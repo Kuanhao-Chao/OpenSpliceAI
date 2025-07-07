@@ -69,7 +69,7 @@ Before You Begin
 One-liner Start
 -----------------
 
-1. **Variants**: `input.vcf <https://github.com/Kuanhao-Chao/OpenSpliceAI/tree/main/examples/data/input.vcf>`_ ``input.vcf`` |download_icon|
+1. **Variants**: `input.vcf <https://github.com/Kuanhao-Chao/OpenSpliceAI/tree/main/examples/data/input.vcf>`_  |download_icon|
 2. **Reference FASTA**: `hg19.fa <https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz>`_ |download_icon|
 3. **Annotation File**: `grch37.txt <https://github.com/Kuanhao-Chao/OpenSpliceAI/tree/main/data/grch37.txt>`_ |download_icon|
 
