@@ -91,15 +91,16 @@ def transfer(args):
     # assert training_target in ["RefSeq", "MANE", "SpliceAI", "SpliceAI27"]
     device = setup_environment(args)
     model_output_base, log_output_train_base, log_output_val_base, log_output_test_base = initialize_paths(args)
-    train_h5f, test_h5f, batch_num = load_datasets(args)
-    train_idxs, val_idxs, test_idxs = generate_indices(batch_num, args.random_seed, test_h5f)
+    train_h5f, valid_h5f, test_h5f, batch_num = load_datasets(args)
+    train_idxs, val_idxs, test_idxs = generate_indices(train_h5f, valid_h5f, test_h5f)
     model, optimizer, scheduler, params = initialize_model_and_optim_transfer(device, args.flanking_size, args.epochs, args.scheduler, args.pretrained_model, args.unfreeze, args.unfreeze_all)
     
     params["RANDOM_SEED"] = args.random_seed
     train_metric_files = create_metric_files(log_output_train_base)
     valid_metric_files = create_metric_files(log_output_val_base)
     test_metric_files = create_metric_files(log_output_test_base)
-    train_model(model, optimizer, scheduler, train_h5f, test_h5f, train_idxs, 
+    train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, train_idxs, 
                 val_idxs, test_idxs, model_output_base, args, device, params, train_metric_files, valid_metric_files, test_metric_files)
     train_h5f.close()
+    valid_h5f.close()
     test_h5f.close()

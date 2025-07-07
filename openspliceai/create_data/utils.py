@@ -204,3 +204,37 @@ def create_datapoints(seq, label):
     X, Y = one_hot_encode(Xd, Yd)
 
     return X, Y
+
+
+def split_train_val(data, val_split_ratio):
+    """
+    Split training data into training and validation sets.
+
+    Args:
+        data (list of lists): [NAME, CHROM, STRAND, TX_START, TX_END, SEQ, LABEL]
+        val_split_ratio (float): proportion of data to use for validation (e.g., 0.1 for 10%)
+
+    Returns:
+        tuple: (train_data, val_data), each a list of lists with the same structure as input
+    """
+    # Transpose data to a list of records
+    records = list(zip(*data))
+    # Shuffle records in place for random split
+    random.shuffle(records)
+    total = len(records)
+    val_size = int(total * val_split_ratio)
+
+    # Split into validation and training records
+    val_records = records[:val_size]
+    train_records = records[val_size:]
+    # Handle case where no records
+    if not train_records:
+        train_data = [[] for _ in data]
+    else:
+        train_data = [list(field) for field in zip(*train_records)]
+    if not val_records:
+        val_data = [[] for _ in data]
+    else:
+        val_data = [list(field) for field in zip(*val_records)]
+    print(f"Split data into {len(train_data[0])} training records and {len(val_data[0])} validation records.")
+    return train_data, val_data

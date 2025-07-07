@@ -349,7 +349,7 @@ def normalise_chrom(source, target):
 
     return source  # Return source as is if both or neither have 'chr' prefix
 
-def get_delta_scores(record, ann, dist_var, mask, flanking_size=5000, precision=2):
+def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision=2):
     """
     Calculate delta scores for variant impacts on splice sites.
     
@@ -358,7 +358,7 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=5000, precision=
         ann (Annotator): Annotator instance with annotation and reference genome data.
         dist_var (int): Max distance between variant and gained/lost splice site, defaults to 50.
         mask (bool): Mask scores representing annotated acceptor/donor gain and unannotated acceptor/donor loss, defaults to 0.
-        flanking_size (int, optional): Size of the flanking region around the variant, defaults to 5000.
+        flanking_size (int, optional): Size of the flanking region around the variant, defaults to 10000.
     
     Returns:
         list: Delta scores indicating the impact of variants on splicing.
@@ -366,7 +366,7 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=5000, precision=
 
     # Define coverage and window size around the variant
     cov = 2 * dist_var + 1
-    wid = 2 * flanking_size + cov
+    wid = flanking_size + cov
     delta_scores = []
     device = setup_device()
 
@@ -436,7 +436,6 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=5000, precision=
             x_alt = one_hot_encode(x_alt)[None, :]
 
             '''separate handling of PyTorch and Keras models'''
-            
             if ann.keras: # keras model handling
                 # Reverse the sequences if on the negative strand
                 if strands[i] == '-':
@@ -488,7 +487,6 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=5000, precision=
                 # Convert to numpy arrays
                 y_ref = y_ref.numpy()
                 y_alt = y_alt.numpy()
-
             '''end'''
 
             # Adjust the alternative sequence scores based on reference and alternative lengths
@@ -513,6 +511,9 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=5000, precision=
             idx_na = (y[0, :, 1] - y[1, :, 1]).argmax()
             idx_pd = (y[1, :, 2] - y[0, :, 2]).argmax()
             idx_nd = (y[0, :, 2] - y[1, :, 2]).argmax()
+
+            # print(f"idx_pa: {idx_pa}, idx_na: {idx_na}, idx_pd: {idx_pd}, idx_nd: {idx_nd}")
+            # print("cov:", cov)
 
             # Apply masks to delta scores based on calculated indices and provided mask
             mask_pa = np.logical_and((idx_pa - cov // 2 == dist_ann[2]), mask)

@@ -24,6 +24,7 @@ def create_dataset(args):
     elif args.chr_split == 'train-test':
         dataset_ls.append('test')
         dataset_ls.append('train')
+        dataset_ls.append('validation')
     for dataset_type in dataset_ls:
         print(("\tProcessing %s ..." % dataset_type))
         if args.biotype =="non-coding":

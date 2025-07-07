@@ -14,7 +14,7 @@ from tqdm import tqdm
 from openspliceai.train_base.openspliceai import *
 from openspliceai.train_base.utils import *
 from openspliceai.constants import *
-
+import openspliceai.create_data.paralogs as paralogs
 
 def initialize_model_and_optim(device, flanking_size, epochs, scheduler):
     # Hyper-parameters:
@@ -67,14 +67,16 @@ def train(args):
     print("Running OpenSpliceAI with 'train' mode")
     device = setup_environment(args)
     model_output_base, log_output_train_base, log_output_val_base, log_output_test_base = initialize_paths(args)
-    train_h5f, test_h5f, batch_num = load_datasets(args)
-    train_idxs, val_idxs, test_idxs = generate_indices(batch_num, args.random_seed, test_h5f)
+    train_h5f, valid_h5f, test_h5f, batch_num = load_datasets(args)
+    train_idxs, val_idxs, test_idxs = generate_indices(train_h5f, valid_h5f, test_h5f)
+
     model, optimizer, scheduler, params = initialize_model_and_optim(device, args.flanking_size, args.epochs, args.scheduler)
     params["RANDOM_SEED"] = args.random_seed
     train_metric_files = create_metric_files(log_output_train_base)
     valid_metric_files = create_metric_files(log_output_val_base)
     test_metric_files = create_metric_files(log_output_test_base)
-    train_model(model, optimizer, scheduler, train_h5f, test_h5f, 
+    train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, 
                 train_idxs, val_idxs, test_idxs, model_output_base, args, device, params, train_metric_files, valid_metric_files, test_metric_files)
     train_h5f.close()
+    valid_h5f.close()
     test_h5f.close()

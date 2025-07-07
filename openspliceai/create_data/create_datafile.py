@@ -157,10 +157,20 @@ def create_datafile(args):
         test_data = get_sequences_and_labels(db, args.output_dir, seq_dict, TEST_CHROM_GROUP, 'test', parse_type=args.parse_type, biotype=args.biotype, canonical_only=args.canonical_only, write_fasta=args.write_fasta)
         if args.remove_paralogs:
             # Remove homologous sequences
-            print("> Removing homologous sequences...")
-            train_data, test_data = paralogs.remove_paralogous_sequences(train_data, test_data, args.min_identity, args.min_coverage, args.output_dir)        
+            print("> Removing homologous sequences in test...")
+            train_data, test_data = paralogs.remove_paralogous_sequences(train_data, test_data, args.min_identity, args.min_coverage, args.output_dir, "test")
+
+        # Split the training data into training and validation sets (90:10 split)
+        print("> Splitting training data into training and validation sets...")
+        train_data, val_data = utils.split_train_val(train_data, args.val_split_ratio)
+        if args.remove_paralogs:
+            # Remove homologous sequences
+            print("> Removing homologous sequences in validation...")
+            train_data, val_data = paralogs.remove_paralogous_sequences(train_data, val_data, args.min_identity, args.min_coverage, args.output_dir, "validation")
+
         # Write the filtered data to h5 files
         paralogs.write_h5_file(args.output_dir, "train", train_data)
+        paralogs.write_h5_file(args.output_dir, "validation", val_data)
         paralogs.write_h5_file(args.output_dir, "test", test_data)
     utils.print_motif_counts(donor_motif_counts, acceptor_motif_counts)    
     print("--- %s seconds ---" % (time.process_time() - start_time))

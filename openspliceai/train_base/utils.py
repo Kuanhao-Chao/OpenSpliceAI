@@ -233,17 +233,23 @@ def initialize_paths(args):
 
 def load_datasets(args):
     train_h5f = h5py.File(args.train_dataset, 'r')
+    os.path.dirname(args.train_dataset)
+    valid_dataset = os.path.join(os.path.dirname(args.train_dataset), os.path.basename(args.train_dataset).replace("train", "validation"))
+    valid_h5f = h5py.File(valid_dataset, 'r')
     test_h5f = h5py.File(args.test_dataset, 'r')
     batch_num = len(train_h5f.keys()) // 2
     print("* Batch_num: ", batch_num, file=sys.stderr)
-    return train_h5f, test_h5f, batch_num
+    return train_h5f, valid_h5f, test_h5f, batch_num
 
 
-def generate_indices(batch_num, random_seed, test_h5f):
-    np.random.seed(random_seed)
-    idxs = np.random.permutation(batch_num)
-    train_idxs = idxs[:int(0.9 * batch_num)]
-    val_idxs = idxs[int(0.9 * batch_num):]
+def generate_indices(train_h5f, valid_h5f, test_h5f):
+    # np.random.seed(random_seed)
+    # idxs = np.random.permutation(batch_num)
+    # train_idxs = idxs[:int(0.9 * batch_num)]
+    # val_idxs = idxs[int(0.9 * batch_num):]
+    # test_idxs = np.arange(len(test_h5f.keys()) // 2)
+    train_idxs = np.arange(len(train_h5f.keys()) // 2)    
+    val_idxs = np.arange(len(valid_h5f.keys()) // 2)        
     test_idxs = np.arange(len(test_h5f.keys()) // 2)
     # # Other approach of splitting test set
     # # Generate and shuffle indices for training set
@@ -568,7 +574,7 @@ def focal_loss(y_true, y_pred, alpha=0.25, gamma=2.0):
                         + y_true[:, 2, :]*torch.log(y_pred[:, 2, :]+epsilon) * torch.pow(torch.sub(1, y_pred[:, 2, :]), gamma))
 
 
-def train_model(model, optimizer, scheduler, train_h5f, test_h5f, train_idxs, val_idxs, test_idxs,
+def train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, train_idxs, val_idxs, test_idxs,
                 model_output_base, args, device, params, 
                 train_metric_files, valid_metric_files, test_metric_files):
     print(f"train_idxs (count: {len(train_idxs)}): ", train_idxs)
@@ -584,7 +590,7 @@ def train_model(model, optimizer, scheduler, train_h5f, test_h5f, train_idxs, va
         start_time = time.time()
         train_loss, global_batch_idx= train_epoch(model, train_h5f,
                         train_idxs, params["BATCH_SIZE"], args.loss, optimizer, scheduler, device, params, train_metric_files, args.flanking_size, run_mode="train", global_batch_idx=global_batch_idx)
-        val_loss = valid_epoch(model, train_h5f, val_idxs, params["BATCH_SIZE"], args.loss, device, 
+        val_loss = valid_epoch(model, valid_h5f, val_idxs, params["BATCH_SIZE"], args.loss, device, 
                                params, valid_metric_files, args.flanking_size, "validation")
         test_loss = valid_epoch(model, test_h5f, test_idxs, params["BATCH_SIZE"], args.loss, device, 
                                 params, test_metric_files, args.flanking_size, "test")

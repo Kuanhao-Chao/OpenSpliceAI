@@ -25,7 +25,7 @@ def variant(args):
 
     # Error handling for required arguments
     if None in [args.input_vcf, args.output_vcf, args.ref_genome, args.annotation, args.model, args.flanking_size]:
-        logging.error('Usage: spliceai [-h] [-m [model]] [-f [flanking_size]] [-I [input]] [-O [output]] -R reference -A annotation '
+        logging.error('Usage: openspliceai [-h] [-m [model]] [-f [flanking_size]] [-I [input]] [-O [output]] -R reference -A annotation '
                       '[-D [distance]] [-M [mask]]')
         exit(1)
 
@@ -56,7 +56,7 @@ def variant(args):
 
     # Adding annotation to the header
     header = vcf.header
-    header.add_line('##INFO=<ID=SpliceAI,Number=.,Type=String,Description="OpenSpliceAI variant '
+    header.add_line('##INFO=<ID=OpenSpliceAI,Number=.,Type=String,Description="OpenSpliceAI variant '
                     'annotation. These include delta scores (DS) and delta positions (DP) for '
                     'acceptor gain (AG), acceptor loss (AL), donor gain (DG), and donor loss (DL). '
                     'Format: ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL">')
@@ -78,7 +78,7 @@ def variant(args):
     for record in tqdm(vcf):
         scores = get_delta_scores(record, ann, distance, mask, flanking_size, precision)
         if scores:
-            record.info['SpliceAI'] = scores
+            record.info['OpenSpliceAI'] = scores
         output.write(record)
 
     # Close input and output VCF files
