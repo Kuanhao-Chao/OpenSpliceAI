@@ -73,7 +73,7 @@ OpenSpliceAI can predict splice sites from DNA sequences with a default **10,000
 
   
 3. **A pre-trained OpenSpliceAI model or directory of models**: 
-    - `GitHub (models/spliceai-mane/10000nt/) <https://github.com/Kuanhao-Chao/OpenSpliceAI/tree/main/models/spliceai-mane/10000nt/>`_ |download_icon| or
+    - `GitHub (models/openspliceai-mane/10000nt/) <https://github.com/Kuanhao-Chao/OpenSpliceAI/tree/main/models/openspliceai-mane/10000nt/>`_ |download_icon| or
     -  `FTP site (OSAI-MANE/10000nt/) <ftp://ftp.ccb.jhu.edu/pub/data/OpenSpliceAI/OSAI-MANE/10000nt/>`_ |download_icon|
 
 Run the following commands (adapt or replace filenames as needed):

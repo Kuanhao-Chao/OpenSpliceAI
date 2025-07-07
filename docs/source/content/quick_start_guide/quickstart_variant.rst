@@ -69,12 +69,12 @@ Before You Begin
 One-liner Start
 -----------------
 
-1. **Variants**: ``input.vcf`` |download_icon|
-2. **Reference FASTA**: ``hg19.fa`` |download_icon|
-3. **Annotation File**: ``grch37.txt`` |download_icon|
+1. **Variants**: `input.vcf <https://github.com/Kuanhao-Chao/OpenSpliceAI/tree/main/examples/data/input.vcf>`_ ``input.vcf`` |download_icon|
+2. **Reference FASTA**: `hg19.fa <https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz>`_ |download_icon|
+3. **Annotation File**: `grch37.txt <https://github.com/Kuanhao-Chao/OpenSpliceAI/tree/main/data/grch37.txt>`_ |download_icon|
 
-3. **A pre-trained OpenSpliceAI model or directory of models**: 
-    - `GitHub (models/spliceai-mane/10000nt/) <https://github.com/Kuanhao-Chao/OpenSpliceAI/tree/main/models/spliceai-mane/10000nt/>`_ |download_icon| or
+4. **A pre-trained OpenSpliceAI model or directory of models**: 
+    - `GitHub (models/openspliceai-mane/10000nt/) <https://github.com/Kuanhao-Chao/OpenSpliceAI/tree/main/models/openspliceai-mane/10000nt/>`_ |download_icon| or
     -  `FTP site (OSAI-MANE/10000nt/) <ftp://ftp.ccb.jhu.edu/pub/data/OpenSpliceAI/OSAI-MANE/10000nt/>`_ |download_icon|
 
 Run:
@@ -84,10 +84,10 @@ Run:
     openspliceai variant \
       -R data/hg19.fa \
       -A data/grch37.txt \
-      -m models/spliceai-mane/400nt/ \
+      -m models/openspliceai-mane/400nt/ \
       -f 400 \
       -t pytorch \
-      -I data/input.vcf \
+      -I examples/input.vcf \
       -O examples/variant/output.vcf
 
 This command:
