@@ -5,6 +5,8 @@ Date: 2025-03-20
 Description: Temperature scaling functions and classes for model calibration.
 """
 
+import inspect
+
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -136,8 +138,19 @@ class ModelWithTemperature(nn.Module):
 
         # Optimize the temperature vector
         optimizer = torch.optim.Adam([self.temperature], lr=0.01)
+        scheduler_kwargs = dict(mode='min', factor=0.1, patience=2)
+        scheduler_signature = inspect.signature(
+            torch.optim.lr_scheduler.ReduceLROnPlateau.__init__
+        )
+        if 'verbose' in scheduler_signature.parameters:
+            scheduler_kwargs['verbose'] = True
+        else:
+            print(
+                "ReduceLROnPlateau 'verbose' argument unsupported in this torch version; proceeding without it."
+            )
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.1, patience=2, verbose=True)
+            optimizer, **scheduler_kwargs
+        )
 
         best_loss = float('inf')
         best_temp = self.temperature.data.clone()

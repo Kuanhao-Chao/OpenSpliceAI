@@ -121,8 +121,8 @@ def calibrate(args):
     
     # Set up the device, datasets, and indices
     device = setup_environment(args)
-    train_h5f, test_h5f, batch_num = load_datasets(args)
-    train_idxs, val_idxs, test_idxs = generate_indices(batch_num, args.random_seed, test_h5f)
+    train_h5f, valid_h5f, test_h5f, _ = load_datasets(args)
+    _, val_idxs, test_idxs = generate_indices(train_h5f, valid_h5f, test_h5f)
     
     # Initialize the model
     model, model_params = initialize_model_and_optim(device, args.flanking_size, args.pretrained_model)
@@ -139,7 +139,7 @@ def calibrate(args):
     print("Test indices count:", len(test_idxs))
     
     # Create data loaders for the validation (calibration) and test sets
-    validation_loader = get_validation_loader(train_h5f, val_idxs, model_params["BATCH_SIZE"])
+    validation_loader = get_validation_loader(valid_h5f, val_idxs, model_params["BATCH_SIZE"])
     test_loader = get_validation_loader(test_h5f, test_idxs, model_params["BATCH_SIZE"])
     
     # Load or determine the temperature vector
@@ -159,9 +159,22 @@ def calibrate(args):
     with open(temperature_txt_save_path, 'w') as f:
         f.write(str(calibrated_model.temperature.data.cpu().numpy()))
     
-    # Save the full calibrated model (including the temperature vector)
+    # Save the calibrated model in a torch.load-safe dictionary format.
+    # Only tensor containers are persisted so that torch.load(weights_only=True)
+    # can deserialize the file without requiring custom class allow-listing.
     model_save_path = os.path.join(base_output_dir, "calibrated_model.pt")
-    torch.save(calibrated_model, model_save_path)
+    temperature_tensor = calibrated_model.temperature.detach().cpu()
+    checkpoint = {
+        "model_state_dict": calibrated_model.model.state_dict(),
+        "temperature": temperature_tensor,
+        "num_classes": int(temperature_tensor.numel()),
+        "metadata": {
+            "created_by": "openspliceai.calibrate",
+            "project": args.project_name,
+            "timestamp": time.time(),
+        },
+    }
+    torch.save(checkpoint, model_save_path)
     print(f"Calibrated model saved to: {model_save_path}")
     
     # Evaluate and visualize on the validation set

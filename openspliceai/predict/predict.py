@@ -1,6 +1,7 @@
 import argparse
 import os, sys, glob
 import re
+import inspect
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -461,6 +462,22 @@ def setup_device():
     device_str = "cuda" if torch.cuda.is_available() else "mps" if platform.system() == "Darwin" else "cpu"
     return torch.device(device_str)
 
+
+def apply_model_temperature(model, logits):
+    """Apply optional temperature scaling stored on the model."""
+    temperature = getattr(model, "_temperature_vector", None)
+    if temperature is None:
+        return logits
+
+    temperature = temperature.to(device=logits.device, dtype=logits.dtype)
+
+    if logits.ndim == 3:
+        return logits / temperature.view(1, 1, -1)
+    if logits.ndim == 2:
+        return logits / temperature.view(1, -1)
+    return logits / temperature
+
+
 def load_pytorch_models(model_path, device, SL, CL):
     """
     Loads a SpliceAI PyTorch model from given state, inferring device.
@@ -517,6 +534,37 @@ def load_pytorch_models(model_path, device, SL, CL):
 
         return model, params
     
+    # Determine whether this torch build exposes the weights_only kwarg.
+    load_signature = inspect.signature(torch.load)
+    supports_weights_only = "weights_only" in load_signature.parameters
+
+    def _torch_load(path):
+        try:
+            return torch.load(path, map_location=device)
+        except Exception as exc:
+            message = str(exc)
+            if supports_weights_only and "Weights only load failed" in message:
+                print(f"\t[WARN] {os.path.basename(path)} requires full deserialization; retrying with weights_only=False.")
+                return torch.load(path, map_location=device, weights_only=False)
+            raise
+
+    def _extract_payload(obj, source_label):
+        temperature = None
+        metadata = None
+        if isinstance(obj, dict) and "model_state_dict" in obj:
+            temperature = obj.get("temperature")
+            metadata = obj.get("metadata")
+            obj = obj["model_state_dict"]
+            if temperature is not None:
+                if isinstance(temperature, torch.Tensor):
+                    temp_len = temperature.numel()
+                elif hasattr(temperature, "__len__"):
+                    temp_len = len(temperature)
+                else:
+                    temp_len = temperature
+                print(f"\t[INFO] Loaded temperature vector ({temp_len}) from {source_label}.")
+        return obj, temperature, metadata
+
     # Load all model state dicts given the supplied model path
     if os.path.isdir(model_path):
         # Find all '*.pth' and '*.pt' files in the directory
@@ -524,41 +572,50 @@ def load_pytorch_models(model_path, device, SL, CL):
         if not model_files:
             print(f"\t[ERR] No PyTorch model files found in directory: {model_path}")
             exit()
-            
+
         models = []
         for model_file in model_files:
             try:
-                model = torch.load(model_file, map_location=device)
-                models.append(model)
+                model_obj = _torch_load(model_file)
+                models.append((model_obj, model_file))
             except Exception as e:
                 print(f"\t[ERR] Error loading PyTorch model from file {model_file}: {e}. Skipping...")
-                
+
         if not models:
             print(f"\t[ERR] No valid PyTorch models found in directory: {model_path}")
             exit()
-    
+
     elif os.path.isfile(model_path):
         try:
-            models = [torch.load(model_path, map_location=device)]
+            models = [(_torch_load(model_path), model_path)]
         except Exception as e:
             print(f"\t[ERR] Error loading PyTorch model from file {model_path}: {e}.")
             exit()
-        
+
     else:
         print(f"\t[ERR] Invalid path: {model_path}")
         exit()
-    
+
     # Load state of model to device
-    # NOTE: supplied model paths should be state dicts, not model files  
+    # NOTE: supplied model paths should be state dicts, not model files
     loaded_models = []
-    
-    for state_dict in models:
-        try: 
+
+    for state_dict_obj, source_path in models:
+        try:
+            state_dict, temperature, metadata = _extract_payload(state_dict_obj, os.path.basename(source_path))
             model, params = load_model(device, CL) # loads new SpliceAI model with correct hyperparams
             model.load_state_dict(state_dict)      # loads state dict
+            if temperature is not None:
+                if not isinstance(temperature, torch.Tensor):
+                    temperature = torch.tensor(temperature, dtype=torch.float32)
+                else:
+                    temperature = temperature.to(dtype=torch.float32)
+                model.register_buffer("_temperature_vector", temperature)
+            if metadata:
+                model._calibration_metadata = metadata
             model = model.to(device)               # puts model on device
             model.eval()                           # puts model in evaluation mode
-            loaded_models.append(model)            # appends model to list of loaded models  
+            loaded_models.append(model)            # appends model to list of loaded models
         except Exception as e:
             print(f"\t[ERR] Error processing model for device: {e}. Skipping...")
             
@@ -666,8 +723,13 @@ def get_prediction(models, dataset_path, device, batch_size, output_dir, flush_p
                 # with torch.no_grad():
                     #     y_pred = model(DNAs)
                     # y_pred = y_pred.detach().cpu()
-                with torch.no_grad():
-                    y_pred = torch.mean(torch.stack([models[m](DNAs).detach().cpu() for m in range(len(models))]), axis=0)
+                predictions = []
+                for model in models:
+                    with torch.no_grad():
+                        logits = model(DNAs)
+                        logits = apply_model_temperature(model, logits)
+                    predictions.append(logits.detach().cpu())
+                y_pred = torch.mean(torch.stack(predictions), axis=0)
 
                 if debug:
                     print('\tbatch ', len(y_pred), file=sys.stderr)
@@ -712,12 +774,17 @@ def get_prediction(models, dataset_path, device, batch_size, output_dir, flush_p
             DNAs = batch[0].to(device)
             DNAs = DNAs.to(torch.float32).to(device)
 
-            with torch.no_grad():
-                y_pred = model(DNAs)
+            predictions = []
+            for model in models:
+                with torch.no_grad():
+                    logits = model(DNAs)
+                    logits = apply_model_temperature(model, logits)
+                predictions.append(logits.detach().cpu())
 
-            batch_ypred.append(y_pred.detach().cpu())
+            y_pred = torch.mean(torch.stack(predictions), axis=0)
+            batch_ypred.append(y_pred)
             count += 1
-            
+
             pbar.update(1)
         
         pbar.close()
