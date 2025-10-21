@@ -159,9 +159,22 @@ def calibrate(args):
     with open(temperature_txt_save_path, 'w') as f:
         f.write(str(calibrated_model.temperature.data.cpu().numpy()))
     
-    # Save the full calibrated model (including the temperature vector)
+    # Save the calibrated model in a torch.load-safe dictionary format.
+    # Only tensor containers are persisted so that torch.load(weights_only=True)
+    # can deserialize the file without requiring custom class allow-listing.
     model_save_path = os.path.join(base_output_dir, "calibrated_model.pt")
-    torch.save(calibrated_model, model_save_path)
+    temperature_tensor = calibrated_model.temperature.detach().cpu()
+    checkpoint = {
+        "model_state_dict": calibrated_model.model.state_dict(),
+        "temperature": temperature_tensor,
+        "num_classes": int(temperature_tensor.numel()),
+        "metadata": {
+            "created_by": "openspliceai.calibrate",
+            "project": args.project_name,
+            "timestamp": time.time(),
+        },
+    }
+    torch.save(checkpoint, model_save_path)
     print(f"Calibrated model saved to: {model_save_path}")
     
     # Evaluate and visualize on the validation set
