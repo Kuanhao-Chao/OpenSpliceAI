@@ -8,11 +8,15 @@ scores and delta positions for acceptor gain (AG), acceptor loss (AL), donor gai
 '''
 
 import logging
-import pysam
-import numpy as np
-from openspliceai.variant.utils import *
-from tqdm import tqdm
 import os
+
+import numpy as np
+import pysam
+import torch
+from tqdm import tqdm
+
+from openspliceai.rbp.expression import load_rbp_expression
+from openspliceai.variant.utils import *
 
 # NOTE: if running with gpu, note that cudnn version should be 8.9.6 or higher, numpy <2.0.0
 
@@ -46,6 +50,17 @@ def variant(args):
           input: {input_vcf}, output: {output_vcf}, 
           distance: {distance}, mask: {mask}, flanking_size: {flanking_size}, precision: {precision}''')
 
+    # Load optional RBP expression vector
+    rbp_tensor = None
+    if args.rbp_expression:
+        try:
+            rbp_expr = load_rbp_expression(args.rbp_expression)
+            rbp_tensor = torch.tensor(rbp_expr.values, dtype=torch.float32).unsqueeze(0)
+            logging.info(f"Loaded RBP vector dim={rbp_expr.dim} from {args.rbp_expression}")
+        except (OSError, ValueError) as exc:
+            logging.error(f"Failed to read RBP expression vector: {exc}")
+            exit(1)
+
     # Reading input VCF file
     print('\t[INFO] Reading input VCF file')
     try:
@@ -72,7 +87,11 @@ def variant(args):
 
     # Setup the Annotator based on reference genome and annotation
     logging.info('Initializing Annotator class')
-    ann = Annotator(ref_genome, annotation, model, model_type, flanking_size)
+    try:
+        ann = Annotator(ref_genome, annotation, model, model_type, flanking_size, rbp_tensor=rbp_tensor)
+    except ValueError as exc:
+        logging.error(f"Annotator initialisation failed: {exc}")
+        exit(1)
 
     # Obtain delta score for each variant in VCF
     for record in tqdm(vcf):

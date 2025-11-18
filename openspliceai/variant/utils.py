@@ -1,14 +1,18 @@
 from importlib.resources import files
-import pandas as pd
-import numpy as np
-from pyfaidx import Fasta
 import logging
-import platform
 import os, glob
-from openspliceai.train_base.openspliceai import SpliceAI
+import platform
+
+import numpy as np
+import pandas as pd
+import torch
+from pyfaidx import Fasta
+
 from openspliceai.constants import *
 from openspliceai.predict.predict import *
 from openspliceai.predict.utils import *
+from openspliceai.rbp.metadata import extract_film_config_from_state_dict
+from openspliceai.train_base.openspliceai import SpliceAI
     
 ##############################################
 ## LOADING PYTORCH AND KERAS MODELS
@@ -31,7 +35,7 @@ def load_pytorch_models(model_path, CL):
     - loaded_models (list): SpliceAI model(s) loaded with given state.
     """
     
-    def load_model(device, flanking_size):
+    def load_model(device, flanking_size, film_config=None):
         """Loads the given model."""
         # Hyper-parameters:
         # L: Number of convolution kernels
@@ -69,7 +73,7 @@ def load_pytorch_models(model_path, CL):
         print(f"\t[INFO] Context nucleotides {CL}")
         print(f"\t[INFO] Sequence length (output): {SL}")
         
-        model = SpliceAI(L, W, AR).to(device)
+        model = SpliceAI(L, W, AR, film_config=film_config).to(device)
         params = {'L': L, 'W': W, 'AR': AR, 'CL': CL, 'SL': SL, 'BATCH_SIZE': BATCH_SIZE, 'N_GPUS': N_GPUS}
 
         return model, params
@@ -113,7 +117,8 @@ def load_pytorch_models(model_path, CL):
     
     for state_dict in models:
         try: 
-            model, params = load_model(device, CL) # loads new SpliceAI model with correct hyperparams
+            film_config = extract_film_config_from_state_dict(state_dict)
+            model, params = load_model(device, CL, film_config or None)
             model.load_state_dict(state_dict)      # loads state dict
             model = model.to(device)               # puts model on device
             model.eval()                           # puts model in evaluation mode
@@ -212,7 +217,7 @@ class Annotator:
     It initializes with the reference genome, annotation data, and optional model configuration.
     """
     
-    def __init__(self, ref_fasta, annotations, model_path='SpliceAI', model_type='keras', CL=80):
+    def __init__(self, ref_fasta, annotations, model_path='SpliceAI', model_type='keras', CL=80, rbp_tensor=None):
         """
         Initializes the Annotator with reference genome, annotations, and model settings.
         
@@ -260,6 +265,7 @@ class Annotator:
             exit()  # Exit if the file cannot be read
 
         # Load models based on the specified model type or file
+        self.rbp_tensor = None
         if model_path == 'SpliceAI':
             from tensorflow import keras
             paths = ('./models/spliceai/spliceai{}.h5'.format(x) for x in range(1, 6))  # Generate paths for SpliceAI models
@@ -276,6 +282,42 @@ class Annotator:
             exit()
         
         print(f'\t[INFO] {len(self.models)} model(s) loaded successfully')
+        self._maybe_prepare_rbp_condition(rbp_tensor)
+
+    def _maybe_prepare_rbp_condition(self, rbp_tensor):
+        if getattr(self, "keras", False):
+            if rbp_tensor is not None:
+                logging.warning("RBP expression provided but current backend does not use FiLM; ignoring.")
+            self.rbp_tensor = None
+            return
+        film_dims = set()
+        for model in self.models:
+            metadata = {}
+            if hasattr(model, "rbp_metadata"):
+                metadata = model.rbp_metadata()
+            dim = metadata.get("rbp_dim")
+            if dim:
+                film_dims.add(dim)
+        if not film_dims:
+            if rbp_tensor is not None:
+                logging.warning("RBP expression provided but loaded model lacks FiLM layers; ignoring vector.")
+            self.rbp_tensor = None
+            return
+        if rbp_tensor is None:
+            raise ValueError("Model contains FiLM layers; please provide --rbp-expression.")
+        if len(film_dims) > 1:
+            raise ValueError(f"Inconsistent FiLM dimensions detected: {sorted(film_dims)}")
+        required_dim = film_dims.pop()
+        tensor = rbp_tensor
+        if not torch.is_tensor(tensor):
+            tensor = torch.tensor(tensor, dtype=torch.float32)
+        tensor = tensor.to(dtype=torch.float32)
+        if tensor.ndim == 1:
+            tensor = tensor.unsqueeze(0)
+        if tensor.shape[-1] != required_dim:
+            raise ValueError(f"RBP vector dimension ({tensor.shape[-1]}) does not match model requirement ({required_dim}).")
+        device = next(self.models[0].parameters()).device
+        self.rbp_tensor = tensor.to(device)
 
     def get_name_and_strand(self, chrom, pos):
         """
@@ -472,8 +514,19 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision
                 
                 # Predict scores using the models
                 with torch.no_grad():
-                    y_ref = torch.mean(torch.stack([ann.models[m](x_ref).detach().cpu() for m in range(len(ann.models))]), axis=0)
-                    y_alt = torch.mean(torch.stack([ann.models[m](x_alt).detach().cpu() for m in range(len(ann.models))]), axis=0)
+                    cond = ann.rbp_tensor
+                    y_ref_preds = []
+                    y_alt_preds = []
+                    for m in range(len(ann.models)):
+                        model = ann.models[m]
+                        if cond is None:
+                            y_ref_preds.append(model(x_ref).detach().cpu())
+                            y_alt_preds.append(model(x_alt).detach().cpu())
+                        else:
+                            y_ref_preds.append(model(x_ref, cond).detach().cpu())
+                            y_alt_preds.append(model(x_alt, cond).detach().cpu())
+                    y_ref = torch.mean(torch.stack(y_ref_preds), axis=0)
+                    y_alt = torch.mean(torch.stack(y_alt_preds), axis=0)
                 
                 # Remove flanking sequence and permute shape
                 y_ref = y_ref.permute(0, 2, 1)

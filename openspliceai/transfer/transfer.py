@@ -1,21 +1,17 @@
-"""
-Filename: transfer.py
-Author: Kuan-Hao Chao
-Date: 2025-03-20
-Description: Transfer-learning for OpenSpliceAI model.
-"""
-
 import numpy as np
 import torch
 import torch.optim as optim
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+
+from openspliceai.constants import *
+from openspliceai.rbp.expression import load_rbp_expression
 from openspliceai.train_base.openspliceai import *
 from openspliceai.train_base.utils import *
-from openspliceai.constants import *
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
 def initialize_model_and_optim_transfer(device, flanking_size, epochs, scheduler,
-                               pretrained_model, unfreeze, unfreeze_all):
+                               pretrained_model, unfreeze, unfreeze_all,
+                               rbp_expression_path=None, film_start_layer=None):
     L = 32
     N_GPUS = 2
     W = np.asarray([11, 11, 11, 11])
@@ -45,7 +41,23 @@ def initialize_model_and_optim_transfer(device, flanking_size, epochs, scheduler
     print("\033[1mContext nucleotides: %d\033[0m" % (CL))
     print("\033[1mSequence length (output): %d\033[0m" % (SL))
     # Initialize the model
-    model = SpliceAI(L, W, AR).to(device)
+    film_config = None
+    rbp_tensor = None
+    num_residual_units = len(W)
+    if rbp_expression_path:
+        rbp_expr = load_rbp_expression(rbp_expression_path)
+        start_layer = film_start_layer - 1 if film_start_layer is not None else num_residual_units // 2
+        start_layer = max(0, min(start_layer, num_residual_units - 1))
+        film_config = {
+            "rbp_dim": rbp_expr.dim,
+            "rbp_names": rbp_expr.names,
+            "film_start": start_layer,
+        }
+        rbp_tensor = torch.tensor(rbp_expr.values, dtype=torch.float32).unsqueeze(0)
+        print(f"[FiLM] Enabled with dim={rbp_expr.dim}, start_unit={start_layer+1}")
+    elif film_start_layer is not None:
+        print("[FiLM] --film-start-layer ignored because --rbp-expression was not supplied.")
+    model = SpliceAI(L, W, AR, film_config=film_config).to(device)
     # # Print the shapes of the parameters in the initialized model
     # print("\nInitialized model parameter shapes:")
     # for name, param in model.named_parameters():
@@ -83,7 +95,9 @@ def initialize_model_and_optim_transfer(device, flanking_size, epochs, scheduler
         scheduler_obj = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
             optimizer, T_0=5, T_mult=1, eta_min=1e-5, last_epoch=-1)    
     params = {'L': L, 'W': W, 'AR': AR, 'CL': CL, 'SL': SL, 'BATCH_SIZE': BATCH_SIZE, 'N_GPUS': N_GPUS}
-    return model, optimizer, scheduler_obj, params
+    if film_config:
+        params["film_config"] = film_config
+    return model, optimizer, scheduler_obj, params, rbp_tensor
 
 
 def transfer(args):
@@ -93,14 +107,17 @@ def transfer(args):
     model_output_base, log_output_train_base, log_output_val_base, log_output_test_base = initialize_paths(args)
     train_h5f, valid_h5f, test_h5f, batch_num = load_datasets(args)
     train_idxs, val_idxs, test_idxs = generate_indices(train_h5f, valid_h5f, test_h5f)
-    model, optimizer, scheduler, params = initialize_model_and_optim_transfer(device, args.flanking_size, args.epochs, args.scheduler, args.pretrained_model, args.unfreeze, args.unfreeze_all)
+    model, optimizer, scheduler, params, rbp_context = initialize_model_and_optim_transfer(
+        device, args.flanking_size, args.epochs, args.scheduler, args.pretrained_model,
+        args.unfreeze, args.unfreeze_all, rbp_expression_path=args.rbp_expression,
+        film_start_layer=args.film_start_layer)
     
     params["RANDOM_SEED"] = args.random_seed
     train_metric_files = create_metric_files(log_output_train_base)
     valid_metric_files = create_metric_files(log_output_val_base)
     test_metric_files = create_metric_files(log_output_test_base)
     train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, train_idxs, 
-                val_idxs, test_idxs, model_output_base, args, device, params, train_metric_files, valid_metric_files, test_metric_files)
+                val_idxs, test_idxs, model_output_base, args, device, params, train_metric_files, valid_metric_files, test_metric_files, rbp_context=rbp_context)
     train_h5f.close()
     valid_h5f.close()
     test_h5f.close()

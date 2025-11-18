@@ -59,6 +59,50 @@ Annotates VCF files with delta scores and positions to evaluate the impact of ge
 <div class="line"><br></div>
 </div>
 </section>
+<section id="rbp-conditioned-prediction">
+<h1>RBP-Conditioned Prediction<a class="headerlink" href="#rbp-conditioned-prediction" title="Permalink to this heading">#</a></h1>
+<p>OpenSpliceAI now includes optional FiLM (Feature-wise Linear Modulation) layers so that later residual units can be conditioned on a fixed RNA binding protein (RBP) expression vector. This keeps the early layers focused on universal sequence rules while the final layers adapt to a tissue-specific regulatory environment.</p>
+<ol class="arabic simple">
+<li><p><strong>Prepare a tissue feature vector.</strong> The helper script now concatenates RBP expression (<code class="docutils literal notranslate"><span class="pre">data/tissue_rbp_matrix.csv</span></code>) with optional high-variance gene (HVG) profiles (e.g. <code class="docutils literal notranslate"><span class="pre">data/developmental_system_hvg.csv</span></code>).</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m openspliceai.scripts.prepare_rbp_expression \
+  --matrix data/tissue_rbp_matrix.csv \
+  --hvg-matrix data/developmental_system_hvg.csv \
+  --tissue limb \
+  --output data/limb_rbp.json \
+  --format json \
+  --standardize zscore \
+  --hvg-standardize zscore
+</pre></div>
+</div>
+<p>The resulting JSON/NPY stores a single concatenated vector whose <code class="docutils literal notranslate"><span class="pre">rbp_names</span></code> entry reflects both the RBP and HVG feature names; the same file must be reused during training and inference.</p>
+<ol class="arabic simple" start="2">
+<li><p><strong>Condition transfer learning.</strong> Pass <code class="docutils literal notranslate"><span class="pre">--rbp-expression</span></code> (and optionally <code class="docutils literal notranslate"><span class="pre">--film-start-layer</span></code>) to modulate only the later residual units:</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>openspliceai transfer \
+  --train-dataset /home1/xyf/data/openspliceai_data/dataset_limb/train.h5 \
+  --test-dataset /home1/xyf/data/openspliceai_data/dataset_limb/test.h5 \
+  --pretrained-model data/model_best.pt \
+  --rbp-expression data/limb_rbp.json \
+  --film-start-layer 7 \
+  --output-dir runs/limb_rbp \
+  --project-name limb_rbp
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p><strong>Run RBP-aware variant annotation.</strong> Tissue-specific checkpoints store their required RBP dimensionality. The <code class="docutils literal notranslate"><span class="pre">variant</span></code> subcommand validates that the same vector is provided at inference time:</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>openspliceai variant \
+  --input decipher_variants_all.vcf \
+  --output results/annotated.vcf \
+  --model model_limb.pt \
+  --ref-genome data/genome.fa \
+  --annotation data/grch38.txt \
+  --rbp-expression data/limb_rbp.json
+</pre></div>
+</div>
+<p><strong>Tip:</strong> The checkpoint records the RBP dimensionality (and any supplied names), so mismatched or missing vectors are reported immediately. Base models without FiLM layers continue to work without any additional inputs.</p>
+</section>
 <section id="cite-us">
 <h1>Cite Us<a class="headerlink" href="#cite-us" title="Permalink to this heading">#</a></h1>
 <p>If you use OpenSpliceAI in your research, please cite our work as well as the original SpliceAI paper:</p>

@@ -103,6 +103,8 @@ def parse_args_transfer(subparsers):
     parser_transfer.add_argument("--loss", '-l', type=str, default='cross_entropy_loss', choices=["cross_entropy_loss", "focal_loss"], help="Loss function for fine-tuning")
     parser_transfer.add_argument("--unfreeze-all", '-A', action='store_true', default=True, help='Unfreeze all layers for fine-tuning')
     parser_transfer.add_argument("--unfreeze", '-u', type=int, default=1, help="Number of layers to unfreeze for fine-tuning")
+    parser_transfer.add_argument('--rbp-expression', type=str, help='Path to an RBP expression vector (JSON/NPY) used for FiLM conditioning')
+    parser_transfer.add_argument('--film-start-layer', type=int, default=None, help='1-based residual unit index to start FiLM conditioning (defaults to half of the network)')
 
 
 def parse_args_predict(subparsers):
@@ -141,6 +143,7 @@ def parse_args_variant(subparsers):
     parser_variant.add_argument('--flanking-size', '-f', type=int, default=80, help='Sum of flanking sequence lengths on each side of input (i.e. 40+40)')
     parser_variant.add_argument('--model-type', '-t', type=str, choices=['keras', 'pytorch'], default='pytorch', help='Type of model file (keras or pytorch)')
     parser_variant.add_argument('--precision', '-p', type=int, default=2, help='Number of decimal places to round the output scores')
+    parser_variant.add_argument('--rbp-expression', type=str, help='Path to an RBP expression vector (JSON/NPY) used when the model includes FiLM layers')
  
 
 def parse_args(arglist):

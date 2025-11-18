@@ -387,7 +387,7 @@ def model_evaluation(batch_ylabel, batch_ypred, metric_files, run_mode, criterio
     return loss
 
 
-def valid_epoch(model, h5f, idxs, batch_size, criterion, device, params, metric_files, flanking_size, run_mode):
+def valid_epoch(model, h5f, idxs, batch_size, criterion, device, params, metric_files, flanking_size, run_mode, rbp_context=None):
     print(f"\033[1m{run_mode.capitalize()}ing model...\033[0m")
     model.eval()
     running_loss = 0.0
@@ -406,7 +406,7 @@ def valid_epoch(model, h5f, idxs, batch_size, criterion, device, params, metric_
             DNAs, labels = batch[0].to(device), batch[1].to(device)
             DNAs, labels = clip_datapoints(DNAs, labels, params["CL"], CL_max, params["N_GPUS"])
             DNAs, labels = DNAs.to(torch.float32).to(device), labels.to(torch.float32).to(device)
-            yp = model(DNAs)
+            yp = model(DNAs, rbp_context)
             if criterion == "cross_entropy_loss":
                 loss = categorical_crossentropy_2d(labels, yp)
             elif criterion == "focal_loss":
@@ -425,7 +425,7 @@ def valid_epoch(model, h5f, idxs, batch_size, criterion, device, params, metric_
     return eval_loss
 
 
-def train_epoch(model, h5f, idxs, batch_size, criterion, optimizer, scheduler, device, params, metric_files, flanking_size, run_mode, global_batch_idx):
+def train_epoch(model, h5f, idxs, batch_size, criterion, optimizer, scheduler, device, params, metric_files, flanking_size, run_mode, global_batch_idx, rbp_context=None):
     print(f"\033[1m{run_mode.capitalize()}ing model...\033[0m")
     model.train()
     running_loss = 0.0
@@ -452,7 +452,7 @@ def train_epoch(model, h5f, idxs, batch_size, criterion, optimizer, scheduler, d
             DNAs, labels = clip_datapoints(DNAs, labels, params["CL"], CL_max, params["N_GPUS"])
             DNAs, labels = DNAs.to(torch.float32).to(device), labels.to(torch.float32).to(device)
             optimizer.zero_grad()
-            yp = model(DNAs)
+            yp = model(DNAs, rbp_context)
             if criterion == "cross_entropy_loss":
                 loss = categorical_crossentropy_2d(labels, yp)
             elif criterion == "focal_loss":
@@ -575,25 +575,30 @@ def focal_loss(y_true, y_pred, alpha=0.25, gamma=2.0):
 
 
 def train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, train_idxs, val_idxs, test_idxs,
-                model_output_base, args, device, params, 
-                train_metric_files, valid_metric_files, test_metric_files):
+                model_output_base, args, device, params,
+                train_metric_files, valid_metric_files, test_metric_files, rbp_context=None):
     print(f"train_idxs (count: {len(train_idxs)}): ", train_idxs)
     print(f"val_idxs (count: {len(val_idxs)}): ", val_idxs)
     print(f"test_idxs (count: {len(test_idxs)}): ", test_idxs)
     best_val_loss = float('inf')
     epochs_no_improve = 0
     global_batch_idx = 0  # Initialize before the training loop
+    rbp_context_tensor = None
+    if rbp_context is not None:
+        rbp_context_tensor = rbp_context.to(device)
     for epoch in range(args.epochs):
         print(f"\n{'='*60}")
         # current_lr = optimizer.param_groups[0]['lr']
         # print(f">> Epoch {epoch + 1}; Current Learning Rate: {current_lr}")
         start_time = time.time()
         train_loss, global_batch_idx= train_epoch(model, train_h5f,
-                        train_idxs, params["BATCH_SIZE"], args.loss, optimizer, scheduler, device, params, train_metric_files, args.flanking_size, run_mode="train", global_batch_idx=global_batch_idx)
-        val_loss = valid_epoch(model, valid_h5f, val_idxs, params["BATCH_SIZE"], args.loss, device, 
-                               params, valid_metric_files, args.flanking_size, "validation")
-        test_loss = valid_epoch(model, test_h5f, test_idxs, params["BATCH_SIZE"], args.loss, device, 
-                                params, test_metric_files, args.flanking_size, "test")
+                        train_idxs, params["BATCH_SIZE"], args.loss, optimizer, scheduler, device, params,
+                        train_metric_files, args.flanking_size, run_mode="train", global_batch_idx=global_batch_idx,
+                        rbp_context=rbp_context_tensor)
+        val_loss = valid_epoch(model, valid_h5f, val_idxs, params["BATCH_SIZE"], args.loss, device,
+                               params, valid_metric_files, args.flanking_size, "validation", rbp_context=rbp_context_tensor)
+        test_loss = valid_epoch(model, test_h5f, test_idxs, params["BATCH_SIZE"], args.loss, device,
+                                params, test_metric_files, args.flanking_size, "test", rbp_context=rbp_context_tensor)
         print(f"Training Loss: {train_loss}")
         print(f"Validation Loss: {val_loss}")
         print(f"Testing Loss: {test_loss}")
