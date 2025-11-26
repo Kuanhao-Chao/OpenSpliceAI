@@ -16,7 +16,7 @@ EXTRA_PARAMS="--split-method human --canonical-only"
 mkdir -p ${OUTPUT_DIR}
 
 # Run the command
-echo openspliceai create-data \
+openspliceai create-data \
     --remove-paralogs \
     --min-identity 0.8 \
     --min-coverage 0.8 \

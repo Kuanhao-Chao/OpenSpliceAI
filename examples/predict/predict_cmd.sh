@@ -10,7 +10,7 @@ PDIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 
 # Define required arguments
 DATA_PATH="$PDIR/examples/data/chr22.fa"
-MODEL_PATH="$PDIR/models/spliceai-mane/10000nt/model_10000nt_rs14.pt"
+MODEL_PATH="$PDIR/models/openspliceai-mane/10000nt/model_10000nt_rs14.pt"
 FLANKING_SIZE=10000
 OUTPUT_PATH="$PDIR/examples/predict/results"
 

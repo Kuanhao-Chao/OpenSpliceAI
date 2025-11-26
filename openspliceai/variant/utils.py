@@ -111,15 +111,29 @@ def load_pytorch_models(model_path, CL):
     # NOTE: supplied model paths should be state dicts, not model files  
     loaded_models = []
     
+    mismatch_hint = (
+        "[HINT] Ensure the checkpoint was trained with the same flanking size "
+        f"({CL}) that you supplied. For packaged weights, choose the model from "
+        f"the `{CL}nt` directory."
+    )
+
     for state_dict in models:
-        try: 
-            model, params = load_model(device, CL) # loads new SpliceAI model with correct hyperparams
-            model.load_state_dict(state_dict)      # loads state dict
-            model = model.to(device)               # puts model on device
-            model.eval()                           # puts model in evaluation mode
-            loaded_models.append(model)            # appends model to list of loaded models  
-        except Exception as e:
-            logging.error(f"Error processing model for device: {e}. Skipping...")
+        model, params = load_model(device, CL)  # loads new SpliceAI model with correct hyperparams
+        try:
+            model.load_state_dict(state_dict)   # loads state dict
+        except RuntimeError as e:
+            err_msg = str(e)
+            if "size mismatch" in err_msg or "shape" in err_msg:
+                logging.warning("Skipping model due to incompatible tensor shapes.")
+                logging.warning("This typically indicates a flanking-size mismatch between the model and CLI arguments.")
+                logging.warning(mismatch_hint)
+                continue
+            logging.error(f"Error processing model for device: {err_msg}. Skipping...")
+            continue
+
+        model = model.to(device)                # puts model on device
+        model.eval()                            # puts model in evaluation mode
+        loaded_models.append(model)             # appends model to list of loaded models  
             
     if not loaded_models:
         logging.error("No models were successfully loaded to the device.")
@@ -196,8 +210,9 @@ def one_hot_encode(seq):
     seq = seq.upper().replace('A', '\x01').replace('C', '\x02')
     seq = seq.replace('G', '\x03').replace('T', '\x04').replace('N', '\x00')
 
-    # Convert the sequence to one-hot encoded numpy array
-    return map[np.fromstring(seq, np.int8) % 5]
+    # Convert the sequence to one-hot encoded numpy array.
+    # np.fromstring(binary) was removed in NumPy 2.0; frombuffer works across NumPy versions.
+    return map[np.frombuffer(seq.encode('latin-1'), dtype=np.int8) % 5]
 
 
 ####################################################################################################################################

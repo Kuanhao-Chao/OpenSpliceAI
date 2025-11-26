@@ -26,15 +26,15 @@
 ##contig=<ID=22,length=51304566>
 ##contig=<ID=X,length=155270560>
 ##contig=<ID=Y,length=59373566>
-##INFO=<ID=SpliceAI,Number=.,Type=String,Description="OpenSpliceAI variant annotation. These include delta scores (DS) and delta positions (DP) for acceptor gain (AG), acceptor loss (AL), donor gain (DG), and donor loss (DL). Format: ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL">
+##INFO=<ID=OpenSpliceAI,Number=.,Type=String,Description="OpenSpliceAI variant annotation. These include delta scores (DS) and delta positions (DP) for acceptor gain (AG), acceptor loss (AL), donor gain (DG), and donor loss (DL). Format: ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
 1	25000	.	A	C,G,T	.	.	.
-2	152389953	.	T	A,C,G	.	.	SpliceAI=A|NEB|0.00|0.04|0.00|0.12|91|307|91|203,C|NEB|0.00|0.04|0.00|0.12|144|307|91|203,G|NEB|0.00|0.04|0.00|0.12|144|307|91|203
-2	179415988	.	C	CA	.	.	SpliceAI=CA|TTN|0.02|0.98|0.00|0.00|192|199|65|66
-2	179446218	.	ATACT	A	.	.	SpliceAI=A|TTN|0.00|0.00|0.00|0.96|208|368|286|208
-2	179446218	.	ATACT	AT,ATA	.	.	SpliceAI=AT|TTN|.|.|.|.|.|.|.|.,ATA|TTN|.|.|.|.|.|.|.|.
-2	179642185	.	G	A	.	.	SpliceAI=A|TTN|0.04|0.00|0.25|0.33|326|238|202|162
-19	38958362	.	C	T	.	.	SpliceAI=T|RYR1|0.01|0.00|0.94|0.18|88|290|198|290
-21	47406854	.	CCA	C	.	.	SpliceAI=C|COL6A1|0.00|0.98|0.00|0.02|59|204|384|332
-21	47406856	.	A	AT	.	.	SpliceAI=AT|COL6A1|0.00|0.98|0.00|0.01|54|202|382|330
-X	129274636	.	A	C,G,T	.	.	SpliceAI=C|AIFM1|0.00|0.19|0.00|0.23|72|156|156|72,G|AIFM1|0.00|0.17|0.00|0.24|159|156|156|72,T|AIFM1|0.00|0.11|0.00|0.21|72|156|156|72
+2	152389953	.	T	A,C,G	.	.	OpenSpliceAI=A|NEB|0.00|0.00|0.00|0.12|2|3|17|3,C|NEB|0.00|0.00|0.00|0.12|8|3|-26|3,G|NEB|0.00|0.00|0.00|0.12|23|3|17|3
+2	179415988	.	C	CA	.	.	OpenSpliceAI=CA|TTN|0.02|0.99|0.00|0.00|-7|-1|0|-1
+2	179446218	.	ATACT	A	.	.	OpenSpliceAI=A|TTN|0.00|0.00|0.00|0.96|8|4|12|8
+2	179446218	.	ATACT	AT,ATA	.	.	OpenSpliceAI=AT|TTN|.|.|.|.|.|.|.|.,ATA|TTN|.|.|.|.|.|.|.|.
+2	179642185	.	G	A	.	.	OpenSpliceAI=A|TTN|0.00|0.00|0.25|0.33|2|38|2|-38
+19	38958362	.	C	T	.	.	OpenSpliceAI=T|RYR1|0.00|0.00|0.94|0.00|-2|-46|-2|3
+21	47406854	.	CCA	C	.	.	OpenSpliceAI=C|COL6A1|0.00|0.98|0.00|0.00|-19|4|38|4
+21	47406856	.	A	AT	.	.	OpenSpliceAI=AT|COL6A1|0.00|0.98|0.00|0.00|3|2|36|2
+X	129274636	.	A	C,G,T	.	.	OpenSpliceAI=C|AIFM1|0.00|0.19|0.00|0.00|-41|-44|-44|45,G|AIFM1|0.00|0.17|0.00|0.00|-41|-44|-44|-43,T|AIFM1|0.00|0.11|0.00|0.00|45|-44|-44|-43

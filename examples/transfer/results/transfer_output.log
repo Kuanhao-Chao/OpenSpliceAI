@@ -1,0 +1,549 @@
+Running OpenSpliceAI with transfer mode.
+[1mContext nucleotides: 10000[0m
+[1mSequence length (output): 5000[0m
+
+Initialized model parameter shapes:
+initial_conv.weight: torch.Size([32, 4, 1]), initial_conv.bias: torch.Size([32]), initial_skip.conv.weight: torch.Size([32, 32, 1]), initial_skip.conv.bias: torch.Size([32]), residual_units.0.batchnorm1.weight: torch.Size([32]), residual_units.0.batchnorm1.bias: torch.Size([32]), residual_units.0.batchnorm2.weight: torch.Size([32]), residual_units.0.batchnorm2.bias: torch.Size([32]), residual_units.0.conv1.weight: torch.Size([32, 32, 11]), residual_units.0.conv1.bias: torch.Size([32]), residual_units.0.conv2.weight: torch.Size([32, 32, 11]), residual_units.0.conv2.bias: torch.Size([32]), residual_units.1.batchnorm1.weight: torch.Size([32]), residual_units.1.batchnorm1.bias: torch.Size([32]), residual_units.1.batchnorm2.weight: torch.Size([32]), residual_units.1.batchnorm2.bias: torch.Size([32]), residual_units.1.conv1.weight: torch.Size([32, 32, 11]), residual_units.1.conv1.bias: torch.Size([32]), residual_units.1.conv2.weight: torch.Size([32, 32, 11]), residual_units.1.conv2.bias: torch.Size([32]), residual_units.2.batchnorm1.weight: torch.Size([32]), residual_units.2.batchnorm1.bias: torch.Size([32]), residual_units.2.batchnorm2.weight: torch.Size([32]), residual_units.2.batchnorm2.bias: torch.Size([32]), residual_units.2.conv1.weight: torch.Size([32, 32, 11]), residual_units.2.conv1.bias: torch.Size([32]), residual_units.2.conv2.weight: torch.Size([32, 32, 11]), residual_units.2.conv2.bias: torch.Size([32]), residual_units.3.batchnorm1.weight: torch.Size([32]), residual_units.3.batchnorm1.bias: torch.Size([32]), residual_units.3.batchnorm2.weight: torch.Size([32]), residual_units.3.batchnorm2.bias: torch.Size([32]), residual_units.3.conv1.weight: torch.Size([32, 32, 11]), residual_units.3.conv1.bias: torch.Size([32]), residual_units.3.conv2.weight: torch.Size([32, 32, 11]), residual_units.3.conv2.bias: torch.Size([32]), residual_units.4.conv.weight: torch.Size([32, 32, 1]), residual_units.4.conv.bias: torch.Size([32]), residual_units.5.batchnorm1.weight: torch.Size([32]), residual_units.5.batchnorm1.bias: torch.Size([32]), residual_units.5.batchnorm2.weight: torch.Size([32]), residual_units.5.batchnorm2.bias: torch.Size([32]), residual_units.5.conv1.weight: torch.Size([32, 32, 11]), residual_units.5.conv1.bias: torch.Size([32]), residual_units.5.conv2.weight: torch.Size([32, 32, 11]), residual_units.5.conv2.bias: torch.Size([32]), residual_units.6.batchnorm1.weight: torch.Size([32]), residual_units.6.batchnorm1.bias: torch.Size([32]), residual_units.6.batchnorm2.weight: torch.Size([32]), residual_units.6.batchnorm2.bias: torch.Size([32]), residual_units.6.conv1.weight: torch.Size([32, 32, 11]), residual_units.6.conv1.bias: torch.Size([32]), residual_units.6.conv2.weight: torch.Size([32, 32, 11]), residual_units.6.conv2.bias: torch.Size([32]), residual_units.7.batchnorm1.weight: torch.Size([32]), residual_units.7.batchnorm1.bias: torch.Size([32]), residual_units.7.batchnorm2.weight: torch.Size([32]), residual_units.7.batchnorm2.bias: torch.Size([32]), residual_units.7.conv1.weight: torch.Size([32, 32, 11]), residual_units.7.conv1.bias: torch.Size([32]), residual_units.7.conv2.weight: torch.Size([32, 32, 11]), residual_units.7.conv2.bias: torch.Size([32]), residual_units.8.batchnorm1.weight: torch.Size([32]), residual_units.8.batchnorm1.bias: torch.Size([32]), residual_units.8.batchnorm2.weight: torch.Size([32]), residual_units.8.batchnorm2.bias: torch.Size([32]), residual_units.8.conv1.weight: torch.Size([32, 32, 11]), residual_units.8.conv1.bias: torch.Size([32]), residual_units.8.conv2.weight: torch.Size([32, 32, 11]), residual_units.8.conv2.bias: torch.Size([32]), residual_units.9.conv.weight: torch.Size([32, 32, 1]), residual_units.9.conv.bias: torch.Size([32]), residual_units.10.batchnorm1.weight: torch.Size([32]), residual_units.10.batchnorm1.bias: torch.Size([32]), residual_units.10.batchnorm2.weight: torch.Size([32]), residual_units.10.batchnorm2.bias: torch.Size([32]), residual_units.10.conv1.weight: torch.Size([32, 32, 21]), residual_units.10.conv1.bias: torch.Size([32]), residual_units.10.conv2.weight: torch.Size([32, 32, 21]), residual_units.10.conv2.bias: torch.Size([32]), residual_units.11.batchnorm1.weight: torch.Size([32]), residual_units.11.batchnorm1.bias: torch.Size([32]), residual_units.11.batchnorm2.weight: torch.Size([32]), residual_units.11.batchnorm2.bias: torch.Size([32]), residual_units.11.conv1.weight: torch.Size([32, 32, 21]), residual_units.11.conv1.bias: torch.Size([32]), residual_units.11.conv2.weight: torch.Size([32, 32, 21]), residual_units.11.conv2.bias: torch.Size([32]), residual_units.12.batchnorm1.weight: torch.Size([32]), residual_units.12.batchnorm1.bias: torch.Size([32]), residual_units.12.batchnorm2.weight: torch.Size([32]), residual_units.12.batchnorm2.bias: torch.Size([32]), residual_units.12.conv1.weight: torch.Size([32, 32, 21]), residual_units.12.conv1.bias: torch.Size([32]), residual_units.12.conv2.weight: torch.Size([32, 32, 21]), residual_units.12.conv2.bias: torch.Size([32]), residual_units.13.batchnorm1.weight: torch.Size([32]), residual_units.13.batchnorm1.bias: torch.Size([32]), residual_units.13.batchnorm2.weight: torch.Size([32]), residual_units.13.batchnorm2.bias: torch.Size([32]), residual_units.13.conv1.weight: torch.Size([32, 32, 21]), residual_units.13.conv1.bias: torch.Size([32]), residual_units.13.conv2.weight: torch.Size([32, 32, 21]), residual_units.13.conv2.bias: torch.Size([32]), residual_units.14.conv.weight: torch.Size([32, 32, 1]), residual_units.14.conv.bias: torch.Size([32]), residual_units.15.batchnorm1.weight: torch.Size([32]), residual_units.15.batchnorm1.bias: torch.Size([32]), residual_units.15.batchnorm2.weight: torch.Size([32]), residual_units.15.batchnorm2.bias: torch.Size([32]), residual_units.15.conv1.weight: torch.Size([32, 32, 41]), residual_units.15.conv1.bias: torch.Size([32]), residual_units.15.conv2.weight: torch.Size([32, 32, 41]), residual_units.15.conv2.bias: torch.Size([32]), residual_units.16.batchnorm1.weight: torch.Size([32]), residual_units.16.batchnorm1.bias: torch.Size([32]), residual_units.16.batchnorm2.weight: torch.Size([32]), residual_units.16.batchnorm2.bias: torch.Size([32]), residual_units.16.conv1.weight: torch.Size([32, 32, 41]), residual_units.16.conv1.bias: torch.Size([32]), residual_units.16.conv2.weight: torch.Size([32, 32, 41]), residual_units.16.conv2.bias: torch.Size([32]), residual_units.17.batchnorm1.weight: torch.Size([32]), residual_units.17.batchnorm1.bias: torch.Size([32]), residual_units.17.batchnorm2.weight: torch.Size([32]), residual_units.17.batchnorm2.bias: torch.Size([32]), residual_units.17.conv1.weight: torch.Size([32, 32, 41]), residual_units.17.conv1.bias: torch.Size([32]), residual_units.17.conv2.weight: torch.Size([32, 32, 41]), residual_units.17.conv2.bias: torch.Size([32]), residual_units.18.batchnorm1.weight: torch.Size([32]), residual_units.18.batchnorm1.bias: torch.Size([32]), residual_units.18.batchnorm2.weight: torch.Size([32]), residual_units.18.batchnorm2.bias: torch.Size([32]), residual_units.18.conv1.weight: torch.Size([32, 32, 41]), residual_units.18.conv1.bias: torch.Size([32]), residual_units.18.conv2.weight: torch.Size([32, 32, 41]), residual_units.18.conv2.bias: torch.Size([32]), residual_units.19.conv.weight: torch.Size([32, 32, 1]), residual_units.19.conv.bias: torch.Size([32]), final_conv.weight: torch.Size([3, 32, 1]), final_conv.bias: torch.Size([3]), 
+Missing keys: []
+Unexpected keys: []
+
+ unfreeze_all: True
+train_idxs:  [1]
+val_idxs:  [0]
+test_idxs:  [0]
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33325714285714286
+Class Non-splice	: Accuracy=0.9997714285714285, Precision=1.0, Recall=0.9997714285714285, F1=0.9998857012229969
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3332484749455338
+Class Non-splice	: Accuracy=0.9997454248366013, Precision=1.0, Recall=0.9997454248366013, F1=0.9998726962141096
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3332308333333333
+Class Non-splice	: Accuracy=0.9996925, Precision=1.0, Recall=0.9996925, F1=0.9998462263573025
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 0.0006518230657093227
+Validation Loss: 0.0007062681252136827
+Testing Loss: 0.0008844550466164947
+New best model saved.
+>> Epoch 1; Final Learning Rate: 9.363019571208397e-05
+--- 12.27 seconds ---
+============================================================
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3332904761904762
+Class Non-splice	: Accuracy=0.9998714285714285, Precision=1.0, Recall=0.9998714285714285, F1=0.9999357101527956
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33326132897603483
+Class Non-splice	: Accuracy=0.9997839869281046, Precision=1.0, Recall=0.9997839869281046, F1=0.9998919817973804
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3332452777777778
+Class Non-splice	: Accuracy=0.9997358333333334, Precision=1.0, Recall=0.9997358333333334, F1=0.9998678992183551
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 0.00027095931000076234
+Validation Loss: 0.0004968021530658007
+Testing Loss: 0.0006141928606666625
+New best model saved.
+>> Epoch 2; Final Learning Rate: 7.268612642442657e-05
+--- 10.10 seconds ---
+============================================================
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3332984126984127
+Class Non-splice	: Accuracy=0.9998952380952381, Precision=1.0, Recall=0.9998952380952381, F1=0.9999476163037111
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33327712418300653
+Class Non-splice	: Accuracy=0.9998313725490197, Precision=1.0, Recall=0.9998313725490197, F1=0.999915679165106
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33326388888888886
+Class Non-splice	: Accuracy=0.9997916666666666, Precision=1.0, Recall=0.9997916666666666, F1=0.9998958224815085
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 0.0001746190246194601
+Validation Loss: 0.0003502475447021425
+Testing Loss: 0.00042463166755624115
+New best model saved.
+>> Epoch 3; Final Learning Rate: 4.498655797196586e-05
+--- 10.03 seconds ---
+============================================================
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3333095238095238
+Class Non-splice	: Accuracy=0.9999285714285714, Precision=1.0, Recall=0.9999285714285714, F1=0.99996428443873
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33328997821350764
+Class Non-splice	: Accuracy=0.9998699346405229, Precision=1.0, Recall=0.9998699346405229, F1=0.9999349630907369
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3332797222222222
+Class Non-splice	: Accuracy=0.9998391666666666, Precision=1.0, Recall=0.9998391666666666, F1=0.999919576865973
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 0.00012806318409275264
+Validation Loss: 0.0002712578570935875
+Testing Loss: 0.00032455596374347806
+New best model saved.
+>> Epoch 4; Final Learning Rate: 2.1111784029837514e-05
+--- 11.68 seconds ---
+============================================================
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.333315873015873
+Class Non-splice	: Accuracy=0.9999476190476191, Precision=1.0, Recall=0.9999476190476191, F1=0.9999738088378505
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33329455337690633
+Class Non-splice	: Accuracy=0.9998836601307189, Precision=1.0, Recall=0.9998836601307189, F1=0.9999418266814213
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3332852777777778
+Class Non-splice	: Accuracy=0.9998558333333334, Precision=1.0, Recall=0.9998558333333334, F1=0.9999279114702851
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 9.639221389079466e-05
+Validation Loss: 0.00023990629415493459
+Testing Loss: 0.0002842082758434117
+New best model saved.
+>> Epoch 5; Final Learning Rate: 1.0181156770214248e-05
+--- 10.01 seconds ---
+============================================================
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.333318253968254
+Class Non-splice	: Accuracy=0.999954761904762, Precision=1.0, Recall=0.999954761904762, F1=0.999977380440748
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33330925925925925
+Class Non-splice	: Accuracy=0.9999277777777777, Precision=1.0, Recall=0.9999277777777777, F1=0.9999638875848295
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33330472222222224
+Class Non-splice	: Accuracy=0.9999141666666667, Precision=1.0, Recall=0.9999141666666667, F1=0.999957081491414
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 9.729380690259859e-05
+Validation Loss: 0.0001517066266387701
+Testing Loss: 0.00017926191503647715
+New best model saved.
+>> Epoch 6; Final Learning Rate: 9.363019571208397e-05
+--- 10.01 seconds ---
+============================================================
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3333277777777778
+Class Non-splice	: Accuracy=0.9999833333333333, Precision=1.0, Recall=0.9999833333333333, F1=0.9999916665972216
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3333210239651416
+Class Non-splice	: Accuracy=0.9999630718954249, Precision=1.0, Recall=0.9999630718954249, F1=0.9999815356067849
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3333172222222222
+Class Non-splice	: Accuracy=0.9999516666666667, Precision=1.0, Recall=0.9999516666666667, F1=0.9999758327492915
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 4.813558916794136e-05
+Validation Loss: 9.840604616329074e-05
+Testing Loss: 0.00011700192408170551
+New best model saved.
+>> Epoch 7; Final Learning Rate: 7.268612642442658e-05
+--- 10.05 seconds ---
+============================================================
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3333325396825397
+Class Non-splice	: Accuracy=0.9999976190476191, Precision=1.0, Recall=0.9999976190476191, F1=0.9999988095223923
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3333261437908497
+Class Non-splice	: Accuracy=0.999978431372549, Precision=1.0, Recall=0.999978431372549, F1=0.9999892155699718
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33332333333333336
+Class Non-splice	: Accuracy=0.99997, Precision=1.0, Recall=0.99997, F1=0.9999849997749967
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 2.6945965146296658e-05
+Validation Loss: 7.439392356900498e-05
+Testing Loss: 8.678915037307888e-05
+New best model saved.
+>> Epoch 8; Final Learning Rate: 4.498655797196588e-05
+--- 10.05 seconds ---
+============================================================
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3333325396825397
+Class Non-splice	: Accuracy=0.9999976190476191, Precision=1.0, Recall=0.9999976190476191, F1=0.9999988095223923
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33332755991285407
+Class Non-splice	: Accuracy=0.9999826797385621, Precision=1.0, Recall=0.9999826797385621, F1=0.9999913397942826
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3333261111111111
+Class Non-splice	: Accuracy=0.9999783333333333, Precision=1.0, Recall=0.9999783333333333, F1=0.9999891665493043
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 2.0057907022419386e-05
+Validation Loss: 6.329054303932935e-05
+Testing Loss: 7.302735320990905e-05
+New best model saved.
+>> Epoch 9; Final Learning Rate: 2.1111784029837497e-05
+--- 10.04 seconds ---
+============================================================
+
+============================================================
+[1mTraining model...[0m
+shuffled_idxs:  [1]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.3333333333333333
+Class Non-splice	: Accuracy=1.0, Precision=1.0, Recall=1.0, F1=1.0
+[1mValidationing model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33332821350762526
+Class Non-splice	: Accuracy=0.9999846405228758, Precision=1.0, Recall=0.9999846405228758, F1=0.9999923202024591
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+[1mTesting model...[0m
+shuffled_idxs:  [0]
+Shard 1/1
+
+[1macceptor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+
+[1mdonor:[0m
+0.0000	[91m0.0000	[0m0.0000	0.0000	[94m-0.0000	[0m0.0000	0.0000	0.0000	0.0000	0
+***************************************
+
+Overall Accuracy: 0.33332805555555556
+Class Non-splice	: Accuracy=0.9999841666666667, Precision=1.0, Recall=0.9999841666666667, F1=0.9999920832706592
+Class acceptor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Class donor	: Accuracy=0.0, Precision=0.0, Recall=0.0, F1=0.0
+Training Loss: 2.167872662539594e-05
+Validation Loss: 6.0100290284026414e-05
+Testing Loss: 6.883320020278916e-05
+New best model saved.
+>> Epoch 10; Final Learning Rate: 1.0181156770214243e-05
+--- 10.08 seconds ---
+============================================================

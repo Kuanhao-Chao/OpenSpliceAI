@@ -552,15 +552,29 @@ def load_pytorch_models(model_path, device, SL, CL):
     # NOTE: supplied model paths should be state dicts, not model files  
     loaded_models = []
     
+    mismatch_hint = (
+        "\t[HINT] Ensure the provided checkpoint was trained with the same --flanking-size "
+        f"({CL}) you passed to predict. For the bundled releases, pick a model from the "
+        f"`.../{CL}nt/` directory."
+    )
+
     for state_dict in models:
-        try: 
-            model, params = load_model(device, CL) # loads new SpliceAI model with correct hyperparams
-            model.load_state_dict(state_dict)      # loads state dict
-            model = model.to(device)               # puts model on device
-            model.eval()                           # puts model in evaluation mode
-            loaded_models.append(model)            # appends model to list of loaded models  
-        except Exception as e:
-            print(f"\t[ERR] Error processing model for device: {e}. Skipping...")
+        model, params = load_model(device, CL)  # loads new SpliceAI model with correct hyperparams
+        try:
+            model.load_state_dict(state_dict)   # loads state dict
+        except RuntimeError as e:
+            err_msg = str(e)
+            if "size mismatch" in err_msg or "shape" in err_msg:
+                print("\t[WARN] Skipping model due to incompatible tensor shapes.")
+                print("\t[WARN] This typically happens when the checkpoint was trained with a different flanking size.")
+                print(mismatch_hint)
+                continue
+            print(f"\t[ERR] Error processing model for device: {err_msg}. Skipping...")
+            continue
+
+        model = model.to(device)                # puts model on device
+        model.eval()                            # puts model in evaluation mode
+        loaded_models.append(model)             # appends model to list of loaded models  
             
     if not loaded_models:
         print("\t[ERR] No models were successfully loaded to the device.")
@@ -744,6 +758,30 @@ def get_prediction(models, dataset_path, device, batch_size, output_dir, flush_p
 ################
 
 def write_batch_to_bed(seq_name, gene_predictions, acceptor_bed, donor_bed, threshold=1e-6, debug=False):
+    ACCEPTOR_WINDOW = (-2, 0)  # capture canonical AG (inclusive of last two intronic bases)
+    DONOR_WINDOW = (0, 2)      # capture canonical GT (inclusive of first two intronic bases)
+
+    def get_window(pos, window, seq_len):
+        start = pos + window[0]
+        end = pos + window[1]
+        if start < 0 or end > seq_len or end <= start:
+            return None
+        return start, end
+
+    def write_interval(bed_handle, chrom, seq_interval, name, label, score, strand, start_1b=None, end_1b=None):
+        if seq_interval is None:
+            return
+        seq_start, seq_end = seq_interval
+        if chrom is not None:
+            if strand == '+':
+                chrom_start = (start_1b - 1) + seq_start
+                chrom_end = (start_1b - 1) + seq_end
+            else:
+                chrom_start = end_1b - seq_end
+                chrom_end = end_1b - seq_start
+            bed_handle.write(f"{chrom}\t{chrom_start}\t{chrom_end}\t{name}_{label}\t{score:.6f}\t{strand}\n")
+        else:
+            bed_handle.write(f"{seq_name}\t{seq_start}\t{seq_end}\t{seq_name}_{label}\t{score:.6f}\t{strand}\tabsolute_coordinates\n")
 
     # flatten the predictions to a 2D array [total positions, channels]
     if debug:
@@ -768,6 +806,8 @@ def write_batch_to_bed(seq_name, gene_predictions, acceptor_bed, donor_bed, thre
     pattern = re.compile(r'.*(chr[a-zA-Z0-9_]*):(\d+)-(\d+)\(([-+.])\)([-+])?.*')
     match = pattern.match(seq_name)
 
+    seq_len = len(acceptor_scores)
+
     if match:
         chrom = match.group(1)
         start = int(match.group(2))
@@ -780,37 +820,48 @@ def write_batch_to_bed(seq_name, gene_predictions, acceptor_bed, donor_bed, thre
             name = seq_name
 
         # handle file writing based on strand
-        if strand == '+':
-            for pos in range(len(acceptor_scores)): # NOTE: donor and acceptor should have same num of scores 
-                acceptor_score = acceptor_scores[pos]
-                donor_score = donor_scores[pos]
-                if acceptor_score > threshold:
-                    acceptor_bed.write(f"{chrom}\t{start+pos-3}\t{start+pos-1}\t{name}_Acceptor\t{acceptor_score:.6f}\t{strand}\n")
-                if donor_score > threshold:
-                    donor_bed.write(f"{chrom}\t{start+pos}\t{start+pos+2}\t{name}_Donor\t{donor_score:.6f}\t{strand}\n")
-        elif strand == '-':
-            for pos in range(len(acceptor_scores)):
-                acceptor_score = acceptor_scores[pos]
-                donor_score = donor_scores[pos]
-                if acceptor_score > threshold:
-                    acceptor_bed.write(f"{chrom}\t{end-pos}\t{end-pos+2}\t{name}_Acceptor\t{acceptor_score:.6f}\t{strand}\n")
-                if donor_score > threshold:
-                    donor_bed.write(f"{chrom}\t{end-pos-3}\t{end-pos-1}\t{name}_Donor\t{donor_score:.6f}\t{strand}\n")
-        else:
+        if strand not in ['+', '-']:
             print(f'\t[ERR] Undefined strand {strand}. Skipping {seq_name} batch...')
+            return
+
+        for pos in range(seq_len):
+            acceptor_score = acceptor_scores[pos]
+            donor_score = donor_scores[pos]
+            acceptor_interval = get_window(pos, ACCEPTOR_WINDOW, seq_len)
+            donor_interval = get_window(pos, DONOR_WINDOW, seq_len)
+
+            if acceptor_score > threshold:
+                write_interval(
+                    acceptor_bed, chrom, acceptor_interval, name, "Acceptor",
+                    acceptor_score, strand, start, end
+                )
+            if donor_score > threshold:
+                write_interval(
+                    donor_bed, chrom, donor_interval, name, "Donor",
+                    donor_score, strand, start, end
+                )
 
     else: # does not match pattern, could be due to not having gff file, keep writing it
 
         strand = seq_name[-1] # use the ending as the strand (when lack other information)
         
         # write to file using absolute coordinates (using input FASTA as coordinates rather than GFF)
-        for pos in range(len(acceptor_scores)):
+        for pos in range(seq_len):
             acceptor_score = acceptor_scores[pos]
             donor_score = donor_scores[pos]
+            acceptor_interval = get_window(pos, ACCEPTOR_WINDOW, seq_len)
+            donor_interval = get_window(pos, DONOR_WINDOW, seq_len)
+
             if acceptor_score > threshold:
-                acceptor_bed.write(f"{seq_name}\t{pos-3}\t{pos-1}\t{seq_name}_Acceptor\t{acceptor_score:.6f}\t{strand}\tabsolute_coordinates\n")
+                write_interval(
+                    acceptor_bed, None, acceptor_interval, seq_name, "Acceptor",
+                    acceptor_score, strand
+                )
             if donor_score > threshold:
-                donor_bed.write(f"{seq_name}\t{pos}\t{pos-2}\t{seq_name}_Donor\t{donor_score:.6f}\t{strand}\tabsolute_coordinates\n")
+                write_interval(
+                    donor_bed, None, donor_interval, seq_name, "Donor",
+                    donor_score, strand
+                )
 
 # NOTE: need to handle naming when gff file not provided.
 def generate_bed(predict_file, NAME, LEN, output_dir, threshold=1e-6, batch_ypred=None, debug=False):

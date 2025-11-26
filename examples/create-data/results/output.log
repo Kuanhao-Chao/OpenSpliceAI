@@ -1,1 +1,302 @@
-openspliceai create-data --remove-paralogs --min-identity 0.8 --min-coverage 0.8 --genome-fasta /home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/examples/data/human/GCF_000001405.40_GRCh38.p14_genomic_10_sample.fna --annotation-gff /home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/examples/data/human/MANE.GRCh38.v1.3.refseq_genomic_10_sample.gff --output-dir /home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/examples/create-data/results/ --parse-type canonical --write-fasta --split-method human --canonical-only
+Running OpenSpliceAI with 'create-data' mode
+--- Step 1: Creating datafile.h5 ... ---
+Loading existing database...
+Chromosome lengths:  {'chr1': 1014640, 'chr2': 3377918, 'chr3': 4847606, 'chr4': 682128, 'chr5': 700827, 'chr6': 2787052, 'chr7': 1138357, 'chr8': 2145556, 'chr9': 2660156, 'chr10': 3136905, 'chr11': 309495, 'chr12': 1496033, 'chr13': 20525957, 'chr14': 19936857, 'chr15': 22829889, 'chr16': 181279, 'chr17': 979876, 'chr18': 912272, 'chr19': 542187, 'chr20': 354962, 'chr21': 17636362, 'chr22': 17558251, 'chrX': 1537285, 'chrY': 9360693, 'chrM': 16569}
+* TRAIN_CHROM_GROUP:  {'chr2': 0, 'chr4': 0, 'chr6': 0, 'chr8': 0, 'chr10': 0, 'chr11': 0, 'chr12': 0, 'chr13': 0, 'chr14': 0, 'chr15': 0, 'chr16': 0, 'chr17': 0, 'chr18': 0, 'chr19': 0, 'chr20': 0, 'chr21': 0, 'chr22': 0, 'chrX': 0, 'chrY': 0}
+* TEST_CHROM_GROUP:  {'chr1': 0, 'chr3': 0, 'chr5': 0, 'chr7': 0, 'chr9': 0}
+> Creating train datafile...
+	Processing gene gene-FAM110C on chromosome chr2..., len(gene_seq): 7692
+	Processing gene gene-SH3YL1 on chromosome chr2..., len(gene_seq): 46689
+	Processing gene gene-ACP1 on chromosome chr2..., len(gene_seq): 13337
+	Processing gene gene-ALKAL2 on chromosome chr2..., len(gene_seq): 8534
+	Processing gene gene-TMEM18 on chromosome chr2..., len(gene_seq): 13530
+	Processing gene gene-SNTG2 on chromosome chr2..., len(gene_seq): 416765
+	Processing gene gene-TPO on chromosome chr2..., len(gene_seq): 169627
+	Processing gene gene-PXDN on chromosome chr2..., len(gene_seq): 113015
+	Processing gene gene-MYT1L on chromosome chr2..., len(gene_seq): 542163
+	Processing gene gene-EIPR1 on chromosome chr2..., len(gene_seq): 188849
+	Processing gene gene-ZNF595 on chromosome chr4..., len(gene_seq): 34888
+	Processing gene gene-ZNF718 on chromosome chr4..., len(gene_seq): 77831
+	Processing gene gene-ZNF732 on chromosome chr4..., len(gene_seq): 34800
+	Processing gene gene-ZNF141 on chromosome chr4..., len(gene_seq): 47055
+	Processing gene gene-ZNF721 on chromosome chr4..., len(gene_seq): 59169
+	Processing gene gene-PIGG on chromosome chr4..., len(gene_seq): 40991
+	Processing gene gene-TMEM271 on chromosome chr4..., len(gene_seq): 2416
+	Processing gene gene-PDE6B on chromosome chr4..., len(gene_seq): 45210
+	Processing gene gene-ATP5ME on chromosome chr4..., len(gene_seq): 1841
+	Processing gene gene-MYL5 on chromosome chr4..., len(gene_seq): 7487
+	Processing gene gene-DUSP22 on chromosome chr6..., len(gene_seq): 58869
+	Processing gene gene-IRF4 on chromosome chr6..., len(gene_seq): 19692
+	Processing gene gene-EXOC2 on chromosome chr6..., len(gene_seq): 207986
+	Processing gene gene-HUS1B on chromosome chr6..., len(gene_seq): 1162
+	Processing gene gene-FOXQ1 on chromosome chr6..., len(gene_seq): 2661
+	Processing gene gene-FOXF2 on chromosome chr6..., len(gene_seq): 6028
+	Processing gene gene-FOXC1 on chromosome chr6..., len(gene_seq): 3983
+	Processing gene gene-GMDS on chromosome chr6..., len(gene_seq): 621800
+	Processing gene gene-MYLK4 on chromosome chr6..., len(gene_seq): 106740
+	Processing gene gene-WRNIP1 on chromosome chr6..., len(gene_seq): 21560
+	Processing gene gene-OR4F21 on chromosome chr8..., len(gene_seq): 939
+	Processing gene gene-ZNF596 on chromosome chr8..., len(gene_seq): 15204
+	Processing gene gene-FBXO25 on chromosome chr8..., len(gene_seq): 71010
+	Processing gene gene-TDRP on chromosome chr8..., len(gene_seq): 55835
+	Processing gene gene-ERICH1 on chromosome chr8..., len(gene_seq): 116479
+	Processing gene gene-DLGAP2 on chromosome chr8..., len(gene_seq): 970849
+	Processing gene gene-CLN8 on chromosome chr8..., len(gene_seq): 33512
+	Processing gene gene-ARHGEF10 on chromosome chr8..., len(gene_seq): 135342
+	Processing gene gene-KBTBD11 on chromosome chr8..., len(gene_seq): 33260
+	Processing gene gene-MYOM2 on chromosome chr8..., len(gene_seq): 100411
+	Processing gene gene-TUBB8 on chromosome chr10..., len(gene_seq): 30167
+	Processing gene gene-ZMYND11 on chromosome chr10..., len(gene_seq): 124550
+	Processing gene gene-DIP2C on chromosome chr10..., len(gene_seq): 415468
+	Processing gene gene-LARP4B on chromosome chr10..., len(gene_seq): 181428
+	Processing gene gene-GTPBP4 on chromosome chr10..., len(gene_seq): 31499
+	Processing gene gene-IDI2 on chromosome chr10..., len(gene_seq): 6950
+	Processing gene gene-IDI1 on chromosome chr10..., len(gene_seq): 17553
+	Processing gene gene-WDR37 on chromosome chr10..., len(gene_seq): 75988
+	Processing gene gene-ADARB2 on chromosome chr10..., len(gene_seq): 560213
+	Processing gene gene-PFKP on chromosome chr10..., len(gene_seq): 69258
+	Processing gene gene-SCGB1C1 on chromosome chr11..., len(gene_seq): 6526
+	Processing gene gene-CIMAP1A on chromosome chr11..., len(gene_seq): 3498
+	Processing gene gene-BET1L on chromosome chr11..., len(gene_seq): 4476
+	Processing gene gene-RIC8A on chromosome chr11..., len(gene_seq): 7406
+	Processing gene gene-SIRT3 on chromosome chr11..., len(gene_seq): 21902
+	Processing gene gene-PSMD13 on chromosome chr11..., len(gene_seq): 16009
+	Processing gene gene-NLRP6 on chromosome chr11..., len(gene_seq): 6982
+	Processing gene gene-PGGHG on chromosome chr11..., len(gene_seq): 6982
+	Processing gene gene-IFITM5 on chromosome chr11..., len(gene_seq): 1327
+	Processing gene gene-IFITM2 on chromosome chr11..., len(gene_seq): 1580
+	Processing gene gene-IQSEC3 on chromosome chr12..., len(gene_seq): 111689
+	Processing gene gene-SLC6A12 on chromosome chr12..., len(gene_seq): 30310
+	Processing gene gene-SLC6A13 on chromosome chr12..., len(gene_seq): 42215
+	Processing gene gene-KDM5A on chromosome chr12..., len(gene_seq): 109264
+	Processing gene gene-CCDC77 on chromosome chr12..., len(gene_seq): 53296
+	Processing gene gene-B4GALNT3 on chromosome chr12..., len(gene_seq): 103571
+	Processing gene gene-NINJ2 on chromosome chr12..., len(gene_seq): 99150
+	Processing gene gene-WNK1 on chromosome chr12..., len(gene_seq): 158874
+	Gene gene-WNK1 has multiple transcripts: 2
+	Processing gene gene-RAD52 on chromosome chr12..., len(gene_seq): 79387
+	Processing gene gene-ERC1 on chromosome chr12..., len(gene_seq): 505975
+	Processing gene gene-TUBA3C on chromosome chr13..., len(gene_seq): 8053
+	Processing gene gene-TPTE2 on chromosome chr13..., len(gene_seq): 138698
+	Processing gene gene-MPHOSPH8 on chromosome chr13..., len(gene_seq): 39783
+	Processing gene gene-PSPC1 on chromosome chr13..., len(gene_seq): 111741
+	Processing gene gene-ZMYM5 on chromosome chr13..., len(gene_seq): 40168
+	Processing gene gene-ZMYM2 on chromosome chr13..., len(gene_seq): 225276
+	Processing gene gene-GJA3 on chromosome chr13..., len(gene_seq): 23311
+	Processing gene gene-GJB2 on chromosome chr13..., len(gene_seq): 5469
+	Processing gene gene-GJB6 on chromosome chr13..., len(gene_seq): 10358
+	Processing gene gene-CRYL1 on chromosome chr13..., len(gene_seq): 122189
+	Processing gene gene-OR11H12 on chromosome chr14..., len(gene_seq): 981
+	Processing gene gene-POTEM on chromosome chr14..., len(gene_seq): 36319
+	Processing gene gene-POTEG on chromosome chr14..., len(gene_seq): 31856
+	Processing gene gene-OR11H2 on chromosome chr14..., len(gene_seq): 948
+	Processing gene gene-OR4Q3 on chromosome chr14..., len(gene_seq): 8764
+	Processing gene gene-OR4M1 on chromosome chr14..., len(gene_seq): 10193
+	Processing gene gene-OR4N2 on chromosome chr14..., len(gene_seq): 26484
+	Processing gene gene-OR4K2 on chromosome chr14..., len(gene_seq): 8791
+	Processing gene gene-OR4K1 on chromosome chr14..., len(gene_seq): 16495
+	Processing gene gene-OR4K5 on chromosome chr14..., len(gene_seq): 972
+	Processing gene gene-GOLGA6L6 on chromosome chr15..., len(gene_seq): 9945
+	Processing gene gene-POTEB2 on chromosome chr15..., len(gene_seq): 30943
+	Processing gene gene-POTEB3 on chromosome chr15..., len(gene_seq): 35099
+	Processing gene gene-OR4M2B on chromosome chr15..., len(gene_seq): 1084
+	Processing gene gene-OR4N4C on chromosome chr15..., len(gene_seq): 1125
+	Processing gene gene-POTEB on chromosome chr15..., len(gene_seq): 31407
+	Processing gene gene-OR4M2 on chromosome chr15..., len(gene_seq): 1084
+	Processing gene gene-OR4N4 on chromosome chr15..., len(gene_seq): 1341
+	Processing gene gene-GOLGA6L22 on chromosome chr15..., len(gene_seq): 10324
+	Processing gene gene-NIPA1 on chromosome chr15..., len(gene_seq): 43565
+	Processing gene gene-POLR3K on chromosome chr16..., len(gene_seq): 7202
+	Processing gene gene-SNRNP25 on chromosome chr16..., len(gene_seq): 3842
+	Processing gene gene-RHBDF1 on chromosome chr16..., len(gene_seq): 18302
+	Processing gene gene-MPG on chromosome chr16..., len(gene_seq): 8840
+	Processing gene gene-NPRL3 on chromosome chr16..., len(gene_seq): 53288
+	Processing gene gene-HBZ on chromosome chr16..., len(gene_seq): 1860
+	Processing gene gene-HBM on chromosome chr16..., len(gene_seq): 787
+	Processing gene gene-HBA2 on chromosome chr16..., len(gene_seq): 835
+	Processing gene gene-HBA1 on chromosome chr16..., len(gene_seq): 843
+	Processing gene gene-HBQ1 on chromosome chr16..., len(gene_seq): 721
+	Processing gene gene-SCGB1C2 on chromosome chr17..., len(gene_seq): 1499
+	Processing gene gene-DOC2B on chromosome chr17..., len(gene_seq): 38862
+	Processing gene gene-RPH3AL on chromosome chr17..., len(gene_seq): 140419
+	Processing gene gene-LIAT1 on chromosome chr17..., len(gene_seq): 4342
+	Processing gene gene-VPS53 on chromosome chr17..., len(gene_seq): 206172
+	Processing gene gene-TLCD3A on chromosome chr17..., len(gene_seq): 10373
+	Processing gene gene-GEMIN4 on chromosome chr17..., len(gene_seq): 9990
+	Processing gene gene-GLOD4 on chromosome chr17..., len(gene_seq): 26566
+	Processing gene gene-MRM3 on chromosome chr17..., len(gene_seq): 10157
+	Processing gene gene-NXN on chromosome chr17..., len(gene_seq): 180467
+	Processing gene gene-TUBB8B on chromosome chr18..., len(gene_seq): 26328
+	Processing gene gene-USP14 on chromosome chr18..., len(gene_seq): 56073
+	Processing gene gene-THOC1 on chromosome chr18..., len(gene_seq): 53528
+	Processing gene gene-COLEC12 on chromosome chr18..., len(gene_seq): 183965
+	Processing gene gene-CETN1 on chromosome chr18..., len(gene_seq): 1735
+	Processing gene gene-CLUL1 on chromosome chr18..., len(gene_seq): 53195
+	Processing gene gene-TYMS on chromosome chr18..., len(gene_seq): 15926
+	Processing gene gene-ENOSF1 on chromosome chr18..., len(gene_seq): 49645
+	Processing gene gene-YES1 on chromosome chr18..., len(gene_seq): 91166
+	Processing gene gene-ADCYAP1 on chromosome chr18..., len(gene_seq): 7762
+	Processing gene gene-OR4F17 on chromosome chr19..., len(gene_seq): 6053
+	Processing gene gene-PLPP2 on chromosome chr19..., len(gene_seq): 10361
+	Processing gene gene-MIER2 on chromosome chr19..., len(gene_seq): 39224
+	Processing gene gene-SPMAP2 on chromosome chr19..., len(gene_seq): 14280
+	Processing gene gene-C2CD4C on chromosome chr19..., len(gene_seq): 3703
+	Processing gene gene-SHC2 on chromosome chr19..., len(gene_seq): 44445
+	Processing gene gene-CIMAP1D on chromosome chr19..., len(gene_seq): 28264
+	Processing gene gene-MADCAM1 on chromosome chr19..., len(gene_seq): 8858
+	Processing gene gene-TPGS1 on chromosome chr19..., len(gene_seq): 12158
+	Processing gene gene-CDC34 on chromosome chr19..., len(gene_seq): 10328
+	Processing gene gene-DEFB125 on chromosome chr20..., len(gene_seq): 9423
+	Processing gene gene-DEFB126 on chromosome chr20..., len(gene_seq): 3162
+	Processing gene gene-DEFB127 on chromosome chr20..., len(gene_seq): 1710
+	Processing gene gene-DEFB128 on chromosome chr20..., len(gene_seq): 1859
+	Processing gene gene-DEFB129 on chromosome chr20..., len(gene_seq): 2629
+	Processing gene gene-DEFB132 on chromosome chr20..., len(gene_seq): 3373
+	Processing gene gene-C20orf96 on chromosome chr20..., len(gene_seq): 19888
+	Processing gene gene-ZCCHC3 on chromosome chr20..., len(gene_seq): 2752
+	Processing gene gene-SOX12 on chromosome chr20..., len(gene_seq): 4673
+	Processing gene gene-NRSN2 on chromosome chr20..., len(gene_seq): 7752
+	Processing gene gene-TPTE on chromosome chr21..., len(gene_seq): 84134
+	Processing gene gene-POTED on chromosome chr21..., len(gene_seq): 36047
+	Processing gene gene-LIPI on chromosome chr21..., len(gene_seq): 102144
+	Processing gene gene-RBM11 on chromosome chr21..., len(gene_seq): 12216
+	Processing gene gene-HSPA13 on chromosome chr21..., len(gene_seq): 12032
+	Processing gene gene-SAMSN1 on chromosome chr21..., len(gene_seq): 174190
+	Processing gene gene-NRIP1 on chromosome chr21..., len(gene_seq): 104702
+	Processing gene gene-USP25 on chromosome chr21..., len(gene_seq): 150083
+	Processing gene gene-CXADR on chromosome chr21..., len(gene_seq): 123220
+	Processing gene gene-BTG3 on chromosome chr21..., len(gene_seq): 19249
+	Processing gene gene-OR11H1 on chromosome chr22..., len(gene_seq): 948
+	Processing gene gene-POTEH on chromosome chr22..., len(gene_seq): 31606
+	Processing gene gene-CCT8L2 on chromosome chr22..., len(gene_seq): 2060
+	Processing gene gene-XKR3 on chromosome chr22..., len(gene_seq): 41932
+	Processing gene gene-GAB4 on chromosome chr22..., len(gene_seq): 46287
+	Processing gene gene-IL17RA on chromosome chr22..., len(gene_seq): 30694
+	Processing gene gene-TMEM121B on chromosome chr22..., len(gene_seq): 5064
+	Processing gene gene-HDHD5 on chromosome chr22..., len(gene_seq): 27768
+	Processing gene gene-ADA2 on chromosome chr22..., len(gene_seq): 43059
+	Processing gene gene-CECR2 on chromosome chr22..., len(gene_seq): 198203
+	Processing gene gene-PLCXD1 on chromosome chrX..., len(gene_seq): 27001
+	Processing gene gene-GTPBP6 on chromosome chrX..., len(gene_seq): 14038
+	Processing gene gene-PPP2R3B on chromosome chrX..., len(gene_seq): 52975
+	Processing gene gene-SHOX on chromosome chrX..., len(gene_seq): 35068
+	Processing gene gene-CRLF2 on chromosome chrX..., len(gene_seq): 22160
+	Processing gene gene-CSF2RA on chromosome chrX..., len(gene_seq): 56405
+	Processing gene gene-IL3RA on chromosome chrX..., len(gene_seq): 45905
+	Processing gene gene-SLC25A6 on chromosome chrX..., len(gene_seq): 5962
+	Processing gene gene-ASMTL on chromosome chrX..., len(gene_seq): 50618
+	Processing gene gene-P2RY8 on chromosome chrX..., len(gene_seq): 74605
+	Processing gene gene-SRY on chromosome chrY..., len(gene_seq): 828
+	Processing gene gene-RPS4Y1 on chromosome chrY..., len(gene_seq): 25667
+	Processing gene gene-ZFY on chromosome chrY..., len(gene_seq): 47126
+	Processing gene gene-TGIF2LY on chromosome chrY..., len(gene_seq): 975
+	Processing gene gene-PCDH11Y on chromosome chrY..., len(gene_seq): 741933
+	Processing gene gene-TSPY2 on chromosome chrY..., len(gene_seq): 2796
+	Processing gene gene-AMELY on chromosome chrY..., len(gene_seq): 45835
+	Processing gene gene-TBL1Y on chromosome chrY..., len(gene_seq): 180987
+	Processing gene gene-TSPY4 on chromosome chrY..., len(gene_seq): 2815
+	Processing gene gene-TSPY8 on chromosome chrY..., len(gene_seq): 2797
+Total SEQ: 190
+> Creating test datafile...
+	Processing gene gene-OR4F5 on chromosome chr1..., len(gene_seq): 6167
+	Processing gene gene-OR4F29 on chromosome chr1..., len(gene_seq): 939
+	Processing gene gene-OR4F16 on chromosome chr1..., len(gene_seq): 44026
+	Processing gene gene-SAMD11 on chromosome chr1..., len(gene_seq): 20652
+	Processing gene gene-NOC2L on chromosome chr1..., len(gene_seq): 15054
+	Processing gene gene-KLHL17 on chromosome chr1..., len(gene_seq): 5136
+	Processing gene gene-PLEKHN1 on chromosome chr1..., len(gene_seq): 9384
+	Processing gene gene-PERM1 on chromosome chr1..., len(gene_seq): 6896
+	Processing gene gene-HES4 on chromosome chr1..., len(gene_seq): 1134
+	Processing gene gene-ISG15 on chromosome chr1..., len(gene_seq): 1044
+	Processing gene gene-CHL1 on chromosome chr3..., len(gene_seq): 212655
+	Processing gene gene-CNTN6 on chromosome chr3..., len(gene_seq): 311194
+	Processing gene gene-CNTN4 on chromosome chr3..., len(gene_seq): 959094
+	Processing gene gene-IL5RA on chromosome chr3..., len(gene_seq): 44051
+	Processing gene gene-TRNT1 on chromosome chr3..., len(gene_seq): 26496
+	Processing gene gene-CRBN on chromosome chr3..., len(gene_seq): 30085
+	Processing gene gene-LRRN1 on chromosome chr3..., len(gene_seq): 50404
+	Processing gene gene-SUMF1 on chromosome chr3..., len(gene_seq): 432784
+	Processing gene gene-SETMAR on chromosome chr3..., len(gene_seq): 13897
+	Processing gene gene-ITPR1 on chromosome chr3..., len(gene_seq): 354159
+	Processing gene gene-PLEKHG4B on chromosome chr5..., len(gene_seq): 97799
+	Processing gene gene-LRRC14B on chromosome chr5..., len(gene_seq): 4840
+	Processing gene gene-CCDC127 on chromosome chr5..., len(gene_seq): 21286
+	Processing gene gene-SDHA on chromosome chr5..., len(gene_seq): 50427
+	Processing gene gene-PDCD6 on chromosome chr5..., len(gene_seq): 43329
+	Processing gene gene-AHRR on chromosome chr5..., len(gene_seq): 116572
+	Processing gene gene-EXOC3 on chromosome chr5..., len(gene_seq): 24115
+	Processing gene gene-SLC9A3 on chromosome chr5..., len(gene_seq): 53994
+	Processing gene gene-CEP72 on chromosome chr5..., len(gene_seq): 64277
+	Processing gene gene-TPPP on chromosome chr5..., len(gene_seq): 40866
+	Processing gene gene-FAM20C on chromosome chr7..., len(gene_seq): 68202
+	Processing gene gene-FOXL3 on chromosome chr7..., len(gene_seq): 1319
+	Processing gene gene-PDGFA on chromosome chr7..., len(gene_seq): 23443
+	Processing gene gene-PRKAR1B on chromosome chr7..., len(gene_seq): 179738
+	Processing gene gene-DNAAF5 on chromosome chr7..., len(gene_seq): 59777
+	Processing gene gene-SUN1 on chromosome chr7..., len(gene_seq): 59378
+	Processing gene gene-GET4 on chromosome chr7..., len(gene_seq): 19883
+	Processing gene gene-ADAP1 on chromosome chr7..., len(gene_seq): 57508
+	Processing gene gene-COX19 on chromosome chr7..., len(gene_seq): 10698
+	Processing gene gene-C7orf50 on chromosome chr7..., len(gene_seq): 160294
+	Processing gene gene-WASHC1 on chromosome chr9..., len(gene_seq): 15975
+	Processing gene gene-FOXD4 on chromosome chr9..., len(gene_seq): 2187
+	Processing gene gene-ZNG1A on chromosome chr9..., len(gene_seq): 58220
+	Processing gene gene-DOCK8 on chromosome chr9..., len(gene_seq): 253999
+	Processing gene gene-KANK1 on chromosome chr9..., len(gene_seq): 275809
+	Processing gene gene-DMRT1 on chromosome chr9..., len(gene_seq): 127394
+	Processing gene gene-DMRT3 on chromosome chr9..., len(gene_seq): 15078
+	Processing gene gene-DMRT2 on chromosome chr9..., len(gene_seq): 7196
+	Processing gene gene-SMARCA2 on chromosome chr9..., len(gene_seq): 178278
+	Processing gene gene-VLDLR on chromosome chr9..., len(gene_seq): 38270
+Total SEQ: 50
+> Removing homologous sequences in test...
+	Starting paralogy removal process...
+	Initial train set size: 190
+	Initial test set size: 50
+	Creating mappy index from training sequences...
+	Starting to process test sequences...
+		Paralogs detected: Identity: 0.9868291076720448, Coverage: 0.9849197340684287
+		Paralogs detected: Identity: 0.9968051118210862, Coverage: 1.0
+	Paralogy removal process completed.
+	Number of paralogous sequences removed: 2
+	Final test set size: 48
+	Percentage of test set removed: 4.00%
+> Splitting training data into training and validation sets...
+Split data into 171 training records and 19 validation records.
+> Removing homologous sequences in validation...
+	Starting paralogy removal process...
+	Initial train set size: 171
+	Initial test set size: 19
+	Creating mappy index from training sequences...
+	Starting to process test sequences...
+		Paralogs detected: Identity: 0.9915611814345991, Coverage: 0.9663608562691132
+		Paralogs detected: Identity: 0.9890251978933425, Coverage: 1.0032588748971714
+		Paralogs detected: Identity: 0.9490120481927711, Coverage: 1.0049399457574584
+		Paralogs detected: Identity: 0.9951690821256038, Coverage: 0.92
+		Paralogs detected: Identity: 0.8960926818737857, Coverage: 0.921337885769218
+		Paralogs detected: Identity: 0.9947257383966245, Coverage: 1.0
+	Paralogy removal process completed.
+	Number of paralogous sequences removed: 6
+	Final validation set size: 13
+	Percentage of validation set removed: 31.58%
+*******************
+Splice site motif counts:
+	Donor motifs:
+
+	Acceptor motifs:
+
+Total donor motifs:  0
+Total acceptor motifs:  0
+*******************
+--- 10.611335347 seconds ---
+--- Step 2: Creating dataset.h5 ... ---
+	Processing test ...
+	Reading /home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/examples/create-data/results//datafile_test.h5 ... 
+	Writing /home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/examples/create-data/results//dataset_test.h5 ... 
+	Processing train ...
+	Reading /home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/examples/create-data/results//datafile_train.h5 ... 
+	Writing /home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/examples/create-data/results//dataset_train.h5 ... 
+	Processing validation ...
+	Reading /home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/examples/create-data/results//datafile_validation.h5 ... 
+	Writing /home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/examples/create-data/results//dataset_validation.h5 ... 
+--- 8.319667767999999 seconds ---

@@ -15,7 +15,7 @@ mkdir -p $OUTPUT_DIR
 # Set up dataset paths (adjust these as needed for each species)
 TRAIN_DATASET="$PDIR/examples/transfer/results/dataset_train.h5"
 TEST_DATASET="$PDIR/examples/transfer/results/dataset_test.h5"
-PRETRAINED_MODEL="$PDIR/models/spliceai-mane/10000nt/model_10000nt_rs10.pt"
+PRETRAINED_MODEL="$PDIR/models/openspliceai-mane/10000nt/model_10000nt_rs10.pt"
 
 OUTPUT_FILE="$OUTPUT_DIR/transfer_output.log"
 ERROR_FILE="$OUTPUT_DIR/transfer_error.log"

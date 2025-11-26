@@ -3,14 +3,15 @@
 from openspliceai.predict import predict
 from pathlib import Path
 
-# Resolve the absolute path to parent dir
-pdir = Path(__file__).resolve().parents[2]
 
+# Resolve the absolute path to parent dir
+# pdir = Path(__file__).resolve().parents[2]
+pdir = "/home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI/"
 # Define file paths and model
-input_sequence_file = f'{pdir}/examples/data/chr22.fa'
+input_sequence_file = f'{pdir}/examples/predict/tp53.fa'
 output_dir = f'{pdir}/examples/predict/results/'
 flanking_size = 10000
-model = f'{pdir}/models/spliceai-mane/{flanking_size}nt/model_{flanking_size}nt_rs14.pt'
+model = f'{pdir}/models/openspliceai-mane/{flanking_size}nt/model_{flanking_size}nt_rs14.pt'
 
 ### SETUP ###
 import os
@@ -22,7 +23,7 @@ SL = 5000
 
 # setup device and load model
 device = predict.setup_device()
-model, params = predict.load_model(model, device, flanking_size)
+model, params = predict.load_pytorch_models(model, device, flanking_size, 10000)
 
 # optional argument definition
 gff_file = f'{pdir}/examples/data/chr22.gff'
