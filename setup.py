@@ -5,7 +5,7 @@ this_directory = Path(__file__).resolve().parent
 long_description = (this_directory / "./README.md").read_text()
 setuptools.setup(
 	name="openspliceai",
-	version="0.0.4",
+	version="0.0.5",
 	author="Kuan-Hao Chao",
 	author_email="kh.chao@cs.jhu.edu",
 	description="Deep learning framework that decodes splicing across species",

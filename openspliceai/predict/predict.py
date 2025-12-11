@@ -758,8 +758,8 @@ def get_prediction(models, dataset_path, device, batch_size, output_dir, flush_p
 ################
 
 def write_batch_to_bed(seq_name, gene_predictions, acceptor_bed, donor_bed, threshold=1e-6, debug=False):
-    ACCEPTOR_WINDOW = (-2, 0)  # capture canonical AG (inclusive of last two intronic bases)
-    DONOR_WINDOW = (0, 2)      # capture canonical GT (inclusive of first two intronic bases)
+    ACCEPTOR_WINDOW = (-1, 0)  # capture 1bp specific acceptor site (last intronic base)
+    DONOR_WINDOW = (0, 1)      # capture 1bp specific donor site (first intronic base)
 
     def get_window(pos, window, seq_len):
         start = pos + window[0]
