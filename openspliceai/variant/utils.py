@@ -504,6 +504,14 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision
                 y_alt = y_alt.numpy()
             '''end'''
 
+            # Manually crop the output if it exceeds the expected coverage window
+            # This handles cases where the model output is not automatically cropped to the target window
+            if y_ref.shape[1] > cov:
+                start_idx = wid // 2 - cov // 2
+                y_ref = y_ref[:, start_idx : start_idx + cov, :]
+                y_alt = y_alt[:, start_idx : start_idx + cov + alt_len - ref_len, :]
+
+
             # Adjust the alternative sequence scores based on reference and alternative lengths
             if ref_len > 1 and alt_len == 1:
                 y_alt = np.concatenate([
