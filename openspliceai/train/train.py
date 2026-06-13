@@ -9,12 +9,9 @@ import sys
 import numpy as np
 import torch
 import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
-from tqdm import tqdm
 from openspliceai.train_base.openspliceai import *
 from openspliceai.train_base.utils import *
 from openspliceai.constants import *
-import openspliceai.create_data.paralogs as paralogs
 
 def initialize_model_and_optim(device, flanking_size, epochs, scheduler):
     # Hyper-parameters:
@@ -64,6 +61,15 @@ def initialize_model_and_optim(device, flanking_size, epochs, scheduler):
 
 
 def train(args):
+    """Train a SpliceAI model from scratch (entry point for the ``train`` subcommand).
+
+    Sets up the device, resolves the output/log directory layout, loads the
+    train/validation/test HDF5 datasets, builds the model + AdamW optimizer +
+    LR scheduler sized for ``args.flanking_size``, then runs the shared
+    ``train_model`` loop. Side effects: writes per-epoch checkpoints
+    (``model_{epoch}.pt``, ``model_best.pt``) and appends metrics to the
+    ``LOG/{TRAIN,VAL,TEST}`` ``.txt`` files; returns nothing.
+    """
     print("Running OpenSpliceAI with 'train' mode")
     device = setup_environment(args)
     model_output_base, log_output_train_base, log_output_val_base, log_output_test_base = initialize_paths(args)

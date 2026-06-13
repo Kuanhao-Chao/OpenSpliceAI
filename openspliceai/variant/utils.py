@@ -4,7 +4,8 @@ import numpy as np
 from pyfaidx import Fasta
 import logging
 import platform
-import os, glob
+import os
+import glob
 from openspliceai.train_base.openspliceai import SpliceAI
 from openspliceai.constants import *
 from openspliceai.predict.predict import *
@@ -18,6 +19,25 @@ def setup_device():
         """Select computation device based on availability."""
         device_str = "cuda" if torch.cuda.is_available() else "mps" if platform.system() == "Darwin" else "cpu"
         return torch.device(device_str)
+
+
+def _resolve_builtin_annotation(name):
+    """
+    Resolve a built-in annotation shortcut ('grch37'/'grch38') to its packaged file path.
+    The annotation tables ship inside the package (openspliceai/variant/annotations/), so this
+    works regardless of the current working directory or how the package was installed.
+    """
+    return str(files('openspliceai.variant').joinpath('annotations', f'{name}.txt'))
+
+
+def _resolve_default_spliceai_models():
+    """
+    Resolve the paths to the bundled original SpliceAI Keras models (spliceai1-5.h5),
+    relative to the repository checkout. Returns a list of 5 paths.
+    """
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    model_dir = os.path.join(repo_root, 'models', 'spliceai', 'SpliceAI_models_release')
+    return [os.path.join(model_dir, f'spliceai{x}.h5') for x in range(1, 6)]
 
 def load_pytorch_models(model_path, CL):
     """
@@ -63,6 +83,10 @@ def load_pytorch_models(model_path, CL):
             AR = np.asarray([1, 1, 1, 1, 4, 4, 4, 4,
                             10, 10, 10, 10, 25, 25, 25, 25])
             BATCH_SIZE = 6*N_GPUS
+        else:
+            raise ValueError(
+                f"Unsupported flanking_size {flanking_size}; expected one of 80, 400, 2000, 10000."
+            )
 
         CL = 2 * np.sum(AR*(W-1))
 
@@ -166,9 +190,9 @@ def load_keras_models(model_path):
                 models.append(model)
             except Exception as e:
                 logging.error(f"Error loading Keras model from file {model_file}: {e}. Skipping...")
-                
+
         if not models:
-            logging.error(f"No valid PyTorch models found in directory: {model_path}")
+            logging.error(f"No valid Keras models found in directory: {model_path}")
             exit()
             
         return models
@@ -241,9 +265,9 @@ class Annotator:
 
         # Load annotation file based on provided annotations type
         if annotations == 'grch37':
-            annotations = './data/vcf/grch37.txt'
+            annotations = _resolve_builtin_annotation('grch37')
         elif annotations == 'grch38':
-            annotations = './data/vcf/grch38.txt'
+            annotations = _resolve_builtin_annotation('grch38')
 
         # Load and parse the annotation file
         try:
@@ -277,7 +301,12 @@ class Annotator:
         # Load models based on the specified model type or file
         if model_path == 'SpliceAI':
             from tensorflow import keras
-            paths = ('./models/spliceai/spliceai{}.h5'.format(x) for x in range(1, 6))  # Generate paths for SpliceAI models
+            paths = _resolve_default_spliceai_models()  # bundled original SpliceAI Keras models
+            missing = [p for p in paths if not os.path.exists(p)]
+            if missing:
+                logging.error('Default SpliceAI Keras models not found: {}. '
+                              'Pass an explicit --model path/directory instead.'.format(missing))
+                exit()
             self.models = [keras.models.load_model(x) for x in paths]
             self.keras = True
         elif model_type == 'keras': # load models using keras

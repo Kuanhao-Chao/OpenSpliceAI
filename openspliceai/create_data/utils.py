@@ -6,11 +6,11 @@ Description: Functions to process sequences to/from .h5 datasets.
 """
 
 import os
+import warnings
 import numpy as np
 from math import ceil
 import gffutils
 import random
-from sklearn.metrics import average_precision_score
 from openspliceai.constants import *
 
 def check_and_count_motifs(seq, labels, donor_motif_counts, acceptor_motif_counts):
@@ -62,7 +62,6 @@ def split_chromosomes(seq_dict, method='random', split_ratio=0.8):
     print("Chromosome lengths: ", chromosome_lengths)
     if method == 'random':
         total_length = sum(chromosome_lengths.values())
-        target_train_length = total_length * split_ratio
         target_test_length = total_length * (1-split_ratio)
         chromosomes = list(chromosome_lengths.keys())
         random.shuffle(chromosomes)
@@ -90,7 +89,19 @@ def split_chromosomes(seq_dict, method='random', split_ratio=0.8):
         test_chroms = {
             'chr1': 0, 'chr3': 0, 'chr5': 0, 'chr7': 0, 'chr9': 0
         }
-    else: 
+        # Warn loudly if the genome's sequence names don't match the hardcoded UCSC-style
+        # human chromosome names -- otherwise every gene is silently skipped downstream,
+        # producing an (almost) empty dataset with no error.
+        present = set(seq_dict.keys())
+        requested = set(train_chroms) | set(test_chroms)
+        if present.isdisjoint(requested):
+            warnings.warn(
+                "split-method 'human' expects UCSC-style chromosome names (chr1, chr2, ...), "
+                f"but none were found in the genome (e.g. {sorted(present)[:3]}). All genes "
+                "will be skipped -- use --split-method random, or rename the sequences.",
+                stacklevel=2,
+            )
+    else:
         raise ValueError("Invalid chromosome split method. Use 'random' or 'human'.")
     return train_chroms, test_chroms
 

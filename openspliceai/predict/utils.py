@@ -19,7 +19,8 @@ def ceil_div(x, y):
     return int(ceil(float(x)/y))
 
 # FOR TESTING PURPOSES
-import os, sys
+import os
+import sys
 import psutil
 def log_memory_usage():
     process = psutil.Process(os.getpid())

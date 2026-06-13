@@ -11,7 +11,6 @@ import torch.optim as optim
 from openspliceai.train_base.openspliceai import *
 from openspliceai.train_base.utils import *
 from openspliceai.constants import *
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
 def initialize_model_and_optim_transfer(device, flanking_size, epochs, scheduler,
@@ -70,11 +69,15 @@ def initialize_model_and_optim_transfer(device, flanking_size, epochs, scheduler
         # Freeze all layers first
         for param in model.parameters():
             param.requires_grad = False
-        # Unfreeze the last `unfreeze` layers
+        # Unfreeze the last `unfreeze` residual units. The residual_units ModuleList
+        # interleaves Skip layers (one after every 4 ResidualUnits), so select the
+        # ResidualUnit instances explicitly rather than indexing the raw list.
         if unfreeze > 0:
-            # Unfreeze the last few layers (example: last residual unit)
-            for param in model.residual_units[-unfreeze].parameters():
-                param.requires_grad = True
+            res_units = [m for m in model.residual_units if isinstance(m, ResidualUnit)]
+            unfreeze = min(unfreeze, len(res_units))
+            for layer in res_units[-unfreeze:]:
+                for param in layer.parameters():
+                    param.requires_grad = True
     # Set up optimizer and scheduler
     optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4)
     if scheduler == "MultiStepLR":
@@ -87,6 +90,15 @@ def initialize_model_and_optim_transfer(device, flanking_size, epochs, scheduler
 
 
 def transfer(args):
+    """Fine-tune a pretrained SpliceAI model on a new dataset (entry point for the ``transfer`` subcommand).
+
+    Like :func:`train`, but ``initialize_model_and_optim_transfer`` first loads
+    ``args.pretrained_model`` (filtering size-mismatched keys) and, unless
+    ``--unfreeze-all``, freezes everything except the last ``args.unfreeze``
+    residual units; it uses a smaller learning rate (1e-4). Side effects: writes
+    checkpoints and metric logs under the experiment output directory; returns
+    nothing.
+    """
     print('Running OpenSpliceAI with transfer mode.')
     # assert training_target in ["RefSeq", "MANE", "SpliceAI", "SpliceAI27"]
     device = setup_environment(args)
