@@ -38,7 +38,13 @@ Input Files
 
 3. **Annotation File**
 
-   A *custom* gene annotation file that defines the genomic regions to consider. Variants outside of annotated genes or too close to the chromosome ends (by default, within the flanking region) are skipped.
+   A gene annotation table that defines the genomic regions to consider. You may pass the
+   built-in shortcuts ``grch37`` (GENCODE V24lift37 canonical) or ``grch38`` (GENCODE V24
+   canonical) — these tables **ship inside the package**
+   (``openspliceai/variant/annotations/{grch37,grch38}.txt``) and are resolved automatically
+   regardless of the current working directory — or supply a path to your own custom
+   annotation file in the same format. Variants outside of annotated genes or too close to the
+   chromosome ends (by default, within the flanking region) are skipped.
 
 4. **Trained Model Checkpoint(s)**
 
@@ -130,8 +136,8 @@ Usage
 
 .. code-block:: text
 
-   usage: openspliceai variant [-h] -R reference -A annotation [-I [input]] [-O [output]] [-D [distance]] [-M [mask]] [--model MODEL] [--flanking-size FLANKING_SIZE]
-                              [--model-type {keras,pytorch}] [--precision PRECISION]
+   usage: openspliceai variant [-h] -R reference -A annotation [-I [input]] [-O [output]] [-D [distance]] [-M [mask]] [--model MODEL]
+                              [--flanking-size {80,400,2000,10000}] [--model-type {keras,pytorch}] [--precision PRECISION]
 
    optional arguments:
          -h, --help            show this help message and exit
@@ -147,7 +153,7 @@ Usage
                                  maximum distance between the variant and gained/lost splice site, defaults to 50
          -M, --mask [mask]     mask scores representing annotated acceptor/donor gain and unannotated acceptor/donor loss, defaults to 0
          --model, -m MODEL     Path to a SpliceAI model file, or path to a directory of SpliceAI models, or "SpliceAI" for the default model
-         --flanking-size, -f FLANKING_SIZE
+         --flanking-size, -f {80,400,2000,10000}
                                  Sum of flanking sequence lengths on each side of input (i.e. 40+40)
          --model-type, -t {keras,pytorch}
                                  Type of model file (keras or pytorch)
@@ -167,7 +173,7 @@ Example: Discovering pathogenic human variants
    openspliceai variant \
       --input-vcf input_variants.vcf \
       --ref-genome GRCh38.fa \
-      --annotation grch38.txt \
+      --annotation grch38 \
       --model /path/to/pytorch_models/ \
       --model-type pytorch \
       --flanking-size 400 \
@@ -178,7 +184,7 @@ Example: Discovering pathogenic human variants
 This command:
 
 1. **Loads** the reference genome from ``GRCh38.fa``.
-2. **Reads** the gene annotation from ``grch38.txt``.
+2. **Reads** the built-in ``grch38`` gene annotation that ships inside the package.
 3. **Scans** the directory ``/path/to/pytorch_models/`` for PyTorch checkpoints, averaging predictions from all found models.
 4. **Computes** donor and acceptor delta scores within ±100 nucleotides of each variant.
 5. **Masks** scores representing annotated acceptor/donor gain and unannotated acceptor/donor loss. (This is useful for novel/pathogenic variant discovery).
@@ -194,7 +200,7 @@ Example: Annotating all variant in VCF
    openspliceai variant \
       --input-vcf sample_variants.vcf \
       --ref-genome GRCh37.fa \
-      --annotation grch37.txt \
+      --annotation grch37 \
       --model /path/to/keras_models/ \
       --model-type keras \
       --flanking-size 10000 \
@@ -204,7 +210,7 @@ Example: Annotating all variant in VCF
 This command:
 
 1. **Loads** the reference genome from ``GRCh37.fa``.
-2. **Reads** the gene annotation from ``grch37.txt``.
+2. **Reads** the built-in ``grch37`` gene annotation that ships inside the package.
 3. **Scans** the directory ``/path/to/keras_models/`` for Keras checkpoints, averaging predictions from all found models.
 4. **Computes** donor and acceptor delta scores within ±50 nucleotides of each variant.
 5. **Writes** a new VCF (``annotated_samples.vcf``) with all annotations for the four delta scores and positions in the ``INFO`` field (these are unmasked by default, so all scores are included). The scores are rounded to three decimal places.

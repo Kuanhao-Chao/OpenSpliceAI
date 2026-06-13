@@ -85,6 +85,40 @@ Annotates VCF files with delta scores and positions to evaluate the impact of ge
 <div class="line"><br></div>
 </div>
 </section>
+<section id="development-testing">
+<h1>Development &amp; Testing<a class="headerlink" href="#development-testing" title="Permalink to this heading">#</a></h1>
+<p>If you would like to contribute to OpenSpliceAI or run its test suite, install the package together with its development dependencies (pytest, pytest-cov, ruff, and pre-commit) from a clone of the repository:</p>
+<pre><code>pip install -e '.[dev]'</code></pre>
+<p><strong>Running the test suite.</strong> The tests live under <code class="docutils literal notranslate"><span class="pre">tests/</span></code> (organized into <code class="docutils literal notranslate"><span class="pre">unit</span></code>, <code class="docutils literal notranslate"><span class="pre">regression</span></code>, and <code class="docutils literal notranslate"><span class="pre">integration</span></code> groups) and run on CPU only. For a fast inner-loop run, exclude the slow and end-to-end tests:</p>
+<pre><code># Fast unit suite (skips slow / integration tests)
+pytest -m "not slow and not integration"
+
+# Full suite
+pytest</code></pre>
+<p><strong>Marker conventions.</strong> Tests are tagged with pytest markers (declared in <code class="docutils literal notranslate"><span class="pre">pytest.ini</span></code>) so you can select or deselect them with <code class="docutils literal notranslate"><span class="pre">-m</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">integration</span></code> &mdash; end-to-end flows on tiny fixtures (CPU).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">slow</span></code> &mdash; long-running tests.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gpu</span></code> &mdash; requires a CUDA device.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">keras</span></code> &mdash; requires TensorFlow/Keras (heavy, optional; auto-skipped if absent).</p></li>
+</ul>
+<p>For example, to run only the integration tests: <code class="docutils literal notranslate"><span class="pre">pytest -m integration</span></code>.</p>
+<p><strong>Linting.</strong> OpenSpliceAI uses <a class="reference external" href="https://docs.astral.sh/ruff/">ruff</a> (configured in <code class="docutils literal notranslate"><span class="pre">ruff.toml</span></code>) for linting:</p>
+<pre><code># Check for lint issues
+ruff check .
+
+# Auto-fix what can be fixed
+ruff check --fix .</code></pre>
+<p><strong>Pre-commit.</strong> A <a class="reference external" href="https://pre-commit.com/">pre-commit</a> configuration runs ruff and a few basic checks automatically before each commit. Enable the git hook once after installing the dev dependencies:</p>
+<pre><code># Install the git hook
+pre-commit install
+
+# Run all hooks against every file
+pre-commit run --all-files</code></pre>
+<div class="line-block">
+<div class="line"><br></div>
+</div>
+</section>
 <section id="table-of-contents">
 <h1>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this heading">#</a></h1>
 <div class="toctree-wrapper compound">

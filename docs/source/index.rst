@@ -217,6 +217,7 @@ Table of Contents
    content/openspliceai_vs_spliceai
    content/behind_scenes
    content/how_to_page
+   content/development
    content/changelog
    content/license
    content/contact

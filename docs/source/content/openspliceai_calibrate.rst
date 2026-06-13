@@ -107,14 +107,18 @@ Examples
 Example: Calibrating a Trained Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Suppose you have a trained model ``model_best.pt`` and a test HDF5 file ``dataset_test.h5``:
+Suppose you have a trained model ``model_best.pt`` and the HDF5 splits produced by
+:ref:`create-data_subcommand` (``dataset_train.h5`` and ``dataset_test.h5``). Both
+``--train-dataset`` and ``--test-dataset`` are required, along with ``--project-name``:
 
 .. code-block:: bash
 
    openspliceai calibrate \
       --pretrained-model model_best.pt \
+      --train-dataset dataset_train.h5 \
       --test-dataset dataset_test.h5 \
       --flanking-size 10000 \
+      --project-name human_MANE_calibration \
       --output-dir ./calibration_results/ \
       --random-seed 42
 

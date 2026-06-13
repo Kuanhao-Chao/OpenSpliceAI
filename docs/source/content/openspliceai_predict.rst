@@ -17,7 +17,7 @@ Overview
 Once an OpenSpliceAI model is trained (via the :ref:`train_subcommand` or :ref:`transfer_subcommand`), the ``predict`` subcommand:
 
 - **Loads** a reference genome in FASTA and, optionally, a GFF file to focus on specific gene regions.
-- **Splits** large sequences into manageable chunks (``--split_fasta_threshold``).
+- **Splits** large sequences into manageable chunks (``--split-threshold``, default 1.5 Mb).
 - **One-hot encodes** the sequence data with flanking regions (size determined by ``--flanking-size``).
 - **Runs** inference on each chunk in a batch-wise manner (with a batch size derived from the flanking size).
 - **Generates** final BED files, separating donor and acceptor sites exceeding a user-defined score threshold.
@@ -66,17 +66,17 @@ Usage
 
 .. code-block:: text
 
-   usage: openspliceai predict [-h] [--model MODEL] --output-dir OUTPUT_DIR [--flanking-size FLANKING_SIZE] [--input-sequence INPUT_SEQUENCE]
+   usage: openspliceai predict [-h] --output-dir OUTPUT_DIR --input-sequence INPUT_SEQUENCE --model MODEL --flanking-size {80,400,2000,10000}
                               [--annotation-file ANNOTATION_FILE] [--threshold THRESHOLD] [--predict-all] [--debug] [--hdf-threshold HDF_THRESHOLD]
                               [--flush-threshold FLUSH_THRESHOLD] [--split-threshold SPLIT_THRESHOLD] [--chunk-size CHUNK_SIZE]
 
    optional arguments:
          -h, --help            show this help message and exit
          --model MODEL, -m MODEL
-                                 Path to a PyTorch SpliceAI model file or "SpliceAI" for the default model
+                                 Path to a PyTorch SpliceAI model file (or a directory of checkpoints to ensemble)
          --output-dir OUTPUT_DIR, -o OUTPUT_DIR
                                  Output directory to save the data
-         --flanking-size FLANKING_SIZE, -f FLANKING_SIZE
+         --flanking-size {80,400,2000,10000}, -f {80,400,2000,10000}
                                  Sum of flanking sequence lengths on each side of input (i.e. 40+40)
          --input-sequence INPUT_SEQUENCE, -i INPUT_SEQUENCE
                                  Path to FASTA file of the input sequence

@@ -48,18 +48,30 @@ Output Files
 The subcommand produces several outputs:
 
 - **Training Dataset:**
-  
+
   ``dataset_train.h5 <ftp://ftp.ccb.jhu.edu/pub/data/OpenSpliceAI/train_data/spliceai-mane/dataset_train.h5>``
 
+- **Validation Dataset:**
+
+  ``dataset_validation.h5``
+
 - **Testing Dataset:**
-  
+
   ``dataset_test.h5 <ftp://ftp.ccb.jhu.edu/pub/data/OpenSpliceAI/train_data/spliceai-mane/dataset_test.h5>``
 
 - **Intermediate Files:**
 
   - ``datafile_train.h5``
+  - ``datafile_validation.h5``
   - ``datafile_test.h5``
   - ``stats.txt``
+
+.. note::
+
+   With the default ``--chr-split train-test``, the subcommand writes three datasets:
+   ``dataset_train.h5``, ``dataset_validation.h5``, and ``dataset_test.h5`` (along with the
+   matching ``datafile_*.h5`` intermediates). When ``--chr-split test`` is used, only the
+   ``test`` split is produced.
 
 These files contain the processed gene sequences (tensor :math:`X`) and splice site labels (tensor :math:`Y`).
 
@@ -135,8 +147,9 @@ Then, execute the command:
 After a successful run, the following files will be generated:
 
 - **dataset_train.h5** (main file for training)
+- **dataset_validation.h5** (held-out validation split)
 - **dataset_test.h5** (main file for testing)
-- **Intermediate Files**: ``datafile_train.h5``, ``datafile_test.h5``, and ``stats.txt``
+- **Intermediate Files**: ``datafile_train.h5``, ``datafile_validation.h5``, ``datafile_test.h5``, and ``stats.txt``
 
 
 |
