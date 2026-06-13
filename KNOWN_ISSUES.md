@@ -50,3 +50,25 @@ below) show the code is **correct**; do not "fix" them.
   `SL + CL`, and the model's internal `Cropping1D` removes the remaining `CL`, yielding `SL` — which
   matches `Y`. Cropping `Y` here would actually break training. Locked by
   `tests/regression/test_clip_datapoints_invariant.py`.
+
+## `predict` / `variant` validation audit (see `validation/`)
+
+A dedicated audit validated the two scoring subcommands step by step (`validation/ALGORITHM.md`,
+`validation/VALIDATION_REPORT.md`).
+
+- **Proven correct:** `variant --model-type keras --flanking-size 10000` reproduces the original Illumina
+  `spliceai` 1.3.1 **exactly** (100% of DS and DP fields, across `--mask {0,1}` × `--distance {50,500,1000}`
+  on 35 variants incl. both strands, indels, multiallelic, MNV). Locked by
+  `tests/equivalence/test_keras_equivalence.py`. Equivalence requires **flanking 10000** (original hardcodes
+  `wid = 10000 + cov`).
+
+- **Fixed:** `variant/variant.py` crashed (`FileNotFoundError: ''`) when `--output-vcf` was a bare filename;
+  now guards the empty-dirname case. Locked by `tests/integration/test_variant_output_dir.py`.
+
+- **Hardened:** `predict.py` `load_pytorch_models` now raises on an unsupported `--flanking-size` (was a
+  silent 80nt default; unreachable via the CLI's argparse `choices`). Locked by
+  `tests/unit/test_predict_variant_hardening.py`.
+
+- **Caveat (not a bug):** whole-genome `predict` writes **duplicate BED rows** in the `CL_max//2` overlap
+  zones of sequences split beyond `--split-threshold` (1.5 Mb). Coordinates are correct, rows are redundant;
+  dedup with `validation/dedup_predictions.py`.

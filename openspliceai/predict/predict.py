@@ -509,6 +509,9 @@ def load_pytorch_models(model_path, device, SL, CL):
             AR = np.asarray([1, 1, 1, 1, 4, 4, 4, 4,
                             10, 10, 10, 10, 25, 25, 25, 25])
             BATCH_SIZE = 6*N_GPUS
+        else:
+            raise ValueError(f"Invalid flanking size: {flanking_size}. "
+                             "Must be one of 80, 400, 2000, 10000.")
 
         CL = 2 * np.sum(AR*(W-1))
 
