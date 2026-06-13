@@ -1,4 +1,9 @@
-<img alt="My Logo" class="logo header-image only-dark align-center" src="https://khchao.com/images/openspliceai_logo_black.png" style="width:90%">
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="logo/logo_white.png">
+  <img alt="OpenSpliceAI" src="logo/logo_black.png" width="90%">
+</picture>
+</p>
 
 
 <a class="reference external image-reference" href="https://img.shields.io/badge/License-GPLv3-yellow.svg"><img alt="https://img.shields.io/badge/License-GPLv3-yellow.svg" src="https://img.shields.io/badge/License-GPLv3-yellow.svg"></a>
@@ -203,5 +208,7 @@ Annotates VCF files with delta scores and positions to evaluate the impact of ge
 <div class="line"><br></div>
 <div class="line"><br></div>
 </div>
-<img alt="My Logo" class="logo header-image only-light align-center" src="https://khchao.com/images/jhu-logo-dark.png">
+<p align="center">
+<img alt="Johns Hopkins University" src="logo/jhu-logo-dark.png" width="40%">
+</p>
 </section>
