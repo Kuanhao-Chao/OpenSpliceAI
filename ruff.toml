@@ -1,0 +1,27 @@
+# Ruff configuration for OpenSpliceAI.
+# Focused on real correctness issues (pyflakes F) + basic errors/warnings; line-length
+# (E501) and ambiguous-name (E741, the code uses l/L/W/AR heavily) are intentionally ignored
+# to avoid mass churn. Legacy/experimental trees are excluded.
+line-length = 120
+# Honor `extend-exclude` even for files passed explicitly (e.g. by pre-commit), so excluded
+# legacy/standalone files are never linted.
+force-exclude = true
+# Excludes legacy/experimental trees and standalone (not CLI-wired) scripts:
+# temperature_scaling_site_only.py is a dead alternate of temperature_scaling.py;
+# gff_to_tsv.py is a standalone annotation converter not imported by the package.
+extend-exclude = [
+    "openspliceai/scripts", "openspliceai/test", "build", "dist", "examples", "docs", "sandbox",
+    "openspliceai/calibrate/temperature_scaling_site_only.py",
+    "openspliceai/create_data/gff_to_tsv.py",
+]
+
+[lint]
+select = ["E", "F", "W"]
+# E501 line-length and E741 ambiguous names: pervasive, intentional. W291/W292/W293 whitespace:
+# avoided to prevent mass whitespace churn. F403/F405 star-imports: used by design across the
+# train_base modules (names resolve at runtime), refactoring them is out of scope.
+ignore = ["E501", "E741", "W291", "W292", "W293", "F403", "F405"]
+
+[lint.per-file-ignores]
+# predict/utils.py deliberately interleaves small imports with the helpers they support.
+"openspliceai/predict/utils.py" = ["E402"]

@@ -1,0 +1,16 @@
+# Pre-commit hooks for OpenSpliceAI. Install with: pre-commit install
+# Run on all files with: pre-commit run --all-files
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.17
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^(openspliceai|tests)/   # lint the package + tests, not root build/debug scripts
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # trailing-whitespace / end-of-file-fixer intentionally omitted to avoid whitespace churn.
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=2048]
