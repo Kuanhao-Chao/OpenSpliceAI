@@ -29,7 +29,12 @@ setuptools.setup(
         'psutil>=5.9.2',
         'mappy>=2.28'
     ],
+    extras_require={
+        'test': ['pytest>=7', 'pytest-cov>=4'],
+        'dev': ['pytest>=7', 'pytest-cov>=4', 'ruff>=0.4', 'pre-commit>=3'],
+    },
     include_package_data=True,
+    package_data={'openspliceai.variant': ['annotations/*.txt']},
 	python_requires='>=3.9',
 	packages=setuptools.find_packages(),
 	entry_points={'console_scripts': ['openspliceai = openspliceai.openspliceai:main'], },

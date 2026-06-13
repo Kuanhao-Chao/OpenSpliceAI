@@ -5,6 +5,7 @@
 !/docs/source/_images/*
 *.txt
 !requirements.txt
+!openspliceai/variant/annotations/*.txt
 *delta
 *.bed
 *.fa

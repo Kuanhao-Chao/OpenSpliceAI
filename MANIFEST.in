@@ -1,1 +1,2 @@
 recursive-include logo *
+recursive-include openspliceai/variant/annotations *.txt
