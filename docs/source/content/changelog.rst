@@ -4,6 +4,30 @@
 Changelog
 ===========
 
+v0.0.6 (2026-06-13)
+-------------------
+
+**Validation**
+
+- Audited the ``predict`` and ``variant`` subcommands step by step (see ``validation/``).
+  ``variant --model-type keras --flanking-size 10000`` reproduces the original Illumina
+  ``spliceai`` tool **exactly** (every delta score and position, across a mask/distance grid),
+  and ``predict`` coordinates were verified correct on both strands.
+
+**Bug fixes**
+
+- Fixed a crash in ``variant`` when ``--output-vcf`` was a bare filename (empty directory name).
+- Hardened ``predict`` to raise on an unsupported ``--flanking-size`` instead of silently
+  defaulting to the 80 nt schedule.
+
+**Packaging & tooling**
+
+- Stopped shipping the top-level ``tests`` package in the built wheel
+  (``find_packages(include=['openspliceai', 'openspliceai.*'])``).
+- Expanded the test suite to **143 tests** (added a keras-vs-original-SpliceAI equivalence
+  regression and predict/variant invariants) and condensed the README "Development & Testing"
+  section.
+
 v1.0.1 (2026-06-13)
 -------------------
 

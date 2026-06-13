@@ -39,7 +39,7 @@ The ``dev`` extra installs ``pytest`` (test runner), ``pytest-cov`` (coverage), 
 Running the test suite
 -----------------------
 
-The suite lives under ``tests/`` and contains **122 tests** (collected via
+The suite lives under ``tests/`` and contains **143 tests** (collected via
 ``pytest --collect-only``). It is designed to run **CPU-only** so it can execute on any
 machine, including CI runners without a GPU.
 

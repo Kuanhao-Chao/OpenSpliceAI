@@ -7,7 +7,7 @@
 
 
 <a class="reference external image-reference" href="https://img.shields.io/badge/License-GPLv3-yellow.svg"><img alt="https://img.shields.io/badge/License-GPLv3-yellow.svg" src="https://img.shields.io/badge/License-GPLv3-yellow.svg"></a>
-<a class="reference external image-reference" href="https://img.shields.io/badge/version-v.0.0.4-blue"><img alt="https://img.shields.io/badge/version-v.0.0.4-blue" src="https://img.shields.io/badge/version-v.0.0.4-blue"></a>
+<a class="reference external image-reference" href="https://img.shields.io/badge/version-v.0.0.6-blue"><img alt="https://img.shields.io/badge/version-v.0.0.6-blue" src="https://img.shields.io/badge/version-v.0.0.6-blue"></a>
 <a class="reference external image-reference" href="https://pepy.tech/project/openspliceai"><img alt="https://static.pepy.tech/personalized-badge/openspliceai?period=total&amp;units=abbreviation&amp;left_color=grey&amp;right_color=blue&amp;left_text=PyPi%20downloads" src="https://static.pepy.tech/personalized-badge/openspliceai?period=total&amp;units=abbreviation&amp;left_color=grey&amp;right_color=blue&amp;left_text=PyPi%20downloads"></a>
 <a class="reference external image-reference" href="https://github.com/Kuanhao-Chao/OpenSpliceAI/releases"><img alt="https://img.shields.io/github/downloads/Kuanhao-Chao/OpenSpliceAI/total.svg?style=social&amp;logo=github&amp;label=Download" src="https://img.shields.io/github/downloads/Kuanhao-Chao/OpenSpliceAI/total.svg?style=social&amp;logo=github&amp;label=Download"></a>
 <a class="reference external image-reference" href="https://github.com/Kuanhao-Chao/OpenSpliceAI/releases"><img alt="https://img.shields.io/badge/platform-macOS_/Linux-green.svg" src="https://img.shields.io/badge/platform-macOS_/Linux-green.svg"></a>
@@ -92,34 +92,16 @@ Annotates VCF files with delta scores and positions to evaluate the impact of ge
 </section>
 <section id="development-testing">
 <h1>Development &amp; Testing<a class="headerlink" href="#development-testing" title="Permalink to this heading">#</a></h1>
-<p>If you would like to contribute to OpenSpliceAI or run its test suite, install the package together with its development dependencies (pytest, pytest-cov, ruff, and pre-commit) from a clone of the repository:</p>
+<p>Install the package with its development dependencies (pytest, pytest-cov, ruff, pre-commit) from a clone of the repository:</p>
 <pre><code>pip install -e '.[dev]'</code></pre>
-<p><strong>Running the test suite.</strong> The tests live under <code class="docutils literal notranslate"><span class="pre">tests/</span></code> (organized into <code class="docutils literal notranslate"><span class="pre">unit</span></code>, <code class="docutils literal notranslate"><span class="pre">regression</span></code>, and <code class="docutils literal notranslate"><span class="pre">integration</span></code> groups) and run on CPU only. For a fast inner-loop run, exclude the slow and end-to-end tests:</p>
-<pre><code># Fast unit suite (skips slow / integration tests)
-pytest -m "not slow and not integration"
-
-# Full suite
-pytest</code></pre>
-<p><strong>Marker conventions.</strong> Tests are tagged with pytest markers (declared in <code class="docutils literal notranslate"><span class="pre">pytest.ini</span></code>) so you can select or deselect them with <code class="docutils literal notranslate"><span class="pre">-m</span></code>:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">integration</span></code> &mdash; end-to-end flows on tiny fixtures (CPU).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">slow</span></code> &mdash; long-running tests.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">gpu</span></code> &mdash; requires a CUDA device.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">keras</span></code> &mdash; requires TensorFlow/Keras (heavy, optional; auto-skipped if absent).</p></li>
-</ul>
-<p>For example, to run only the integration tests: <code class="docutils literal notranslate"><span class="pre">pytest -m integration</span></code>.</p>
-<p><strong>Linting.</strong> OpenSpliceAI uses <a class="reference external" href="https://docs.astral.sh/ruff/">ruff</a> (configured in <code class="docutils literal notranslate"><span class="pre">ruff.toml</span></code>) for linting:</p>
-<pre><code># Check for lint issues
-ruff check .
-
-# Auto-fix what can be fixed
-ruff check --fix .</code></pre>
-<p><strong>Pre-commit.</strong> A <a class="reference external" href="https://pre-commit.com/">pre-commit</a> configuration runs ruff and a few basic checks automatically before each commit. Enable the git hook once after installing the dev dependencies:</p>
-<pre><code># Install the git hook
-pre-commit install
-
-# Run all hooks against every file
-pre-commit run --all-files</code></pre>
+<p><strong>Tests</strong> live under <code>tests/</code> (<code>unit</code> / <code>integration</code> / <code>regression</code>) and run on CPU only:</p>
+<pre><code>pytest -m "not slow and not integration"   # fast inner loop
+pytest                                      # full suite</code></pre>
+<p>Tests are tagged with markers (declared in <code>pytest.ini</code>) &mdash; <code>integration</code>, <code>slow</code>, <code>gpu</code>, and <code>keras</code> (auto-skipped when TensorFlow is absent) &mdash; selectable with <code>-m</code>, e.g. <code>pytest -m integration</code>.</p>
+<p><strong>Lint and pre-commit hooks</strong> (configured in <code>ruff.toml</code> and <code>.pre-commit-config.yaml</code>):</p>
+<pre><code>ruff check .            # lint (add --fix to auto-fix)
+pre-commit install      # run ruff + checks on every commit</code></pre>
+<p>See the <a class="reference external" href="https://ccb.jhu.edu/openspliceai/">full documentation</a> for the complete development and testing guide.</p>
 <div class="line-block">
 <div class="line"><br></div>
 </div>
