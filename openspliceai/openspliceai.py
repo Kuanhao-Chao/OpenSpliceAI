@@ -19,6 +19,7 @@ from openspliceai.variant import variant
 __VERSION__ = header.__version__
 
 def parse_args_create_data(subparsers):
+    """Register the ``create-data`` subcommand and its arguments (GFF + FASTA -> train/test HDF5 datasets)."""
     parser_create_data = subparsers.add_parser('create-data', help='Create dataset for your genome for SpliceAI model training')
     parser_create_data.add_argument('--annotation-gff', type=str, required=True, help='Path to the GFF file')
     parser_create_data.add_argument('--genome-fasta', type=str, required=True, help='Path to the FASTA file')
@@ -39,6 +40,7 @@ def parse_args_create_data(subparsers):
 
 
 def parse_args_train(subparsers):
+    """Register the ``train`` subcommand and its arguments (train a SpliceAI model from scratch on HDF5 datasets)."""
     parser_train = subparsers.add_parser('train', help='Train the SpliceAI model')
     parser_train.add_argument('--epochs', '-n', type=int, default=10, help='Number of epochs for training')
     parser_train.add_argument('--scheduler', '-s', type=str, default="MultiStepLR", choices=["MultiStepLR", "CosineAnnealingWarmRestarts"], help="Learning rate scheduler")
@@ -56,6 +58,7 @@ def parse_args_train(subparsers):
 
 
 def parse_args_test(subparsers):
+    """Register the (currently disabled) ``test`` subcommand and its arguments (evaluate a pretrained model)."""
     parser_test = subparsers.add_parser('test', help='Test the SpliceAI model')
     parser_test.add_argument("--pretrained-model", '-m', type=str, required=True, help="Path to the pre-trained model")
     parser_test.add_argument('--output-dir', '-o', type=str, required=True, help='Output directory to save the data')
@@ -70,6 +73,7 @@ def parse_args_test(subparsers):
 
 
 def parse_args_calibrate(subparsers):
+    """Register the ``calibrate`` subcommand and its arguments (post-hoc temperature scaling of a trained model)."""
     parser_calibrate = subparsers.add_parser('calibrate', help='Calibrate the SpliceAI model')
     parser_calibrate.add_argument('--epochs', '-n', type=int, default=10, help='Number of epochs for training')
     parser_calibrate.add_argument('--early-stopping', '-E', action='store_true', default=False, help='Enable early stopping')
@@ -87,6 +91,7 @@ def parse_args_calibrate(subparsers):
 
 
 def parse_args_transfer(subparsers):
+    """Register the ``transfer`` subcommand and its arguments (fine-tune a pretrained model on new data, optionally freezing layers)."""
     parser_transfer = subparsers.add_parser('transfer', help='transfer a pre-trained SpliceAI model on new data.')
     parser_transfer.add_argument('--epochs', '-n', type=int, default=10, help='Number of epochs for training')
     parser_transfer.add_argument('--scheduler', '-s', type=str, default="MultiStepLR", choices=["MultiStepLR", "CosineAnnealingWarmRestarts"], help="Learning rate scheduler")
@@ -101,15 +106,16 @@ def parse_args_transfer(subparsers):
     parser_transfer.add_argument("--train-dataset", '-train', type=str, required=True, help="Path to the training dataset")
     parser_transfer.add_argument("--test-dataset", '-test', type=str, required=True, help="Path to the testing dataset")
     parser_transfer.add_argument("--loss", '-l', type=str, default='cross_entropy_loss', choices=["cross_entropy_loss", "focal_loss"], help="Loss function for fine-tuning")
-    parser_transfer.add_argument("--unfreeze-all", '-A', action='store_true', default=True, help='Unfreeze all layers for fine-tuning')
+    parser_transfer.add_argument("--unfreeze-all", '-A', action='store_true', default=False, help='Unfreeze all layers for fine-tuning (default: freeze all but the last --unfreeze residual units)')
     parser_transfer.add_argument("--unfreeze", '-u', type=int, default=1, help="Number of layers to unfreeze for fine-tuning")
 
 
 def parse_args_predict(subparsers):
+    """Register the ``predict`` subcommand and its arguments (score a FASTA and write donor/acceptor BED predictions)."""
     parser_predict = subparsers.add_parser('predict', help='Predict splice sites in a given sequence using the SpliceAI model')
     parser_predict.add_argument('--input-sequence', '-i', type=str, required=True, help="Path to FASTA file of the input sequence")
     parser_predict.add_argument('--model', '-m', type=str, required=True, help='Path to a PyTorch SpliceAI model file')
-    parser_predict.add_argument('--flanking-size', '-f', type=int, required=True, help='Sum of flanking sequence lengths on each side of input (i.e. 40+40)')
+    parser_predict.add_argument('--flanking-size', '-f', type=int, required=True, choices=[80, 400, 2000, 10000], help='Sum of flanking sequence lengths on each side of input (i.e. 40+40)')
     parser_predict.add_argument('--output-dir', '-o', type=str, default="./predict_out", help='Output directory to save the data')
     parser_predict.add_argument('--annotation-file', '-a', type=str, required=False, help="Path to GFF file of coordinates for genes")
     parser_predict.add_argument('--threshold', '-t', type=float, default=1e-6, help="Threshold to determine acceptor and donor sites")
@@ -123,6 +129,7 @@ def parse_args_predict(subparsers):
 
 
 def parse_args_variant(subparsers):
+    """Register the ``variant`` subcommand and its arguments (annotate a VCF with splicing delta scores)."""
     parser_variant = subparsers.add_parser('variant', help='Label genetic variations with their predicted effects on splicing.')
     parser_variant.add_argument('-R', '--ref-genome', metavar='reference', required=True, help='path to the reference genome fasta file')
     parser_variant.add_argument('-A', '--annotation', metavar='annotation', required=True, help='"grch37" (GENCODE V24lift37 canonical annotation file in '
@@ -138,12 +145,13 @@ def parse_args_variant(subparsers):
                                         'unannotated acceptor/donor loss, defaults to 0')
     '''AM: newly added flags below vv'''
     parser_variant.add_argument('--model', '-m', default="SpliceAI", type=str, help='Path to a SpliceAI model file, or path to a directory of SpliceAI models, or "SpliceAI" for the default model')
-    parser_variant.add_argument('--flanking-size', '-f', type=int, default=80, help='Sum of flanking sequence lengths on each side of input (i.e. 40+40)')
+    parser_variant.add_argument('--flanking-size', '-f', type=int, default=80, choices=[80, 400, 2000, 10000], help='Sum of flanking sequence lengths on each side of input (i.e. 40+40)')
     parser_variant.add_argument('--model-type', '-t', type=str, choices=['keras', 'pytorch'], default='pytorch', help='Type of model file (keras or pytorch)')
     parser_variant.add_argument('--precision', '-p', type=int, default=2, help='Number of decimal places to round the output scores')
  
 
 def parse_args(arglist):
+    """Build the top-level argument parser with all subcommands and parse ``arglist`` (or ``sys.argv``)."""
     parser = argparse.ArgumentParser(description='OpenSpliceAI toolkit to help you retrain your own splice site predictor')
     # Create a parent subparser to house the common subcommands.
     subparsers = parser.add_subparsers(dest='command', required=True, help='Subcommands: create-data, train, calibrate, predict, transfer, variant')
@@ -162,6 +170,13 @@ def parse_args(arglist):
 
 
 def main(arglist=None):
+    """Console entry point: print the banner, parse args, and dispatch to the chosen subcommand.
+
+    Dispatches ``args.command`` to its package: ``create-data`` runs
+    ``create_datafile`` then ``create_dataset`` (and ``verify_h5`` if requested),
+    and ``train`` / ``calibrate`` / ``transfer`` / ``predict`` / ``variant`` each
+    call their respective entry-point function.
+    """
     # ANSI Shadow
     banner = '''
 ============================================================

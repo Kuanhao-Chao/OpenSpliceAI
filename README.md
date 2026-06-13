@@ -7,7 +7,7 @@
 
 
 <a class="reference external image-reference" href="https://img.shields.io/badge/License-GPLv3-yellow.svg"><img alt="https://img.shields.io/badge/License-GPLv3-yellow.svg" src="https://img.shields.io/badge/License-GPLv3-yellow.svg"></a>
-<a class="reference external image-reference" href="https://img.shields.io/badge/version-v.0.0.4-blue"><img alt="https://img.shields.io/badge/version-v.0.0.4-blue" src="https://img.shields.io/badge/version-v.0.0.4-blue"></a>
+<a class="reference external image-reference" href="https://img.shields.io/badge/version-v.0.0.6-blue"><img alt="https://img.shields.io/badge/version-v.0.0.6-blue" src="https://img.shields.io/badge/version-v.0.0.6-blue"></a>
 <a class="reference external image-reference" href="https://pepy.tech/project/openspliceai"><img alt="https://static.pepy.tech/personalized-badge/openspliceai?period=total&amp;units=abbreviation&amp;left_color=grey&amp;right_color=blue&amp;left_text=PyPi%20downloads" src="https://static.pepy.tech/personalized-badge/openspliceai?period=total&amp;units=abbreviation&amp;left_color=grey&amp;right_color=blue&amp;left_text=PyPi%20downloads"></a>
 <a class="reference external image-reference" href="https://github.com/Kuanhao-Chao/OpenSpliceAI/releases"><img alt="https://img.shields.io/github/downloads/Kuanhao-Chao/OpenSpliceAI/total.svg?style=social&amp;logo=github&amp;label=Download" src="https://img.shields.io/github/downloads/Kuanhao-Chao/OpenSpliceAI/total.svg?style=social&amp;logo=github&amp;label=Download"></a>
 <a class="reference external image-reference" href="https://github.com/Kuanhao-Chao/OpenSpliceAI/releases"><img alt="https://img.shields.io/badge/platform-macOS_/Linux-green.svg" src="https://img.shields.io/badge/platform-macOS_/Linux-green.svg"></a>
@@ -86,6 +86,22 @@ Annotates VCF files with delta scores and positions to evaluate the impact of ge
 <section id="next-steps">
 <h1>Next Steps<a class="headerlink" href="#next-steps" title="Permalink to this heading">#</a></h1>
 <p>Check out the <a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html#installation"><span class="std std-ref">Installation Guide</span></a> to get started with OpenSpliceAI. For a quick overview of the main commands and subcommands, see the <a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/quick_start_guide/index.html#quick-start-home"><span class="std std-ref">Quick Start Guide</span></a>.</p>
+<div class="line-block">
+<div class="line"><br></div>
+</div>
+</section>
+<section id="development-testing">
+<h1>Development &amp; Testing<a class="headerlink" href="#development-testing" title="Permalink to this heading">#</a></h1>
+<p>Install the package with its development dependencies (pytest, pytest-cov, ruff, pre-commit) from a clone of the repository:</p>
+<pre><code>pip install -e '.[dev]'</code></pre>
+<p><strong>Tests</strong> live under <code>tests/</code> (<code>unit</code> / <code>integration</code> / <code>regression</code>) and run on CPU only:</p>
+<pre><code>pytest -m "not slow and not integration"   # fast inner loop
+pytest                                      # full suite</code></pre>
+<p>Tests are tagged with markers (declared in <code>pytest.ini</code>) &mdash; <code>integration</code>, <code>slow</code>, <code>gpu</code>, and <code>keras</code> (auto-skipped when TensorFlow is absent) &mdash; selectable with <code>-m</code>, e.g. <code>pytest -m integration</code>.</p>
+<p><strong>Lint and pre-commit hooks</strong> (configured in <code>ruff.toml</code> and <code>.pre-commit-config.yaml</code>):</p>
+<pre><code>ruff check .            # lint (add --fix to auto-fix)
+pre-commit install      # run ruff + checks on every commit</code></pre>
+<p>See the <a class="reference external" href="https://ccb.jhu.edu/openspliceai/">full documentation</a> for the complete development and testing guide.</p>
 <div class="line-block">
 <div class="line"><br></div>
 </div>

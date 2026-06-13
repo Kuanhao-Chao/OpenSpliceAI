@@ -62,14 +62,14 @@ def evaluate_and_visualize(calibrated_model, data_loader, device, output_base_di
     
     original_nll, original_ece = calibrated_model.compute_ece_nll(logits, labels)
     with open(metric_original_file, 'w') as f:
-        f.write(f"Original_NLL\tOriginal_ECE\n")
+        f.write("Original_NLL\tOriginal_ECE\n")
         f.write(f"{original_nll:.8f}\t{original_ece:.8f}\n")
     print(f"Original NLL: {original_nll:.8f}")
     print(f"Original ECE: {original_ece:.8f}")
 
     calibrated_nll, calibrated_ece = calibrated_model.compute_ece_nll(logits_scaled, labels)
     with open(metric_calibrated_file, 'w') as f:
-        f.write(f"Calibrated_NLL\tCalibrated_ECE\n")
+        f.write("Calibrated_NLL\tCalibrated_ECE\n")
         f.write(f"{calibrated_nll:.8f}\t{calibrated_ece:.8f}\n")
     print(f"Calibrated NLL: {calibrated_nll:.8f}")
     print(f"Calibrated ECE: {calibrated_ece:.8f}")
@@ -110,6 +110,14 @@ def evaluate_and_visualize(calibrated_model, data_loader, device, output_base_di
 
 
 def calibrate(args):
+    """Temperature-scale a trained SpliceAI model (entry point for the ``calibrate`` subcommand).
+
+    Loads ``args.pretrained_model``, wraps it in a ``ModelWithTemperature``, and
+    fits a single temperature parameter on the validation set. Reports
+    calibration metrics (ECE/NLL/Brier) and writes calibration-curve plots and
+    per-dataset metric files, plus ``temperature.pt``/``.txt`` and a full
+    ``calibrated_model.pt`` under ``{output_dir}/calibration``. Returns nothing.
+    """
     print("Running OpenSpliceAI with 'calibrate' mode")
     start_time = time.time()
     
@@ -121,8 +129,8 @@ def calibrate(args):
     
     # Set up the device, datasets, and indices
     device = setup_environment(args)
-    train_h5f, test_h5f, batch_num = load_datasets(args)
-    train_idxs, val_idxs, test_idxs = generate_indices(batch_num, args.random_seed, test_h5f)
+    train_h5f, valid_h5f, test_h5f, batch_num = load_datasets(args)
+    train_idxs, val_idxs, test_idxs = generate_indices(train_h5f, valid_h5f, test_h5f)
     
     # Initialize the model
     model, model_params = initialize_model_and_optim(device, args.flanking_size, args.pretrained_model)
@@ -138,8 +146,9 @@ def calibrate(args):
     print("Validation indices count:", len(val_idxs))
     print("Test indices count:", len(test_idxs))
     
-    # Create data loaders for the validation (calibration) and test sets
-    validation_loader = get_validation_loader(train_h5f, val_idxs, model_params["BATCH_SIZE"])
+    # Create data loaders for the validation (calibration) and test sets.
+    # val_idxs index the validation file, so the loader must read from valid_h5f.
+    validation_loader = get_validation_loader(valid_h5f, val_idxs, model_params["BATCH_SIZE"])
     test_loader = get_validation_loader(test_h5f, test_idxs, model_params["BATCH_SIZE"])
     
     # Load or determine the temperature vector

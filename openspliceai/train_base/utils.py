@@ -69,16 +69,31 @@ def clip_datapoints_spliceai27(X, Y, CL, N_GPUS):
 
 
 class MetricsAccumulator:
+    """Accumulate true/predicted class labels across batches to compute overall metrics.
+
+    Collects flattened integer class labels (0=non-splice, 1=acceptor,
+    2=donor) over many batches via :meth:`update`, then computes aggregate
+    per-class accuracy and precision/recall/F1 in one pass via
+    :meth:`calculate_overall_metrics`.
+    """
+
     def __init__(self, num_classes):
         self.true_classes = []
         self.predicted_classes = []
         self.num_classes = num_classes
 
     def update(self, y_true, y_pred):
+        """Append a batch of true and predicted class labels to the running buffers."""
         self.true_classes.extend(y_true)
         self.predicted_classes.extend(y_pred)
 
     def calculate_overall_metrics(self):
+        """Compute aggregate metrics over all accumulated batches.
+
+        Returns ``(overall_accuracy, precision, recall, f1, class_accuracies)``
+        where ``overall_accuracy`` is the mean of the per-class accuracies and
+        ``precision``/``recall``/``f1`` are per-class arrays.
+        """
         true_classes = np.array(self.true_classes)
         predicted_classes = np.array(self.predicted_classes)
         true_classes = true_classes.flatten()
@@ -171,7 +186,7 @@ def test_SpliceAI_Keras_model(model, test_h5f, test_idxs, args, params, test_met
     y_true_donor_all = np.concatenate(y_true_donor_all)
     y_pred_donor_all = np.concatenate(y_pred_donor_all)
 
-    acceptor_topk_accuracy, acceptor_auprc = print_topl_statistics(y_true_donor_all, y_pred_donor_all, test_metric_files["acceptor_topk_all"], ss_type='acceptor', print_top_k=True)
+    acceptor_topk_accuracy, acceptor_auprc = print_topl_statistics(y_true_acceptor_all, y_pred_acceptor_all, test_metric_files["acceptor_topk_all"], ss_type='acceptor', print_top_k=True)
     donor_topk_accuracy, donor_auprc = print_topl_statistics(y_true_donor_all, y_pred_donor_all, test_metric_files["donor_topk_all"], ss_type='donor', print_top_k=True)
 
     # Calculate and write overall metrics
@@ -274,11 +289,22 @@ def create_metric_files(log_output_base):
 
 
 def setup_device():
+    """Pick the best available compute device: CUDA, then MPS (macOS), else CPU.
+
+    Returns a ``torch.device``.
+    """
     device_str = "cuda" if torch.cuda.is_available() else "mps" if platform.system() == "Darwin" else "cpu"
     return torch.device(device_str)
 
 
 def initialize_paths_inner(output_dir, project_name, flanking_size, exp_num, sequence_length, loss_fun, random_seed):
+    """Build and create the experiment's model/log directory tree.
+
+    Creates ``{output_dir}/SpliceAI_{project_name}_{flanking_size}_{exp_num}_rs{random_seed}/{exp_num}/``
+    with ``models/`` and ``LOG/{TRAIN,VAL,TEST}/`` subdirectories. Returns the
+    tuple ``(model_output_base, log_output_train_base, log_output_val_base,
+    log_output_test_base)``.
+    """
     MODEL_VERSION = f"SpliceAI_{project_name}_{flanking_size}_{exp_num}_rs{random_seed}"
     model_train_outdir = f"{output_dir}/{MODEL_VERSION}/{exp_num}/"
     model_output_base = f"{model_train_outdir}models/"
@@ -292,6 +318,13 @@ def initialize_paths_inner(output_dir, project_name, flanking_size, exp_num, seq
 
 
 def load_data_from_shard(h5f, shard_idx, device, batch_size, params, shuffle=False):
+    """Load one HDF5 shard (``X{shard_idx}``/``Y{shard_idx}``) into a DataLoader.
+
+    Reads the chunked dataset, transposes both tensors to ``(N, channels,
+    length)`` as the model expects, wraps them in a ``TensorDataset``, and
+    returns a ``DataLoader`` (``drop_last=True``, ``pin_memory=True``) with the
+    given ``batch_size`` and ``shuffle`` setting.
+    """
     X = h5f[f'X{shard_idx}'][:].transpose(0, 2, 1)
     Y = h5f[f'Y{shard_idx}'][0, ...].transpose(0, 2, 1)
     X = torch.tensor(X, dtype=torch.float32)
@@ -320,7 +353,6 @@ def metrics(batch_ypred, batch_ylabel, metric_files, run_mode):
     predicted_classes = predicted_classes.numpy()
     true_classes_flat = true_classes.flatten()
     predicted_classes_flat = predicted_classes.flatten()
-    accuracy = accuracy_score(true_classes_flat, predicted_classes_flat)
     precision, recall, f1, _ = precision_recall_fscore_support(true_classes_flat, predicted_classes_flat, average=None)
     class_accuracies = classwise_accuracy(true_classes, predicted_classes, 3)
     overall_accuracy = np.mean(class_accuracies)
@@ -577,6 +609,15 @@ def focal_loss(y_true, y_pred, alpha=0.25, gamma=2.0):
 def train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, train_idxs, val_idxs, test_idxs,
                 model_output_base, args, device, params, 
                 train_metric_files, valid_metric_files, test_metric_files):
+    """Run the full training loop shared by the ``train`` and ``transfer`` subcommands.
+
+    For each of ``args.epochs`` epochs: runs one ``train_epoch`` over the train
+    shards, then ``valid_epoch`` over the validation and test shards, logging
+    losses and metrics. Saves a checkpoint every epoch (``model_{epoch}.pt``)
+    and the best-validation checkpoint (``model_best.pt``), steps the LR
+    scheduler, and honours early stopping when ``args.early_stopping`` is set.
+    Returns nothing (side effects are checkpoints and metric files).
+    """
     print(f"train_idxs (count: {len(train_idxs)}): ", train_idxs)
     print(f"val_idxs (count: {len(val_idxs)}): ", val_idxs)
     print(f"test_idxs (count: {len(test_idxs)}): ", test_idxs)

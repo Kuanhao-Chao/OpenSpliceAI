@@ -9,7 +9,6 @@ scores and delta positions for acceptor gain (AG), acceptor loss (AL), donor gai
 
 import logging
 import pysam
-import numpy as np
 from openspliceai.variant.utils import *
 from tqdm import tqdm
 import os
@@ -17,6 +16,16 @@ import os
 # NOTE: if running with gpu, note that cudnn version should be 8.9.6 or higher, numpy <2.0.0
 
 def variant(args):
+    """Annotate a VCF with splicing delta scores (entry point for the ``variant`` subcommand).
+
+    Reads the input VCF (``args.input_vcf``, default stdin), builds an
+    ``Annotator`` from the reference genome, gene annotation
+    (``grch37``/``grch38`` builtins or a custom TSV) and SpliceAI model(s)
+    (PyTorch or Keras). For each variant it computes, within ``args.distance``,
+    delta scores/positions for acceptor and donor gain/loss and writes them to
+    the ``OpenSpliceAI`` INFO field of the output VCF (``args.output_vcf``,
+    default stdout). Returns nothing.
+    """
     print("Running SpliceAI-toolkit with 'variant' mode")
     start_time = time.time()
     
@@ -63,7 +72,9 @@ def variant(args):
 
     # Generating output VCF file
     print('\t[INFO] Generating output VCF file')
-    os.makedirs(os.path.dirname(output_vcf), exist_ok=True)
+    out_dir = os.path.dirname(output_vcf)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
     try:
         output = pysam.VariantFile(output_vcf, mode='w', header=header)
     except (IOError, ValueError) as e:

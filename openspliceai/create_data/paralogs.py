@@ -22,7 +22,7 @@ def remove_paralogous_sequences(train_data, test_data, min_identity, min_coverag
     :param min_coverage: Minimum coverage for sequences to be considered paralogous
     :return: Tuple of (filtered_train_data, filtered_test_data)
     """
-    print(f"\tStarting paralogy removal process...")
+    print("\tStarting paralogy removal process...")
     print(f"\tInitial train set size: {len(train_data[0])}")
     print(f"\tInitial test set size: {len(test_data[0])}")
     train_seqs = train_data[5]  # SEQ is at index 5
@@ -44,7 +44,7 @@ def remove_paralogous_sequences(train_data, test_data, min_identity, min_coverag
     filtered_test_data = [[] for _ in range(len(test_data))]
     paralogous_count = 0
     total_count = len(test_data[5])
-    fw = open(f"{output_dir}removed_paralogs_{exp}.txt", "w")
+    fw = open(os.path.join(output_dir, f"removed_paralogs_{exp}.txt"), "w")
     print("\tStarting to process test sequences...")
     for i in range(total_count):  # Iterate over test sequences
         test_seq = test_data[5][i]
@@ -65,7 +65,7 @@ def remove_paralogous_sequences(train_data, test_data, min_identity, min_coverag
         # Log progress every 1000 sequences
         if (i + 1) % 1000 == 0:
             print(f"\tProcessed {i + 1}/{total_count} sequences...")
-    print(f"\tParalogy removal process completed.")
+    print("\tParalogy removal process completed.")
     print(f"\tNumber of paralogous sequences removed: {paralogous_count}")
     print(f"\tFinal {exp} set size: {len(filtered_test_data[0])}")
     print(f"\tPercentage of {exp} set removed: {(paralogous_count / total_count) * 100:.2f}%")
@@ -77,7 +77,7 @@ def write_h5_file(output_dir, data_type, data):
     """
     Write the data to an h5 file.
     """
-    h5fname = output_dir + f'datafile_{data_type}.h5'
+    h5fname = os.path.join(output_dir, f'datafile_{data_type}.h5')
     h5f = h5py.File(h5fname, 'w')
     dt = h5py.string_dtype(encoding='utf-8')
     

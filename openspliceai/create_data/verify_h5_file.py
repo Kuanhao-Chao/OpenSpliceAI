@@ -9,7 +9,6 @@ import h5py
 import torch
 import matplotlib.pyplot as plt
 import time 
-import h5py
 
 def verify_h5(args):
     """
@@ -44,9 +43,12 @@ def verify_h5(args):
             Y0_tensor = torch.from_numpy(hf['Y0'][:]) 
             print(f"X0 shape: {X0_tensor.shape}, Y0 shape: {Y0_tensor.shape}")
 
-            # process a specific dataset ('X3') for visualization
-            x = torch.from_numpy(hf['X3'][:]).float()  
-            y = torch.from_numpy(hf['Y3'][:])  
+            # process a representative chunk (the last available) for visualization.
+            # The dataset may have only a handful of chunks (X0, X1, ...), so pick the
+            # last one that exists rather than a hardcoded index.
+            last_idx = max((int(k[1:]) for k in hf.keys() if k.startswith('X')))
+            x = torch.from_numpy(hf[f'X{last_idx}'][:]).float()
+            y = torch.from_numpy(hf[f'Y{last_idx}'][:])
             print(f"x[0].shape: {x[0].shape}, y[0].shape: {y[0].shape}")
 
             # plot the sum of the last entry in the 'X3' dataset along its rows

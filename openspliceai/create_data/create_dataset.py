@@ -15,6 +15,15 @@ from openspliceai.create_data.utils import ceil_div, replace_non_acgt_to_n, crea
 CHUNK_SIZE = 100 # size of chunks to process data in
 
 def create_dataset(args):
+    """Stage 2 of ``create-data``: one-hot encode and window the datafiles into ``dataset_*.h5``.
+
+    Reads each ``datafile_{split}.h5`` produced by :func:`create_datafile`,
+    one-hot encodes the sequences (4 channels) and labels (3 channels), splits
+    them into fixed-length ``SL + CL_max`` windows, and stores them as chunked
+    ``X0,X1,...`` / ``Y0,Y1,...`` datasets (100 genes per chunk). Side effect:
+    writes ``dataset_{train,validation,test}.h5`` into ``args.output_dir``,
+    ready to be streamed by the training loop.
+    """
     print("--- Step 2: Creating dataset.h5 ... ---")
     start_time = time.process_time()
     
@@ -38,9 +47,6 @@ def create_dataset(args):
         with h5py.File(input_file, 'r') as h5f:
             SEQ = h5f['SEQ'][:]
             LABEL = h5f['LABEL'][:]
-            STRAND = h5f['STRAND'][:]
-            TX_START = h5f['TX_START'][:]
-            TX_END = h5f['TX_END'][:]
 
         print(f"\tWriting {output_file} ... ")
         with h5py.File(output_file, 'w') as h5f2:

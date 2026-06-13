@@ -5,14 +5,12 @@ Date: 2025-03-20
 Description: Test script to calibrate the OpenSpliceAI model only on splice sites.
 """
 
-import os
 import torch
-from torch import nn, optim
+from torch import nn
 import torch.nn.functional as F
 import numpy as np
 from openspliceai.train_base.utils import *
 from torch.utils.data import TensorDataset, DataLoader
-from tqdm import tqdm
 
 
 def load_data_from_shard(h5f, shard_idx):

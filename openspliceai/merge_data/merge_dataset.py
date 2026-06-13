@@ -6,12 +6,9 @@ Description: Merge dataset.h5 files.
 """
 
 import h5py
-import numpy as np
-import sys, os
+import os
 import time
 # from utils import *
-import argparse
-import openspliceai.create_data.utils as utils
 
 donor_motif_counts = {}  # Initialize counts
 acceptor_motif_counts = {}  # Initialize counts

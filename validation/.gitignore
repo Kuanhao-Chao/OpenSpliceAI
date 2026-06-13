@@ -1,0 +1,4 @@
+# scratch run artifacts (regenerate with the scripts)
+equiv/
+predict_test/
+split_test/

@@ -1,5 +1,6 @@
-import argparse
-import os, sys, glob
+import os
+import sys
+import glob
 import re
 import numpy as np
 import torch
@@ -385,7 +386,7 @@ def convert_sequences(datafile_path, output_dir, SL, CL_max, chunk_size=100, SEQ
     use_h5 = file_ext == '.h5'
 
     # read the given input file if both datastreams were not provided
-    if SEQ == None:
+    if SEQ is None:
         print(f"\t[INFO] Reading {datafile_path} ... ")
         if use_h5:
             with h5py.File(datafile_path, 'r') as in_h5f:
@@ -435,7 +436,9 @@ def convert_sequences(datafile_path, output_dir, SL, CL_max, chunk_size=100, SEQ
         print(f"\t[INFO] Writing {dataset_path} ... ")
         X_all = []
         for idx in range(num_seqs):
-            seq_decode = SEQ[idx].decode('ascii')
+            seq_decode = SEQ[idx]
+            if isinstance(seq_decode, bytes):
+                seq_decode = seq_decode.decode('ascii')
             X = create_datapoints(seq_decode, SL, CL_max, debug=debug)
             if debug:      
                 print('\tX.shape:', X.shape, file=sys.stderr)
@@ -506,6 +509,9 @@ def load_pytorch_models(model_path, device, SL, CL):
             AR = np.asarray([1, 1, 1, 1, 4, 4, 4, 4,
                             10, 10, 10, 10, 25, 25, 25, 25])
             BATCH_SIZE = 6*N_GPUS
+        else:
+            raise ValueError(f"Invalid flanking size: {flanking_size}. "
+                             "Must be one of 80, 400, 2000, 10000.")
 
         CL = 2 * np.sum(AR*(W-1))
 
@@ -714,9 +720,9 @@ def get_prediction(models, dataset_path, device, batch_size, output_dir, flush_p
     else: # read from the PyTorch file
         predict_path = f'{output_dir}predict.pt'
 
-        # load all data
-        X = torch.load(dataset_path).transpose(0, 2, 1)
-        X = torch.tensor(X, dtype=torch.float32)
+        # load all data and reshape to (N, channels, length)
+        X = torch.load(dataset_path).permute(0, 2, 1)
+        X = X.to(torch.float32)
         ds = TensorDataset(X)
         loader = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False, pin_memory=True)
 
@@ -727,9 +733,9 @@ def get_prediction(models, dataset_path, device, batch_size, output_dir, flush_p
             DNAs = DNAs.to(torch.float32).to(device)
 
             with torch.no_grad():
-                y_pred = model(DNAs)
+                y_pred = torch.mean(torch.stack([models[m](DNAs).detach().cpu() for m in range(len(models))]), axis=0)
 
-            batch_ypred.append(y_pred.detach().cpu())
+            batch_ypred.append(y_pred)
             count += 1
             
             pbar.update(1)
@@ -1017,32 +1023,39 @@ def predict_and_write(models, dataset_path, device, batch_size, NAME, LEN, outpu
                 
     else: # read from the PyTorch file
 
-        # load all data
-        X = torch.load(dataset_path).transpose(0, 2, 1)
-        X = torch.tensor(X, dtype=torch.float32)
+        # load all data and reshape to (N, channels, length)
+        X = torch.load(dataset_path).permute(0, 2, 1)
+        X = X.to(torch.float32)
         ds = TensorDataset(X)
         loader = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False, pin_memory=True)
 
         pbar = tqdm(loader, leave=False, total=len(loader))
         for batch in pbar:
 
-            # getting prediction
+            # getting prediction (ensemble mean across all loaded models)
             DNAs = batch[0].to(device)
             DNAs = DNAs.to(torch.float32).to(device)
-            # with torch.no_grad():
-            #     y_pred = model(DNAs)
-            # y_pred = y_pred.detach().cpu()
             with torch.no_grad():
                 y_pred = torch.mean(torch.stack([models[m](DNAs).detach().cpu() for m in range(len(models))]), axis=0)
-            count += 1
+            count += len(y_pred)
 
-            # writing to BED
-            seq_name = NAME[i]
-            gene_predictions = y_pred.permute(0, 2, 1).contiguous().view(-1, y_pred.shape[1])
-            write_batch_to_bed(seq_name, gene_predictions, acceptor_bed, donor_bed, threshold=threshold, debug=debug)
-            
+            # accumulate predictions and flush each completed gene to BED. Batches do not
+            # align 1:1 with genes, so map them via LEN exactly like the HDF5 branch above.
+            accumulated_predictions.append(y_pred)
+            accumulated_length += len(y_pred)
+
+            while len_idx < len(LEN) and accumulated_length >= LEN[len_idx]:
+                seq_name = NAME[len_idx]
+                gene_length = LEN[len_idx]
+                accumulated_predictions = torch.cat(accumulated_predictions, dim=0)
+                combined_predictions = accumulated_predictions[:gene_length]
+                write_batch_to_bed(seq_name, combined_predictions, acceptor_bed, donor_bed, threshold=threshold, debug=debug)
+                accumulated_predictions = [accumulated_predictions[gene_length:]]
+                accumulated_length -= gene_length
+                len_idx += 1
+
             pbar.update(1)
-        
+
         pbar.close()
 
     acceptor_bed.close()
@@ -1141,8 +1154,8 @@ def predict_cli(args):
     device = setup_device()
 
     # load model from current state
-    model, params = load_pytorch_models(model_path, device, consts['SL'], flanking_size)
-    print(f"\t[INFO] Device: {device}, Model: {model}, Params: {params}")
+    models, params = load_pytorch_models(model_path, device, consts['SL'], flanking_size)
+    print(f"\t[INFO] Device: {device}, Models: {models}, Params: {params}")
 
     print("--- %s seconds ---" % (time.time() - start_time))
 
@@ -1152,7 +1165,7 @@ def predict_cli(args):
         print("--- Step 4: Get predictions ... ---", flush=True)
         start_time = time.time()
 
-        predict_file = get_prediction(model, dataset_path, device, params['BATCH_SIZE'], output_base, flush_predict_threshold=consts['FLUSH_PREDICT_THRESHOLD'], debug=debug)
+        predict_file = get_prediction(models, dataset_path, device, params['BATCH_SIZE'], output_base, flush_predict_threshold=consts['FLUSH_PREDICT_THRESHOLD'], debug=debug)
 
         print("--- %s seconds ---" % (time.time() - start_time))
 
@@ -1170,7 +1183,7 @@ def predict_cli(args):
         print("--- Step 4o: Extract predictions to BED ... ---", flush=True)
         start_time = time.time()
         
-        predict_and_write(model, dataset_path, device, params['BATCH_SIZE'], NAME, LEN, output_base, threshold=threshold, debug=debug)
+        predict_and_write(models, dataset_path, device, params['BATCH_SIZE'], NAME, LEN, output_base, threshold=threshold, debug=debug)
 
         print("--- %s seconds ---" % (time.time() - start_time))  
 

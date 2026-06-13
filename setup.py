@@ -5,7 +5,7 @@ this_directory = Path(__file__).resolve().parent
 long_description = (this_directory / "./README.md").read_text()
 setuptools.setup(
 	name="openspliceai",
-	version="0.0.5",
+	version="0.0.6",
 	author="Kuan-Hao Chao",
 	author_email="kh.chao@cs.jhu.edu",
 	description="Deep learning framework that decodes splicing across species",
@@ -29,9 +29,14 @@ setuptools.setup(
         'psutil>=5.9.2',
         'mappy>=2.28'
     ],
+    extras_require={
+        'test': ['pytest>=7', 'pytest-cov>=4'],
+        'dev': ['pytest>=7', 'pytest-cov>=4', 'ruff>=0.4', 'pre-commit>=3'],
+    },
     include_package_data=True,
+    package_data={'openspliceai.variant': ['annotations/*.txt']},
 	python_requires='>=3.9',
-	packages=setuptools.find_packages(),
+	packages=setuptools.find_packages(include=['openspliceai', 'openspliceai.*']),
 	entry_points={'console_scripts': ['openspliceai = openspliceai.openspliceai:main'], },
         long_description=long_description,
         long_description_content_type='text/markdown'

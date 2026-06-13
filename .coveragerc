@@ -1,0 +1,19 @@
+[run]
+source = openspliceai
+omit =
+    openspliceai/scripts/*
+    openspliceai/test/*
+    openspliceai/__init__.py
+    openspliceai/header.py
+    # standalone scripts / dead alternates not wired into the CLI flow:
+    openspliceai/create_data/gff_to_tsv.py
+    openspliceai/variant/get_anno.py
+    openspliceai/calibrate/temperature_scaling_site_only.py
+
+[report]
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    def __repr__

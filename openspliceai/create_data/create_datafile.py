@@ -131,6 +131,16 @@ def get_sequences_and_labels(db, output_dir, seq_dict, chrom_dict, train_or_test
 
 
 def create_datafile(args):
+    """Stage 1 of ``create-data``: extract per-gene sequences and splice labels into ``datafile_*.h5``.
+
+    Parses the annotation GFF (via gffutils) and genome FASTA, splits
+    chromosomes into train/test groups (``--split-method``), and for each gene
+    collects the (minus-strand reverse-complemented) sequence and a per-base
+    label marking donor=2 / acceptor=1 positions (optionally gated to canonical
+    motifs). Optionally removes paralogs between splits and carves a validation
+    set out of train. Side effect: writes ``datafile_{train,validation,test}.h5``
+    (string datasets SEQ/LABEL/STRAND/TX_START/TX_END) into ``args.output_dir``.
+    """
     print("Running OpenSpliceAI with 'create-data' mode")
     print("--- Step 1: Creating datafile.h5 ... ---")
     start_time = time.process_time()
