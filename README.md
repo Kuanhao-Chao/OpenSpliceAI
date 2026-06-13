@@ -1,7 +1,7 @@
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="logo/logo_white.png">
-  <img alt="OpenSpliceAI" src="logo/logo_black.png" width="90%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Kuanhao-Chao/OpenSpliceAI/main/logo/logo_white.png">
+  <img alt="OpenSpliceAI" src="https://raw.githubusercontent.com/Kuanhao-Chao/OpenSpliceAI/main/logo/logo_black.png" width="90%">
 </picture>
 </p>
 
