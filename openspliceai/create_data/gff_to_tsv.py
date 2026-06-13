@@ -55,7 +55,6 @@ def main():
             # Filter for protein_coding genes
             # Check gene_biotype (Standard/Ensembl) or gene_type (MANE/Gencode)
             is_protein_coding = False
-            
             if 'gene_biotype' in gene.attributes and gene.attributes['gene_biotype'][0] == 'protein_coding':
                 is_protein_coding = True
             elif 'gene_type' in gene.attributes and gene.attributes['gene_type'][0] == 'protein_coding':
