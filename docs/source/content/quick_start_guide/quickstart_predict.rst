@@ -90,6 +90,34 @@ Run the following commands (adapt or replace filenames as needed):
 
 This command will generate prediction results in the specified output directory (``results/``). The predictions will be based on the input FASTA file (``chr22.fa``) and the annotation file (``chr22.gff``). The results will include a GFF file with predicted splice sites and their scores.
 
+.. important::
+
+   **Strand and flanking context matter.** OpenSpliceAI scores the sequence on the strand you
+   provide, and the deep models need ``flanking_size/2`` bp of **real** sequence on each side of every
+   position they score (**5,000 bp per side for the 10,000 nt model**). The simplest way to satisfy both
+   is to pass the whole chromosome/genome FASTA together with a GFF via ``-a/--annotation`` (as above):
+   OpenSpliceAI then reverse-complements minus-strand genes for you and scores each gene in its genomic
+   context. If you instead feed a short, standalone gene FASTA, the sequence is padded with ``N`` and
+   minus-strand genes are scored on the wrong strand — both of which collapse the scores to near zero.
+
+|
+
+Predicting a single gene of interest
+-------------------------------------
+
+If you only care about one gene, **do not** extract just the gene body into a FASTA and run it directly —
+that loses the flanking context and (for minus-strand genes) the correct strand. Instead, either:
+
+- **Recommended:** keep the full chromosome FASTA and provide a GFF for the gene(s) you want, with
+  ``-a``. OpenSpliceAI extracts each gene **with** ``flanking_size/2`` bp of real flanking on each side
+  (configurable via ``--gene-flank``) and reverse-complements minus-strand genes automatically.
+- **Or** extract the gene **± 5,000 bp** of surrounding genome yourself; if the gene is on the minus
+  strand, reverse-complement that window before running ``predict`` without ``-a``.
+
+A correctly run, well-annotated gene should produce donor/acceptor scores close to **1.0** at its true
+splice junctions. If your scores look uniformly low, see
+:ref:`the troubleshooting Q&A <Q&A>` ("My predicted donor/acceptor scores are unexpectedly low").
+
 .. Try OpenSpliceAI on Google Colab
 .. --------------------------------
 

@@ -67,7 +67,7 @@ Usage
 .. code-block:: text
 
    usage: openspliceai predict [-h] --output-dir OUTPUT_DIR --input-sequence INPUT_SEQUENCE --model MODEL --flanking-size {80,400,2000,10000}
-                              [--annotation-file ANNOTATION_FILE] [--threshold THRESHOLD] [--predict-all] [--debug] [--hdf-threshold HDF_THRESHOLD]
+                              [--annotation-file ANNOTATION_FILE] [--gene-flank GENE_FLANK] [--threshold THRESHOLD] [--predict-all] [--debug] [--hdf-threshold HDF_THRESHOLD]
                               [--flush-threshold FLUSH_THRESHOLD] [--split-threshold SPLIT_THRESHOLD] [--chunk-size CHUNK_SIZE]
 
    optional arguments:
@@ -81,7 +81,13 @@ Usage
          --input-sequence INPUT_SEQUENCE, -i INPUT_SEQUENCE
                                  Path to FASTA file of the input sequence
          --annotation-file ANNOTATION_FILE, -a ANNOTATION_FILE
-                                 Path to GFF file of coordinates for genes
+                                 Path to GFF file of coordinates for genes (minus-strand genes are
+                                 reverse-complemented automatically)
+         --gene-flank GENE_FLANK
+                                 With -a: bp of REAL genomic flanking included on each side of every
+                                 extracted gene so the model sees true context instead of 'N' padding at
+                                 gene boundaries. Default (-1) uses flanking_size/2; set 0 for the bare
+                                 gene body (legacy behavior).
          --threshold THRESHOLD, -t THRESHOLD
                                  Threshold to determine acceptor and donor sites
          --predict-all, -p     Writes all collected predictions to an intermediate file (Warning: on full genomes, will consume much space.)
