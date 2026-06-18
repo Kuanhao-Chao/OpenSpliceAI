@@ -146,6 +146,51 @@ Q & A
 
 |
 
+.. dropdown:: Q: My predicted donor/acceptor scores are unexpectedly low. What went wrong?
+    :animate: fade-in-slide-down
+    :container: + shadow
+    :title: bg-light font-weight-bolder
+    :body: bg-light text-left
+
+    If a gene you *know* is spliced comes back with only weak peaks (e.g. all scores below ~0.3),
+    the prediction is almost always missing one of three things. In order of how often they bite:
+
+    1. **Wrong strand.** OpenSpliceAI scores the sequence on the strand you give it. If your gene is
+       on the **minus strand** but you extracted the plus strand, the splice motifs are reverse-complemented
+       and the model sees essentially the antisense sequence, so scores collapse. **Fix:** pass a GFF with
+       ``-a/--annotation`` — OpenSpliceAI then reverse-complements minus-strand genes for you — or
+       reverse-complement the sequence yourself before running ``predict``.
+
+    2. **Not enough flanking context.** The deep models need real genomic sequence on **both sides** of
+       every position they score: ``flanking_size/2`` bp on each side (so **5,000 bp on each side for the
+       10,000 nt model**). A short, standalone FASTA (just the gene, no flanks) is padded with ``N`` out to
+       that length, and ``N`` padding suppresses splice-site scores. **Fix:** give the model real context —
+       run on the **whole chromosome** with ``-a`` (recommended), or extract your gene **± 5,000 bp**.
+       Since v0.0.7, ``predict`` (a) prints a ``[WARN]`` when an input sequence is shorter than the required
+       context, and (b) with ``-a`` automatically includes ``flanking_size/2`` bp of real flanking around
+       every gene (configurable with ``--gene-flank``).
+
+    3. **Wrong locus / gene identity.** Double-check the coordinates and assembly. Paralogs and pseudogenes
+       are easy to grab by accident (for example, in mouse mm39 the housekeeping **Gapdh** is on
+       ``chr6``, while ``chr7`` carries the testis-specific paralog **Gapdhs** on the minus strand).
+
+    **Recommended command for a single gene of interest:**
+
+    .. code-block:: bash
+
+        # score every gene in genomic context (handles strand + flanking automatically)
+        openspliceai predict \
+            -m models/openspliceai-mouse/10000nt/ \   # a directory => 5-model ensemble
+            -f 10000 \
+            -i genome.fa \                            # whole chromosome / genome FASTA
+            -a annotation.gff \                       # gene coordinates (handles strand)
+            -o results/ -t 0.5
+
+    Genuine splice sites in a well-annotated gene should score close to **1.0** once strand and flanking
+    are correct.
+
+|
+
 .. dropdown:: Q: How do you evaluate the OpenSpliceAI prediction?
     :animate: fade-in-slide-down
     :container: + shadow

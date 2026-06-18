@@ -118,6 +118,7 @@ def parse_args_predict(subparsers):
     parser_predict.add_argument('--flanking-size', '-f', type=int, required=True, choices=[80, 400, 2000, 10000], help='Sum of flanking sequence lengths on each side of input (i.e. 40+40)')
     parser_predict.add_argument('--output-dir', '-o', type=str, default="./predict_out", help='Output directory to save the data')
     parser_predict.add_argument('--annotation-file', '-a', type=str, required=False, help="Path to GFF file of coordinates for genes")
+    parser_predict.add_argument('--gene-flank', type=int, default=-1, help="With -a/--annotation: bp of REAL genomic flanking sequence to include on each side of every extracted gene so the model sees true context instead of 'N' padding at gene boundaries. Default (-1) uses flanking_size/2 (the model's required context); set 0 to extract the bare gene body (legacy behavior).")
     parser_predict.add_argument('--threshold', '-t', type=float, default=1e-6, help="Threshold to determine acceptor and donor sites")
     parser_predict.add_argument('--predict-all', '-p', action='store_true', required=False, help="Writes all collected predictions to an intermediate file (Warning: on full genomes, will consume much space.)")
     parser_predict.add_argument('--debug', '-D', action='store_true', required=False, help="Run in debug mode (debug statements are printed to stderr)")

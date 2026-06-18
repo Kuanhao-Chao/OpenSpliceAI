@@ -17,7 +17,7 @@ import openspliceai.predict.utils as utils
 ##   STEP 1   ##
 ################
 
-def process_gff(fasta_file, gff_file, output_dir):
+def process_gff(fasta_file, gff_file, output_dir, gene_flank=0):
     """
     Processes a GFF file to extract gene regions and creates a new FASTA file
     with the extracted gene sequences.
@@ -26,6 +26,12 @@ def process_gff(fasta_file, gff_file, output_dir):
     - gff_file: Path to the GFF file.
     - fasta_file: Path to the input FASTA file.
     - output_fasta_file: Path to the output FASTA file.
+    - gene_flank: bp of REAL genomic sequence to include on each side of every
+      gene (clamped to the contig ends). The deep model needs flanking_size/2 of
+      true context on each side; without it the boundaries of every extracted
+      gene are padded with 'N' downstream, which suppresses splice-site scores
+      near the gene ends. Pass flanking_size//2 (default 0 keeps the legacy
+      bare-gene-body behavior).
     """
     # define output FASTA file
     output_fasta_file = f'{output_dir}{os.path.splitext(os.path.basename(fasta_file))[0]}_genes.fa'
@@ -67,15 +73,23 @@ def process_gff(fasta_file, gff_file, output_dir):
                         gene_id = attribute.split('=')[1]
                         break
 
-                # extract the gene sequence from the FASTA file
-                sequence = fasta[seqid][start-1:end]  # adjust for 0-based indexing
+                # extend the gene region by gene_flank bp of REAL genomic context
+                # on each side (clamped to the contig bounds) so the model is not
+                # fed 'N' padding at the gene boundaries; report the extended
+                # coordinates in the header so the BED output still maps to genome
+                contig_len = len(fasta[seqid])
+                ext_start = max(1, start - gene_flank)
+                ext_end = min(contig_len, end + gene_flank)
+
+                # extract the gene sequence (+ flank) from the FASTA file
+                sequence = fasta[seqid][ext_start-1:ext_end]  # adjust for 0-based indexing
 
                 # reverse complement the sequence if on the negative strand
                 if strand == '-':
                     sequence = sequence.reverse.complement
 
                 # write the gene sequence to the output FASTA file
-                output_fasta.write(f'>{gene_id} {seqid}:{start}-{end}({strand})\n')
+                output_fasta.write(f'>{gene_id} {seqid}:{ext_start}-{ext_end}({strand})\n')
                 output_fasta.write(str(sequence) + '\n')
                 count += 1
 
@@ -209,21 +223,37 @@ def get_sequences(fasta_file, output_dir, CL_max, hdf_threshold_len=0, split_fas
 
     NAME = [] # Gene Header
     SEQ  = [] # Sequences
+    short_records = []  # records shorter than the model's required context
 
     # obtain the headers and sequences from FASTA file
     for record in genes:
         seq_id = record.long_name
-        sequence = genes[record.name][:].seq    
-        
+        sequence = genes[record.name][:].seq
+
         # reverse strand if explicitly specified, name with strand info
-        if neg_strands is not None and record.name in neg_strands: 
+        if neg_strands is not None and record.name in neg_strands:
             seq_id = str(seq_id) + ':-'
             sequence = sequence.reverse.complement
         else:
             seq_id = str(seq_id) + ':+'
-        
+
+        # flag sequences too short to supply the model's flanking context: they
+        # are padded with 'N' downstream, which strongly suppresses splice scores
+        if len(sequence) < CL_max:
+            short_records.append((record.name, len(sequence)))
+
         NAME.append(seq_id)
         SEQ.append(str(sequence))
+
+    if short_records:
+        preview = ', '.join(f'{n} ({l} bp)' for n, l in short_records[:5])
+        more = '' if len(short_records) <= 5 else f' (+{len(short_records) - 5} more)'
+        print(f"\t[WARN] {len(short_records)} input sequence(s) are shorter than the model's "
+              f"required context (CL_max={CL_max} bp): {preview}{more}.", file=sys.stderr)
+        print(f"\t[WARN] Short sequences are padded with 'N' on both ends, which suppresses "
+              f"donor/acceptor scores. Supply >= {CL_max // 2} bp of REAL flanking sequence on "
+              f"each side — extract the gene +/- {CL_max // 2} bp, or pass the whole chromosome "
+              f"with -a/--annotation so genes are scored in their genomic context.", file=sys.stderr)
     
     # write the sequences to datafile
     if use_hdf:
@@ -1097,6 +1127,7 @@ def predict_cli(args):
     model_path = args.model
     input_sequence = args.input_sequence
     gff_file = args.annotation_file
+    gene_flank = getattr(args, 'gene_flank', -1)
     threshold = np.float32(args.threshold)
     debug = args.debug
     predict_all = args.predict_all
@@ -1128,12 +1159,19 @@ def predict_cli(args):
     start_time = time.time()
 
     # if gff file is provided, extract just the gene regions into a new FASTA file
-    if gff_file: 
-        print('\t[INFO] GFF file provided: extracting gene sequences.')
-        new_fasta = process_gff(input_sequence, gff_file, output_base)
+    if gff_file:
+        # default (-1) => include the model's required context (CL_max/2) of real
+        # genomic flanking on each side of every gene; minus-strand genes are
+        # reverse-complemented automatically inside process_gff
+        resolved_gene_flank = (consts['CL_max'] // 2) if gene_flank is None or gene_flank < 0 else gene_flank
+        print(f'\t[INFO] GFF file provided: extracting gene sequences (+/- {resolved_gene_flank} bp genomic flank, minus-strand genes auto reverse-complemented).')
+        new_fasta = process_gff(input_sequence, gff_file, output_base, gene_flank=resolved_gene_flank)
         datafile_path, NAME, SEQ = get_sequences(new_fasta, output_base, consts['CL_max'], hdf_threshold_len=consts['HDF_THRESHOLD_LEN'], split_fasta_threshold=consts['SPLIT_FASTA_THRESHOLD'], debug=debug)
     else:
         # otherwise, collect all sequences from FASTA into file
+        print("\t[INFO] No -a/--annotation given: each FASTA entry is scored on the strand AS PROVIDED. "
+              "Genes on the minus strand must be reverse-complemented first (or pass -a so OpenSpliceAI "
+              "handles strand and genomic flanking for you).")
         datafile_path, NAME, SEQ = get_sequences(input_sequence, output_base, consts['CL_max'], hdf_threshold_len=consts['HDF_THRESHOLD_LEN'], split_fasta_threshold=consts['SPLIT_FASTA_THRESHOLD'], debug=debug)
 
     print("--- %s seconds ---" % (time.time() - start_time))

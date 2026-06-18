@@ -48,6 +48,70 @@ def test_process_gff_reverse_complements_minus_strand(tmp_path):
     assert lines[1] == expected_rc
 
 
+def test_process_gff_includes_genomic_flank(tmp_path):
+    """gene_flank>0 extends the extracted region by real genomic context on each
+    side and reports the EXTENDED coordinates in the header (so BED still maps to
+    genome). Regression for issue #16: a bare gene body is otherwise N-padded."""
+    seq = "ACGTACGTAC" * 6  # 60bp deterministic chr1
+    fa = tmp_path / "mini.fa"
+    fa.write_text(">chr1\n" + seq + "\n")
+
+    gff = tmp_path / "mini.gff"
+    gff.write_text("##gff-version 3\nchr1\tt\tgene\t21\t40\t.\t+\t.\tID=geneP\n")
+
+    out_fa = pr.process_gff(str(fa), str(gff), str(tmp_path) + "/", gene_flank=10)
+    lines = [l for l in open(out_fa).read().splitlines() if l]
+
+    # 1-based gene 21..40, +/-10 flank -> 11..50, clamped within the 60bp contig
+    assert lines[0] == ">geneP chr1:11-50(+)"
+    assert lines[1] == seq[11 - 1:50]          # 40bp of real sequence, no 'N'
+    assert len(lines[1]) == 40
+
+
+def test_process_gff_flank_clamps_at_contig_ends(tmp_path):
+    """Flanking is clamped to the contig bounds (never runs off the ends)."""
+    seq = "ACGT" * 5  # 20bp chr1
+    fa = tmp_path / "mini.fa"
+    fa.write_text(">chr1\n" + seq + "\n")
+    gff = tmp_path / "mini.gff"
+    gff.write_text("##gff-version 3\nchr1\tt\tgene\t5\t15\t.\t+\t.\tID=g\n")
+
+    out_fa = pr.process_gff(str(fa), str(gff), str(tmp_path) + "/", gene_flank=10)
+    lines = [l for l in open(out_fa).read().splitlines() if l]
+    # 5-10 -> clamp to 1 ; 15+10 -> clamp to 20 (contig length)
+    assert lines[0] == ">g chr1:1-20(+)"
+    assert lines[1] == seq                      # whole contig
+
+
+def test_process_gff_flank_minus_strand_revcomp(tmp_path):
+    """With flank, a minus-strand gene's EXTENDED region is reverse-complemented."""
+    seq = "AAACGTACGTTTTGGGGCCCCACGT"  # 25bp chr1 (same as the legacy test)
+    fa = tmp_path / "mini.fa"
+    fa.write_text(">chr1\n" + seq + "\n")
+    gff = tmp_path / "mini.gff"
+    gff.write_text("##gff-version 3\nchr1\tt\tgene\t8\t17\t.\t-\t.\tID=gm\n")
+
+    out_fa = pr.process_gff(str(fa), str(gff), str(tmp_path) + "/", gene_flank=5)
+    lines = [l for l in open(out_fa).read().splitlines() if l]
+    # 8-5=3 ; 17+5=22 -> extended region 3..22, reverse-complemented
+    assert lines[0] == ">gm chr1:3-22(-)"
+    assert lines[1] == str(Seq(seq[3 - 1:22]).reverse_complement())
+
+
+def test_process_gff_default_is_legacy_bare_body(tmp_path):
+    """Default gene_flank=0 preserves the original bare-gene-body behavior."""
+    seq = "ACGTACGTAC" * 6
+    fa = tmp_path / "mini.fa"
+    fa.write_text(">chr1\n" + seq + "\n")
+    gff = tmp_path / "mini.gff"
+    gff.write_text("##gff-version 3\nchr1\tt\tgene\t21\t40\t.\t+\t.\tID=geneP\n")
+
+    out_fa = pr.process_gff(str(fa), str(gff), str(tmp_path) + "/")  # no gene_flank
+    lines = [l for l in open(out_fa).read().splitlines() if l]
+    assert lines[0] == ">geneP chr1:21-40(+)"
+    assert lines[1] == seq[21 - 1:40]
+
+
 def test_process_gff_skips_non_gene_features(tmp_path):
     """Only 'gene' features are extracted; mRNA/exon rows alone produce an empty fasta."""
     seq = "ACGT" * 20
@@ -169,6 +233,38 @@ def test_get_sequences_zero_threshold_writes_h5(tmp_path):
     assert datafile.endswith(".h5")
     assert datafile == out_dir + "datafile.h5"
     assert os.path.exists(datafile)
+
+
+# --- get_sequences: low-context warning (issue #16) --------------------------------
+
+def test_get_sequences_warns_on_short_sequence(tmp_path, capsys):
+    """A sequence shorter than CL_max is N-padded downstream and scores poorly;
+    get_sequences must warn the user (regression for issue #16)."""
+    seq = "ACGT" * 10  # 40bp < CL_max=80
+    fa = tmp_path / "short.fa"
+    fa.write_text(">chr1\n" + seq + "\n")
+
+    pr.get_sequences(str(fa), str(tmp_path) + "/", CL_max=80,
+                     hdf_threshold_len=10 ** 9, split_fasta_threshold=10 ** 9)
+
+    err = capsys.readouterr().err
+    assert "shorter than the model's required context" in err
+    assert "CL_max=80" in err
+    assert "real flanking" in err.lower() or "flanking" in err.lower()
+
+
+def test_get_sequences_no_warn_when_long_enough(tmp_path, capsys):
+    """A sequence at least CL_max long must NOT trigger the low-context warning."""
+    rng = np.random.default_rng(7)
+    seq = "".join(rng.choice(list("ACGT"), size=120))  # 120bp >= CL_max=80
+    fa = tmp_path / "long.fa"
+    fa.write_text(">chr1\n" + seq + "\n")
+
+    pr.get_sequences(str(fa), str(tmp_path) + "/", CL_max=80,
+                     hdf_threshold_len=10 ** 9, split_fasta_threshold=10 ** 9)
+
+    err = capsys.readouterr().err
+    assert "shorter than the model's required context" not in err
 
 
 # --- load_pytorch_models -----------------------------------------------------------
