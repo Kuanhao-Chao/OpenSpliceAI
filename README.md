@@ -7,7 +7,7 @@
 
 
 <a class="reference external image-reference" href="https://img.shields.io/badge/License-GPLv3-yellow.svg"><img alt="https://img.shields.io/badge/License-GPLv3-yellow.svg" src="https://img.shields.io/badge/License-GPLv3-yellow.svg"></a>
-<a class="reference external image-reference" href="https://img.shields.io/badge/version-v.0.0.6-blue"><img alt="https://img.shields.io/badge/version-v.0.0.6-blue" src="https://img.shields.io/badge/version-v.0.0.6-blue"></a>
+<a class="reference external image-reference" href="https://img.shields.io/badge/version-v.0.0.7-blue"><img alt="https://img.shields.io/badge/version-v.0.0.7-blue" src="https://img.shields.io/badge/version-v.0.0.7-blue"></a>
 <a class="reference external image-reference" href="https://pepy.tech/project/openspliceai"><img alt="https://static.pepy.tech/personalized-badge/openspliceai?period=total&amp;units=abbreviation&amp;left_color=grey&amp;right_color=blue&amp;left_text=PyPi%20downloads" src="https://static.pepy.tech/personalized-badge/openspliceai?period=total&amp;units=abbreviation&amp;left_color=grey&amp;right_color=blue&amp;left_text=PyPi%20downloads"></a>
 <a class="reference external image-reference" href="https://github.com/Kuanhao-Chao/OpenSpliceAI/releases"><img alt="https://img.shields.io/github/downloads/Kuanhao-Chao/OpenSpliceAI/total.svg?style=social&amp;logo=github&amp;label=Download" src="https://img.shields.io/github/downloads/Kuanhao-Chao/OpenSpliceAI/total.svg?style=social&amp;logo=github&amp;label=Download"></a>
 <a class="reference external image-reference" href="https://github.com/Kuanhao-Chao/OpenSpliceAI/releases"><img alt="https://img.shields.io/badge/platform-macOS_/Linux-green.svg" src="https://img.shields.io/badge/platform-macOS_/Linux-green.svg"></a>
@@ -60,6 +60,17 @@ Uses trained models to generate splice site predictions from FASTA sequences, ou
 <li><p><strong>Variant Analysis</strong> (<a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#variant-subcommand"><span class="std std-ref">variant</span></a>):
 Annotates VCF files with delta scores and positions to evaluate the impact of genetic variants on splicing.</p></li>
 </ul>
+<div class="line-block">
+<div class="line"><br></div>
+</div>
+</section>
+<section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">#</a></h1>
+<p>Install the latest release from <strong>PyPI</strong>:</p>
+<pre><code>pip install openspliceai</code></pre>
+<p>or from <strong>Bioconda</strong> (make sure the <code>conda-forge</code> and <code>bioconda</code> channels are enabled):</p>
+<pre><code>conda install -c conda-forge -c bioconda openspliceai</code></pre>
+<p>See the <a class="reference external" href="https://ccb.jhu.edu/openspliceai/content/installation.html#installation">Installation Guide</a> for GPU/CUDA setup and other options.</p>
 <div class="line-block">
 <div class="line"><br></div>
 </div>

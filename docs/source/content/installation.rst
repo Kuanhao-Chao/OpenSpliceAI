@@ -59,13 +59,11 @@ This command installs third‐party libraries including:
    * pyfaidx >= 0.8.1.1
    * tqdm >= 4.65.2
    * torch >= 2.2.1
-   * torchaudio >= 2.2.1
-   * torchvision >= 0.17.1
    * scikit-learn >= 1.4.1.post1
    * biopython >= 1.83
    * matplotlib >= 3.8.3
-   * matplotlib-inline >= 0.1.7
    * psutil >= 5.9.2
+   * mappy >= 2.28
 
 
 .. admonition:: Version Warning
@@ -78,10 +76,12 @@ This command installs third‐party libraries including:
 Install through conda
 ~~~~~~~~~~~~~~~~~~~~~
 Installing via conda is the easiest way to set up a sandboxed environment with all dependencies.
+OpenSpliceAI is distributed on the `Bioconda <https://bioconda.github.io/>`_ channel, so make sure
+both the ``conda-forge`` and ``bioconda`` channels are enabled:
 
 .. code-block:: bash
 
-   conda install -c bioconda openspliceai
+   conda install -c conda-forge -c bioconda openspliceai
 
 This command installs OpenSpliceAI and its dependencies, including PyTorch and mappy. To install or update these packages individually, you can use:
 
@@ -90,10 +90,10 @@ This command installs OpenSpliceAI and its dependencies, including PyTorch and m
 .. code-block:: bash
 
    # CPU-only version (Conda packages are no longer available):
-   pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+   pip3 install torch --index-url https://download.pytorch.org/whl/cpu
 
    # For GPU support (Conda packages are no longer available):
-   pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+   pip3 install torch --index-url https://download.pytorch.org/whl/cu126
 
 **For mappy:**
 
@@ -171,9 +171,9 @@ Terminal Output Example
    .. code-block::
 
 
-      ====================================================================
-      Deep learning framework to train your own SpliceAI model
-      ====================================================================
+      ============================================================
+      Deep learning framework that decodes splicing across species
+      ============================================================
 
 
       ██████╗ ██████╗ ███████╗███╗   ██╗███████╗██████╗ ██╗     ██╗ ██████╗███████╗ █████╗ ██╗
@@ -183,18 +183,17 @@ Terminal Output Example
       ╚██████╔╝██║     ███████╗██║ ╚████║███████║██║     ███████╗██║╚██████╗███████╗██║  ██║██║
       ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝     ╚══════╝╚═╝ ╚═════╝╚══════╝╚═╝  ╚═╝╚═╝
 
-      0.0.1
+      0.0.7
 
-      usage: openspliceai [-h] {create-data,train,test,calibrate,transfer,predict,variant} ...
+      usage: openspliceai [-h] {create-data,train,calibrate,transfer,predict,variant} ...
 
       OpenSpliceAI toolkit to help you retrain your own splice site predictor
 
       positional arguments:
-      {create-data,train,test,calibrate,transfer,predict,variant}
-                              Subcommands: create-data, train, test, calibrate, predict, transfer, variant
+      {create-data,train,calibrate,transfer,predict,variant}
+                              Subcommands: create-data, train, calibrate, predict, transfer, variant
          create-data         Create dataset for your genome for SpliceAI model training
          train               Train the SpliceAI model
-         test                Test the SpliceAI model
          calibrate           Calibrate the SpliceAI model
          transfer            transfer a pre-trained SpliceAI model on new data.
          predict             Predict splice sites in a given sequence using the SpliceAI model
