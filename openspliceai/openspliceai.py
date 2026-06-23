@@ -149,7 +149,9 @@ def parse_args_variant(subparsers):
     parser_variant.add_argument('--flanking-size', '-f', type=int, default=80, choices=[80, 400, 2000, 10000], help='Sum of flanking sequence lengths on each side of input (i.e. 40+40)')
     parser_variant.add_argument('--model-type', '-t', type=str, choices=['keras', 'pytorch'], default='pytorch', help='Type of model file (keras or pytorch)')
     parser_variant.add_argument('--precision', '-p', type=int, default=2, help='Number of decimal places to round the output scores')
- 
+    parser_variant.add_argument('--batch-size', '-b', type=int, default=1, help='Number of windows per GPU forward pass. >1 enables batched inference '
+                                '(pytorch only) for large speedups on many-variant inputs; 1 (default) preserves the exact original per-variant path')
+
 
 def parse_args(arglist):
     """Build the top-level argument parser with all subcommands and parse ``arglist`` (or ``sys.argv``)."""

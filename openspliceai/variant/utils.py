@@ -591,4 +591,192 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision
                 idx_nd - cov // 2
             ))
 
-    return delta_scores 
+    return delta_scores
+
+
+def _ensemble_forward(models, xb):
+    """Run the ensemble mean forward pass on a batch ``xb`` (B, 4, wid) already on device.
+
+    Returns a CPU float tensor of shape (B, Lout, 3) — the per-position class
+    probabilities, permuted to match get_delta_scores' post-processing.
+    """
+    y = torch.mean(torch.stack([models[m](xb) for m in range(len(models))]), axis=0)
+    return y.permute(0, 2, 1).detach().to('cpu')
+
+
+def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, precision=2, batch_size=64):
+    """Batched re-implementation of :func:`get_delta_scores` over a LIST of records (PyTorch only).
+
+    The per-variant math is identical to :func:`get_delta_scores`; the ONLY
+    difference is that the model forward pass is batched across many variants
+    (and the ref+alt windows) instead of one window at a time. This buffers the
+    one-hot windows for every (variant, alt, gene) item, runs the model in
+    sub-batches of ``batch_size``, then applies the exact same crop / indel /
+    argmax / mask / format steps per item.
+
+    Returns a list (same length and order as ``records``) of delta-score string
+    lists — ready to assign to each record's ``OpenSpliceAI`` INFO field.
+    """
+    cov = 2 * dist_var + 1
+    wid = flanking_size + cov
+    device = setup_device()
+    # Precision/speed knobs (env-overridable). cuDNN autotune helps because all
+    # windows share one length. TF32 is the A100 fast path (~2x); it adds ~1e-3
+    # batched-vs-single noise on strong signals, far below the score resolution
+    # used downstream. Default: TF32 ON for speed. Set OSAI_TF32=0 for full fp32
+    # (reproducible across hardware, batched==single) at lower throughput.
+    _bench = os.environ.get('OSAI_CUDNN_BENCH', '1') == '1'
+    _tf32 = os.environ.get('OSAI_TF32', '1') == '1'
+    torch.backends.cudnn.benchmark = _bench
+    torch.backends.cudnn.allow_tf32 = _tf32
+    torch.backends.cuda.matmul.allow_tf32 = _tf32
+
+    out_per_record = [[] for _ in records]   # ordered entries per record (strings or None placeholders)
+    items = []                               # model work items (one per variant,alt,gene)
+    ref_index = {}                           # (chrom,pos,gene_idx) -> index into ref_list (dedup)
+    ref_list = []                            # UNIQUE reference windows (the 3 alts at a position share one)
+    alt_list = []                            # alternate windows (one per item)
+
+    for r, record in enumerate(records):
+        entries = out_per_record[r]
+        # --- record-level validation (mirrors get_delta_scores) ---
+        try:
+            record.chrom, record.pos, record.ref, len(record.alts)
+        except TypeError:
+            logging.warning('Skipping record (bad input): {}'.format(record))
+            continue
+        (genes, strands, idxs) = ann.get_name_and_strand(record.chrom, record.pos)
+        if len(idxs) == 0:
+            continue
+        chrom = normalise_chrom(record.chrom, list(ann.ref_fasta.keys())[0])
+        try:
+            seq = ann.ref_fasta[chrom][record.pos - wid // 2 - 1 : record.pos + wid // 2].seq
+        except (IndexError, ValueError):
+            logging.warning('Skipping record (fasta issue): {}'.format(record))
+            continue
+        if seq[wid // 2 : wid // 2 + len(record.ref)].upper() != record.ref:
+            logging.warning('Skipping record (ref issue): {}'.format(record))
+            continue
+        if len(seq) != wid:
+            logging.warning('Skipping record (near chromosome end): {}'.format(record))
+            continue
+        if len(record.ref) > 2 * dist_var:
+            logging.warning('Skipping record (ref too long): {}'.format(record))
+            continue
+
+        for j in range(len(record.alts)):
+            for i in range(len(idxs)):
+                if '.' in record.alts[j] or '-' in record.alts[j] or '*' in record.alts[j]:
+                    continue
+                if '<' in record.alts[j] or '>' in record.alts[j]:
+                    continue
+                if len(record.ref) > 1 and len(record.alts[j]) > 1:
+                    entries.append("{}|{}|.|.|.|.|.|.|.|.".format(record.alts[j], genes[i]))
+                    continue
+
+                dist_ann = ann.get_pos_data(idxs[i], record.pos)
+                pad_size = [max(wid // 2 + dist_ann[0], 0), max(wid // 2 - dist_ann[1], 0)]
+                ref_len = len(record.ref)
+                alt_len = len(record.alts[j])
+                del_len = max(ref_len - alt_len, 0)
+
+                x_ref = 'N' * pad_size[0] + seq[pad_size[0]: wid - pad_size[1]] + 'N' * pad_size[1]
+                x_alt = x_ref[: wid // 2] + str(record.alts[j]) + x_ref[wid // 2 + ref_len:]
+                x_ref = one_hot_encode(x_ref)[None, :].transpose(0, 2, 1)   # (1, 4, wid)
+                x_alt = one_hot_encode(x_alt)[None, :].transpose(0, 2, 1)
+                x_ref = torch.tensor(x_ref, dtype=torch.float32)
+                x_alt = torch.tensor(x_alt, dtype=torch.float32)
+                if strands[i] == '-':                                       # reverse-complement input
+                    x_ref = torch.flip(x_ref, dims=[1, 2])
+                    x_alt = torch.flip(x_alt, dims=[1, 2])
+
+                # Reference-window reuse: x_ref depends only on (chrom, pos, gene),
+                # NOT on the alt allele -> the 3 alts at a position share one ref pass.
+                rk = (record.chrom, record.pos, int(idxs[i]))
+                if rk not in ref_index:
+                    ref_index[rk] = len(ref_list)
+                    ref_list.append(x_ref[0])                               # (4, wid)
+                slot = len(entries)
+                entries.append(None)                                        # placeholder, filled after inference
+                items.append({
+                    'r': r, 'slot': slot, 'ref_idx': ref_index[rk], 'alt_idx': len(alt_list),
+                    'strand': strands[i], 'gene': genes[i], 'alt': record.alts[j],
+                    'ref_len': ref_len, 'alt_len': alt_len, 'del_len': del_len, 'dist_ann': dist_ann,
+                })
+                alt_list.append(x_alt[0])                                   # (4, wid)
+
+    # --- batched inference over all collected windows ---
+    if items:
+        # Unique reference windows all share one width (wid); the 3 alts at a
+        # position reuse one ref pass (deduped above). Alt windows, however, can
+        # be SHORTER (deletions) or LONGER (insertions) than wid, so they cannot
+        # all be stacked into a single fixed-width batch tensor -- bucket them by
+        # width and batch within each width group (SNVs, the common case, all
+        # share wid and so still batch together).
+        def _run_batched(tensors):
+            outs = []
+            with torch.inference_mode():
+                for s in range(0, len(tensors), batch_size):
+                    xb = torch.stack(tensors[s:s + batch_size]).to(device)
+                    outs.append(_ensemble_forward(ann.models, xb).numpy())
+            return np.concatenate(outs, axis=0) if outs else None
+
+        Yref = _run_batched(ref_list)            # (nref, Lout_ref, 3), all width wid
+
+        Yalt = [None] * len(alt_list)            # per-alt output (variable length for indels)
+        width_buckets = {}
+        for a, x in enumerate(alt_list):
+            width_buckets.setdefault(x.shape[-1], []).append(a)
+        for group in width_buckets.values():
+            yb = _run_batched([alt_list[a] for a in group])   # (len(group), Lout_w, 3)
+            for k, a in enumerate(group):
+                Yalt[a] = yb[k]
+
+        format_str = "{{}}|{{}}|{{:.{}f}}|{{:.{}f}}|{{:.{}f}}|{{:.{}f}}|{{}}|{{}}|{{}}|{{}}".format(
+            precision, precision, precision, precision)
+
+        for it in items:
+            ref_len = it['ref_len']
+            alt_len = it['alt_len']
+            del_len = it['del_len']
+            dist_ann = it['dist_ann']
+            y_ref = Yref[it['ref_idx']]        # (Lout, 3); ref shared across the position's alts
+            y_alt = Yalt[it['alt_idx']]
+            if it['strand'] == '-':            # reverse predictions back to genomic order
+                y_ref = y_ref[::-1]
+                y_alt = y_alt[::-1]
+            y_ref = y_ref[None, :]             # (1, Lout, 3)
+            y_alt = y_alt[None, :]
+
+            if y_ref.shape[1] > cov:
+                start_idx = wid // 2 - cov // 2
+                y_ref = y_ref[:, start_idx: start_idx + cov, :]
+                y_alt = y_alt[:, start_idx: start_idx + cov + alt_len - ref_len, :]
+
+            if ref_len > 1 and alt_len == 1:
+                y_alt = np.concatenate([
+                    y_alt[:, : cov // 2 + alt_len], np.zeros((1, del_len, 3)), y_alt[:, cov // 2 + alt_len:]], axis=1)
+            elif ref_len == 1 and alt_len > 1:
+                y_alt = np.concatenate([
+                    y_alt[:, : cov // 2], np.max(y_alt[:, cov // 2: cov // 2 + alt_len], axis=1)[:, None, :],
+                    y_alt[:, cov // 2 + alt_len:]], axis=1)
+
+            y = np.concatenate([y_ref, y_alt])
+            idx_pa = (y[1, :, 1] - y[0, :, 1]).argmax()
+            idx_na = (y[0, :, 1] - y[1, :, 1]).argmax()
+            idx_pd = (y[1, :, 2] - y[0, :, 2]).argmax()
+            idx_nd = (y[0, :, 2] - y[1, :, 2]).argmax()
+            mask_pa = np.logical_and((idx_pa - cov // 2 == dist_ann[2]), mask)
+            mask_na = np.logical_and((idx_na - cov // 2 != dist_ann[2]), mask)
+            mask_pd = np.logical_and((idx_pd - cov // 2 == dist_ann[2]), mask)
+            mask_nd = np.logical_and((idx_nd - cov // 2 != dist_ann[2]), mask)
+            out_per_record[it['r']][it['slot']] = format_str.format(
+                it['alt'], it['gene'],
+                (y[1, idx_pa, 1] - y[0, idx_pa, 1]) * (1 - mask_pa),
+                (y[0, idx_na, 1] - y[1, idx_na, 1]) * (1 - mask_na),
+                (y[1, idx_pd, 2] - y[0, idx_pd, 2]) * (1 - mask_pd),
+                (y[0, idx_nd, 2] - y[1, idx_nd, 2]) * (1 - mask_nd),
+                idx_pa - cov // 2, idx_na - cov // 2, idx_pd - cov // 2, idx_nd - cov // 2)
+
+    # drop any unfilled placeholders (defensive; should not occur)
+    return [[e for e in entries if e is not None] for entries in out_per_record]
