@@ -138,6 +138,7 @@ Usage
 
    usage: openspliceai variant [-h] -R reference -A annotation [-I [input]] [-O [output]] [-D [distance]] [-M [mask]] [--model MODEL]
                               [--flanking-size {80,400,2000,10000}] [--model-type {keras,pytorch}] [--precision PRECISION]
+                              [--batch-size BATCH_SIZE]
 
    optional arguments:
          -h, --help            show this help message and exit
@@ -159,6 +160,45 @@ Usage
                                  Type of model file (keras or pytorch)
          --precision, -p PRECISION
                                  Number of decimal places to round the output scores
+         --batch-size, -b BATCH_SIZE
+                                 Number of windows per GPU forward pass. >1 enables batched inference (pytorch only) for large speedups on many-variant inputs; 1 (default) preserves the exact original per-variant path
+
+|
+
+Batched inference (``--batch-size``)
+------------------------------------
+
+By default (``--batch-size 1``) ``variant`` scores one window at a time, exactly reproducing
+the original per-variant code path. On a **PyTorch** model you can pass ``--batch-size N`` (with
+``N > 1``) to score many variants per forward pass, which gives large speedups on VCFs with many
+variants — especially on a GPU. The batched path is numerically equivalent to the default: it
+deduplicates the shared reference window across a position's alternate alleles and groups windows
+by length so single-nucleotide and INDEL variants are handled correctly, then applies the same
+crop / argmax / mask / formatting steps.
+
+.. note::
+
+   - Batching only applies to PyTorch models. With ``--model-type keras`` the subcommand always
+     uses the per-variant path regardless of ``--batch-size``.
+   - A good starting point on a GPU is ``--batch-size 32`` to ``256``; larger batches use more
+     GPU memory. On CPU, batching still helps but the gains are smaller.
+   - Two optional environment variables tune throughput on NVIDIA GPUs:
+     ``OSAI_CUDNN_BENCH=1`` enables cuDNN autotuning (all windows share one length, so this is
+     effective), and ``OSAI_TF32=1`` (the default) enables the TF32 fast path on Ampere/A100
+     hardware. TF32 adds ~1e-3 of noise — far below the rounded score resolution — so set
+     ``OSAI_TF32=0`` if you need output that is bit-for-bit identical to the per-variant path.
+
+.. code-block:: bash
+
+   openspliceai variant \
+      --input-vcf many_variants.vcf \
+      --ref-genome GRCh38.fa \
+      --annotation grch38 \
+      --model /path/to/pytorch_models/ \
+      --model-type pytorch \
+      --flanking-size 10000 \
+      --batch-size 64 \
+      --output-vcf annotated_variants.vcf
 
 |
 

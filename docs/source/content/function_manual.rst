@@ -10,9 +10,9 @@ OpenSpliceAI
 .. code-block:: text
    :class: no-wrap
    
-      ====================================================================
-      Deep learning framework to train your own SpliceAI model
-      ====================================================================
+      ============================================================
+      Deep learning framework that decodes splicing across species
+      ============================================================
 
 
       ██████╗ ██████╗ ███████╗███╗   ██╗███████╗██████╗ ██╗     ██╗ ██████╗███████╗ █████╗ ██╗
@@ -22,18 +22,17 @@ OpenSpliceAI
       ╚██████╔╝██║     ███████╗██║ ╚████║███████║██║     ███████╗██║╚██████╗███████╗██║  ██║██║
       ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝     ╚══════╝╚═╝ ╚═════╝╚══════╝╚═╝  ╚═╝╚═╝
 
-      0.0.1
+      0.0.7
 
-      usage: openspliceai [-h] {create-data,train,test,calibrate,transfer,predict,variant} ...
+      usage: openspliceai [-h] {create-data,train,calibrate,transfer,predict,variant} ...
 
       OpenSpliceAI toolkit to help you retrain your own splice site predictor
 
       positional arguments:
-      {create-data,train,test,calibrate,transfer,predict,variant}
-                              Subcommands: create-data, train, test, calibrate, predict, transfer, variant
+      {create-data,train,calibrate,transfer,predict,variant}
+                              Subcommands: create-data, train, calibrate, predict, transfer, variant
          create-data         Create dataset for your genome for SpliceAI model training
          train               Train the SpliceAI model
-         test                Test the SpliceAI model
          calibrate           Calibrate the SpliceAI model
          transfer            transfer a pre-trained SpliceAI model on new data.
          predict             Predict splice sites in a given sequence using the SpliceAI model

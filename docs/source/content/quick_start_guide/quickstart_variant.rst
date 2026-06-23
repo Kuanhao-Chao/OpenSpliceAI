@@ -96,6 +96,12 @@ This command:
 - **Predicts** donor/acceptor scores for both wild-type and mutant sequences within ±50 nt.
 - **Outputs** an annotated VCF (``output.vcf``) with delta scores and positions for donor/acceptor gain or loss.
 
+.. tip::
+
+   Annotating a large VCF? On a PyTorch model add ``--batch-size 64`` (or higher) to score many
+   variants per forward pass for a big speedup. The default (``--batch-size 1``) reproduces the
+   per-variant path exactly. See :ref:`variant_subcommand` for details.
+
 |
 
 Next Steps

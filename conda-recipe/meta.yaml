@@ -1,43 +1,70 @@
 {% set name = "openspliceai" %}
-{% set version = "0.0.6" %}
+{% set version = "0.0.7" %}
+
+# This mirrors the official Bioconda recipe
+# (https://github.com/bioconda/bioconda-recipes/tree/master/recipes/openspliceai).
+# Install the released package with:
+#   conda install -c conda-forge -c bioconda openspliceai
+#
+# RELEASE TODO: after uploading the {{ version }} sdist to PyPI, replace the
+# placeholder sha256 below with the real checksum, e.g.:
+#   curl -sL https://pypi.io/packages/source/o/openspliceai/openspliceai-{{ version }}.tar.gz | sha256sum
 
 package:
   name: {{ name }}
   version: {{ version }}
 
 source:
-  git_url: https://github.com/Kuanhao-Chao/OpenSpliceAI.git
-  git_rev: v{{ version }}
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000  # TODO: fill with the 0.0.7 PyPI sdist sha256
 
 build:
   noarch: python
-  pip_interop_enabled: True
-  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
+  number: 0
+  run_exports:
+    - {{ pin_subpackage("openspliceai", max_pin="x.x") }}
+  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
 
 requirements:
   host:
     - python >=3.9
     - pip
-    - pip:
-      - mappy >=2.28
-      - gffutils >=0.12
-      - pyfaidx >=0.8.1.1
-      - pysam >=0.22.0
+    - setuptools
+    - wheel
   run:
     - python >=3.9
-    - torch >=2.2.1
-    - torchaudio >=2.2.1
-    - torchvision >=0.17.1
+    - pytorch >=2.2.1
     - numpy >=1.24.4
     - pandas >=1.5.3
     - h5py >=3.9.0
     - tqdm >=4.65.2
-    - scikit-learn >=1.4.1.post1
+    - scikit-learn >=1.4.1
     - biopython >=1.83
-    - matplotlib >=3.8.3
+    - matplotlib-base >=3.8.3
     - psutil >=5.9.2
+    - pysam >=0.22.0
+    - pyfaidx >=0.8.1.1
+    - gffutils >=0.12
+    - mappy >=2.28
+
+test:
+  imports:
+    - openspliceai
+    - openspliceai.openspliceai
+  commands:
+    - openspliceai --help
 
 about:
   home: https://github.com/Kuanhao-Chao/OpenSpliceAI
-  license: MIT
-  summary: "Deep learning framework that decodes splicing across species"
+  license: GPL-3.0-only
+  license_family: GPL3
+  license_file: LICENSE
+  summary: Deep learning framework that decodes splicing across species
+  doc_url: https://ccb.jhu.edu/openspliceai/
+  dev_url: https://github.com/Kuanhao-Chao/OpenSpliceAI
+
+extra:
+  recipe-maintainers:
+    - Kuanhao-Chao
+  identifiers:
+    - doi:10.7554/eLife.107454
