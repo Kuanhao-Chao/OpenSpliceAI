@@ -112,13 +112,13 @@ def calculate_batch_metrics(y_true, y_pred, metric_files, accumulator):
     print(f"Batch Overall Accuracy: {batch_overall_accuracy}")
     
 
-def process_batch(model, X, Y, params):
+def process_batch(model, X, Y, params):  # pragma: no cover - Keras-only (model.predict); reachable only via the disabled 'test' subcommand
     Xc, Yc = clip_datapoints_spliceai27(X, Y, params['CL'], 2)
     Yp = model.predict(Xc, batch_size=params['BATCH_SIZE'])
     return Yc[0], Yp
 
 
-def test_SpliceAI_Keras_model(model, test_h5f, test_idxs, args, params, test_metric_files):
+def test_SpliceAI_Keras_model(model, test_h5f, test_idxs, args, params, test_metric_files):  # pragma: no cover - Keras-only (model.predict); reachable only via the disabled 'test' subcommand
     print(f"\n{'='*60}")
     start_time = time.time()    
     print("--------------------------------------------------------------")

@@ -36,6 +36,25 @@ v0.0.7 (2026-06-23)
 - Added a regression test locking the new batched ``variant`` path to produce delta scores
   identical to the per-variant path (SNV / deletion / insertion / multi-allelic).
 
+**Bug fixes**
+
+- ``variant``: the reference one-hot encoder now folds every non-ACGT base (``N``, IUPAC
+  ambiguity codes, gaps) to the all-zero row, matching its documented contract — previously
+  only a literal ``N`` was handled and other characters were silently miscoded. ACGTN
+  reference sequence is encoded bit-identically, so real-genome scores are unchanged.
+- ``predict``: fixed a crash in the ``neg_strands`` reverse-complement path of
+  ``get_sequences`` (it called a sequence-object method on a plain string).
+
+**Testing & quality**
+
+- Greatly expanded the pytest suite (now ~300 tests) to **~96% line coverage** of the packaged
+  pipeline, including characterization tests that lock the cross-subcommand hyperparameter
+  table, encode↔decode round-trips, and batched-vs-sequential variant equivalence.
+- Added a one-command, reproducible test entrypoint (``Makefile``: ``make test`` / ``test-all``
+  / ``coverage`` / ``lint``) with a coverage-floor **gate** (``--cov-fail-under``), a
+  ``tests/README.md`` describing the taxonomy and coverage policy, and ``KNOWN_ISSUES.md``
+  references to each locking test.
+
 v0.0.6 (2026-06-13)
 -------------------
 
