@@ -1,41 +1,61 @@
 # OpenSpliceAI test suite
 
-## Environment
-
-Use an interpreter with the pinned scientific stack (numpy 1.26, torch 2.2, scikit-learn, h5py,
-pyfaidx, gffutils, biopython, pysam). On this machine that is the `pytorch_cuda` conda env. The base
-`python` has a broken numpy/torch ABI and is missing dependencies.
-
-```bash
-ENV=/home/kchao10/miniconda3/envs/pytorch_cuda/bin
-$ENV/pip install -e '.[test]'      # installs pytest + pytest-cov
-```
+Strict, reproducible, CPU-only tests for the packaged `openspliceai` pipeline
+(create-data → train / transfer → calibrate → predict / variant).
 
 ## Running
 
+All commands are wrapped in the repo `Makefile`, which pins the interpreter and forces
+CPU-only, headless, bounded-thread execution so runs are deterministic:
+
 ```bash
-# Fast, CPU-only unit + regression tests (no GPU, no TensorFlow):
-CUDA_VISIBLE_DEVICES="" $ENV/python -m pytest tests/unit tests/regression \
-    -m "not gpu and not keras and not integration" -q
-
-# Full suite incl. end-to-end smoke tests (still CPU; keras-marked tests auto-skip without TF):
-CUDA_VISIBLE_DEVICES="" $ENV/python -m pytest tests -q
-
-# Coverage:
-CUDA_VISIBLE_DEVICES="" $ENV/python -m pytest tests --cov=openspliceai --cov-report=term-missing -q
+make test       # fast unit + regression suite (integration & slow deselected)  ~10s
+make test-all   # the whole suite incl. integration / slow / keras              ~3-4min
+make coverage   # full suite + term/html coverage + gate (fails under the floor)
+make lint       # ruff over openspliceai/ and tests/
 ```
 
-## Layout
+> **Interpreter gotcha (this machine):** the default `python` has a broken numpy/torch ABI and is
+> missing deps. The Makefile uses `/home/kchao10/miniconda3/envs/pytorch_cuda/bin/python` (numpy 1.26,
+> torch 2.2.1, scikit-learn/h5py/pyfaidx/gffutils/biopython/pysam; TensorFlow present so keras tests
+> run). Override with `make test PYTHON=/path/to/python`. Install dev deps with `pip install -e '.[dev]'`
+> (or `'.[test]'` for just pytest + pytest-cov).
 
-- `tests/unit/` — pure-function tests (encoding, windowing, losses, metrics, model shape, BED
-  coordinate math, chromosome splitting, argparse validation).
-- `tests/regression/` — locks in two behaviors that an automated audit wrongly flagged as bugs
-  (minus-strand labeling, `clip_datapoints` X/Y handling). See `../KNOWN_ISSUES.md`.
-- `tests/integration/` — end-to-end smoke tests on tiny fixtures proving the bug fixes for
-  `calibrate`, the `predict` non-HDF5 path, and the PyTorch `variant` path. Marked `integration`/`slow`.
-- `tests/fixtures/synthetic.py` — builders for tiny HDF5 datasets and a mini gffutils annotation.
+Determinism is enforced by the autouse `_seed_everything` fixture (`conftest.py`), which seeds
+`random` / `numpy` / `torch` before every test.
 
-## Markers
+## Layout & taxonomy
 
-`gpu` (needs CUDA), `keras` (needs TensorFlow), `slow`, `integration`. GPU/keras tests auto-skip when
-the backend is unavailable.
+| Directory | Purpose |
+|---|---|
+| `tests/unit/` | Pure-function / single-component tests (encoding, windowing, losses, metrics, model shape, BED coordinate math, chromosome splitting, argparse, CLI dispatch, model loaders, temperature scaling, plotting smoke). Fast, no heavy I/O. The bulk of coverage. |
+| `tests/integration/` | End-to-end flows on tiny synthetic fixtures (create-data, train/transfer, predict, variant, calibrate, merge). Marked `integration` (+ `slow` for the training runs). |
+| `tests/regression/` | Characterization tests that **lock** specific conclusions: hyperparameter-table sync across the 5 call sites, encode↔decode round-trips, minus-strand labeling, the `clip_datapoints` invariant, and batched==sequential variant scoring. |
+| `tests/equivalence/` | Bit-exact parity vs the original Illumina SpliceAI (Keras, flanking 10000). Marked `keras`+`slow`+`integration`. |
+| `tests/fixtures/synthetic.py` | Builders for the tiny on-disk schemas (HDF5 shards, mini genome+GFF, variant ref/TSV/VCF) — they mirror the *real* formats so loaders are exercised, not stand-ins. |
+| `tests/conftest.py` | Shared fixtures (`model_80nt`, `packaged_80nt_state/_dir`, dataset builders) + the keras/gpu auto-skip hook. |
+
+## Markers (`pytest.ini`)
+
+- `integration` — end-to-end on tiny fixtures (CPU). Deselected by `make test`.
+- `slow` — long-running. Deselected by `make test`.
+- `keras` — needs TensorFlow/Keras; **auto-skipped** when TF is absent.
+- `gpu` — needs CUDA; **auto-skipped** when no CUDA device is present.
+
+## Coverage policy
+
+`make coverage` runs the **full** suite (integration contributes most of the covered lines) with
+`--cov-fail-under` (the `COV_MIN` variable in the `Makefile`). Pure/logic/encoding modules sit at
+≥95%; the heavy I/O modules (`predict/predict.py`, `train_base/utils.py`, `variant/utils.py`) at ≥90%.
+
+A few lines are excluded with `# pragma: no cover` because they are unreachable from the packaged
+PyTorch CLI; listed here so the exclusions stay auditable:
+
+- `openspliceai/train_base/utils.py` — `process_batch`, `test_SpliceAI_Keras_model`: Keras-only
+  (`model.predict`) evaluation helpers, reachable only via the disabled `test` subcommand.
+
+`.coveragerc` additionally omits legacy/dead modules: `openspliceai/scripts/*`, `openspliceai/test/*`,
+`create_data/gff_to_tsv.py`, `variant/get_anno.py`, `calibrate/temperature_scaling_site_only.py`.
+
+See `../KNOWN_ISSUES.md` for the behavior-changing issues that are deliberately deferred (and pinned
+by characterization tests) and the two bugs fixed during the v0.0.7 test-hardening pass.

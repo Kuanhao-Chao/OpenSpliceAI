@@ -233,7 +233,10 @@ def get_sequences(fasta_file, output_dir, CL_max, hdf_threshold_len=0, split_fas
         # reverse strand if explicitly specified, name with strand info
         if neg_strands is not None and record.name in neg_strands:
             seq_id = str(seq_id) + ':-'
-            sequence = sequence.reverse.complement
+            # ``sequence`` was already materialised to a str (.seq) above, so reverse-
+            # complement via the pyfaidx Sequence object and take its .seq (a bare str
+            # has no .reverse/.complement -> this path previously crashed).
+            sequence = genes[record.name][:].reverse.complement.seq
         else:
             seq_id = str(seq_id) + ':+'
 

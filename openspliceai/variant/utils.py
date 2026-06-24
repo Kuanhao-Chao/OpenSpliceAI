@@ -5,6 +5,7 @@ from pyfaidx import Fasta
 import logging
 import platform
 import os
+import re
 import glob
 from openspliceai.train_base.openspliceai import SpliceAI
 from openspliceai.constants import *
@@ -230,8 +231,13 @@ def one_hot_encode(seq):
                       [0, 0, 1, 0],  # G
                       [0, 0, 0, 1]]) # T
 
-    # Replace nucleotides with corresponding indices
-    seq = seq.upper().replace('A', '\x01').replace('C', '\x02')
+    # Per the map above, index 0 is "N or any invalid character". Fold every non-ACGT
+    # base (N, IUPAC ambiguity codes like R/Y/S, gaps, etc.) to N *before* the latin-1
+    # ``% 5`` trick -- otherwise an unexpected byte would alias onto a concrete base
+    # instead of the intended all-zero row. ACGTN inputs are unaffected (bit-identical),
+    # so real-genome variant scores are unchanged.
+    seq = re.sub('[^ACGT]', 'N', seq.upper())
+    seq = seq.replace('A', '\x01').replace('C', '\x02')
     seq = seq.replace('G', '\x03').replace('T', '\x04').replace('N', '\x00')
 
     # Convert the sequence to one-hot encoded numpy array.

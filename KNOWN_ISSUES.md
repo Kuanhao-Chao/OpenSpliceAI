@@ -34,6 +34,27 @@ decision rather than changed silently.
    loader in lockstep, so it is left as-is. The invariant is exercised by the calibrate integration
    test (which reads the nested schema) and the synthetic fixtures.
 
+## Fixed during the v0.0.7 test-hardening pass
+
+Two latent bugs were uncovered while expanding the test suite for v0.0.7 and fixed. Both live in
+code paths the packaged CLI does not currently reach, so real-genome `predict`/`variant` outputs are
+**unchanged** (verified: the variant delta-score and keras-equivalence tests are bit-identical
+before/after).
+
+- **`variant` `one_hot_encode` miscoded non-ACGTN bases** — `openspliceai/variant/utils.py`.
+  The encoder only folded a literal `N` to the all-zero row; any other non-ACGT byte (IUPAC ambiguity
+  codes `R`/`Y`/`S`/…, gaps, etc.) aliased onto a concrete base via the `byte % 5` lookup, contradicting
+  the map's own "N or any invalid character" contract. Fixed by sanitising `[^ACGT] -> N` before the
+  lookup. ACGTN input is bit-identical, so reference-genome scoring is unaffected. Locked by
+  `tests/regression/test_encode_decode_roundtrip.py::test_variant_encoder_maps_non_acgt_to_zero_row`.
+
+- **`predict` `get_sequences(neg_strands=...)` crashed** — `openspliceai/predict/predict.py`.
+  The minus-strand branch called `.reverse.complement` on a `str` (the sequence had already been
+  materialised via `.seq`), raising `AttributeError`. The feature was entirely broken but unreachable
+  from `predict_cli` (which never passes `neg_strands`). Fixed by reverse-complementing through the
+  pyfaidx `Sequence` object. Locked by
+  `tests/unit/test_predict_turbo_and_debug.py::test_get_sequences_neg_strand_reverse_complements`.
+
 ## False positives — correct code, now locked by regression tests
 
 The automated audit flagged these as high-severity bugs. Hand-tracing (and the regression tests
