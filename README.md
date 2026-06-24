@@ -236,6 +236,6 @@ pre-commit install      # run ruff + checks on every commit</code></pre>
 <div class="line"><br></div>
 </div>
 <p align="center">
-<img alt="Johns Hopkins University" src="logo/jhu-logo-dark.png" width="40%">
+<img alt="Johns Hopkins University" src="https://raw.githubusercontent.com/Kuanhao-Chao/OpenSpliceAI/main/logo/jhu-logo-dark.png" width="40%">
 </p>
 </section>
