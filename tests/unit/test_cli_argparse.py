@@ -17,6 +17,39 @@ def test_transfer_unfreeze_all_flag_sets_true():
     assert args.unfreeze_all is True
 
 
+def test_transfer_forgetting_flags_default_off():
+    """The catastrophic-forgetting mitigations are all default-off / legacy-preserving."""
+    args = parse_args(_TRANSFER)
+    assert args.weight_decay == 0.01          # PyTorch AdamW default (back-compat)
+    assert args.l2sp == 0.0
+    assert args.genomic_eval_dataset is None
+    assert args.rehearsal_dataset is None
+    assert args.rehearsal_shards == -1
+    assert args.distill_weight == 0.0
+    assert args.distill_teacher is None
+    assert args.distill_shards is None
+    assert args.distill_batch_size == -1
+
+
+def test_transfer_forgetting_flags_override():
+    args = parse_args(_TRANSFER + [
+        "--weight-decay", "0", "--l2sp", "0.1",
+        "--genomic-eval-dataset", "g.h5",
+        "--rehearsal-dataset", "r.h5", "--rehearsal-shards", "3",
+        "--distill-weight", "0.5", "--distill-teacher", "t.pt",
+        "--distill-shards", "a.h5", "--distill-batch-size", "4",
+    ])
+    assert args.weight_decay == 0.0
+    assert args.l2sp == 0.1
+    assert args.genomic_eval_dataset == "g.h5"
+    assert args.rehearsal_dataset == "r.h5"
+    assert args.rehearsal_shards == 3
+    assert args.distill_weight == 0.5
+    assert args.distill_teacher == "t.pt"
+    assert args.distill_shards == "a.h5"
+    assert args.distill_batch_size == 4
+
+
 @pytest.mark.parametrize("size", [80, 400, 2000, 10000])
 def test_predict_flanking_size_accepts_supported(size):
     args = parse_args(["predict", "-i", "x", "-m", "m", "-f", str(size)])
