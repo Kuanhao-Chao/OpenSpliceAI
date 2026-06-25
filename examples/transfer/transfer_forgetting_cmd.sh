@@ -3,7 +3,7 @@
 # mitigating CATASTROPHIC FORGETTING of canonical genomic splice sites.
 #
 # This builds on transfer_example.sh by adding the forgetting-mitigation flags
-# introduced in v0.0.8.dev0. See examples/transfer/README_forgetting.md and the
+# introduced in v0.0.8.dev0. See examples/transfer/README.md (Step 3) and the
 # "Mitigating catastrophic forgetting" section of the transfer docs.
 
 # Resolve the repository root (this script lives in <repo>/examples/transfer/)
