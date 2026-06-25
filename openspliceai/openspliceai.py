@@ -107,16 +107,16 @@ def parse_args_transfer(subparsers):
     parser_transfer.add_argument("--test-dataset", '-test', type=str, required=True, help="Path to the testing dataset")
     parser_transfer.add_argument("--loss", '-l', type=str, default='cross_entropy_loss', choices=["cross_entropy_loss", "focal_loss"], help="Loss function for fine-tuning")
     parser_transfer.add_argument("--unfreeze-all", '-A', action='store_true', default=False, help='Unfreeze all layers for fine-tuning (default: freeze all but the last --unfreeze residual units)')
-    parser_transfer.add_argument("--unfreeze", '-u', type=int, default=1, help="Number of layers to unfreeze for fine-tuning")
+    parser_transfer.add_argument("--unfreeze", '-u', type=int, default=1, help="Number of residual units (from the output end) to unfreeze for fine-tuning. Tip: on narrow data, prefer progressive unfreezing -- start small (e.g. 2) and increase across successive transfer rounds (each resuming from the previous round's checkpoint via --pretrained-model) while watching --genomic-eval-dataset, instead of --unfreeze-all.")
     # --- Catastrophic-forgetting mitigation (all optional, default-off; see docs) ---
     parser_transfer.add_argument("--weight-decay", type=float, default=0.01,
                                  help="AdamW weight decay. Default 0.01 decays every trainable weight toward zero each step, which erodes pretrained splice features when finetuning on narrow data; set 0 (or use --l2sp) to reduce catastrophic forgetting.")
     parser_transfer.add_argument("--l2sp", type=float, default=0.0,
                                  help="L2-SP regularization strength: penalize drift of trainable weights away from the pretrained weights (toward the starting point instead of toward zero). 0 (default) disables. Only active alongside a distillation teacher (--distill-weight>0), whose weights serve as the reference.")
     parser_transfer.add_argument("--genomic-eval-dataset", type=str, default=None,
-                                 help="Held-out genomic HDF5 (e.g. MANE test-chromosome shards). If set, donor/acceptor AUPRC + top-k are logged each epoch to LOG/GENOMIC/ so you can track catastrophic forgetting of canonical genomic splice sites alongside the in-distribution metrics. Off by default.")
+                                 help="Held-out genomic HDF5 (e.g. MANE test-chromosome shards). PURE MEASUREMENT, not training: if set, after each epoch the model is evaluated on this set in eval mode (no loss, no gradient, no effect on training or checkpoints) and donor/acceptor AUPRC + top-k are appended to LOG/GENOMIC/ -- a per-epoch 'forgetting curve' for canonical genomic splice sites. Distinct from --test-dataset (which is your fine-tuning distribution). Off by default.")
     parser_transfer.add_argument("--rehearsal-dataset", type=str, default=None,
-                                 help="Genomic HDF5 (e.g. a MANE dataset_train_*.h5 created at the same flanking size) whose shards are interleaved with the training shards during transfer (experience replay) to combat catastrophic forgetting. Off by default.")
+                                 help="Genomic HDF5 (e.g. a MANE dataset_train_*.h5 created at the same flanking size) used for experience replay. CHANGES TRAINING: its shards (with their true labels) are interleaved with the training shards, so part of every epoch's gradient comes from genome-wide data and the model can't drift off it. Pair with --rehearsal-shards to set the mix ratio. Off by default.")
     parser_transfer.add_argument("--rehearsal-shards", type=int, default=-1,
                                  help="Number of genomic anchor shards from --rehearsal-dataset to interleave (-1 = all). Controls the rehearsal mix ratio.")
     parser_transfer.add_argument("--distill-weight", type=float, default=0.0,

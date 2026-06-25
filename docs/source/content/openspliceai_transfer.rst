@@ -105,11 +105,13 @@ Usage
                                  (toward the starting point, not zero). 0 disables. Active only
                                  with a distillation teacher (--distill-weight > 0).
          --genomic-eval-dataset GENOMIC_EVAL_DATASET
-                                 Held-out genomic HDF5; if set, donor/acceptor AUPRC + top-k are
-                                 logged each epoch to LOG/GENOMIC/ to track forgetting.
+                                 Held-out genomic HDF5. Pure measurement (eval only, no effect on
+                                 training): logs donor/acceptor AUPRC + top-k to LOG/GENOMIC/ each
+                                 epoch as a forgetting curve.
          --rehearsal-dataset REHEARSAL_DATASET
-                                 Genomic HDF5 whose shards are interleaved with the training
-                                 shards (experience replay) to combat forgetting.
+                                 Genomic HDF5 whose shards (with true labels) are mixed into training
+                                 (experience replay) so genome-wide gradient keeps flowing; ratio set
+                                 by --rehearsal-shards.
          --rehearsal-shards REHEARSAL_SHARDS
                                  Number of genomic anchor shards to interleave (-1 = all).
          --distill-weight DISTILL_WEIGHT
@@ -138,10 +140,17 @@ provides four optional, default-off controls to detect and counteract this:
 1. **Stop decaying toward zero** — ``--weight-decay 0`` (AdamW's default is 0.01, which pulls
    every trainable weight toward zero each step and erodes pretrained splice features), and/or
    ``--l2sp <mu>`` to instead regularize the weights toward the *pretrained* starting point.
-2. **Reduce plasticity** — prefer ``--unfreeze 1`` / ``--unfreeze 2`` (freeze most layers) over
-   ``--unfreeze-all``, so the general motif detectors are preserved.
-3. **Rehearsal / data-mixing** — ``--rehearsal-dataset`` interleaves real genomic shards (with
-   their true labels) into training, so the genome-wide distribution keeps supplying gradient.
+2. **Progressive unfreezing** — prefer freezing most layers over ``--unfreeze-all``: start with
+   ``--unfreeze 2`` and *increase gradually* across successive transfer rounds (rerun with
+   ``--unfreeze 4``, then ``8``, each round resuming from the previous round's ``model_best.pt`` via
+   ``--pretrained-model``), stopping as soon as the forgetting curve below starts to dip. This
+   layer-wise schedule keeps the general splice-motif detectors intact as long as possible.
+3. **Rehearsal / data-mixing** — ``--rehearsal-dataset`` interleaves ``--rehearsal-shards`` real
+   genomic shards (with their true labels) into the training shard stream, so a fraction of every
+   epoch's gradient comes from genome-wide data and the model can't drift off it. This is the same
+   anti-forgetting idea as distillation but uses *real* labels rather than the teacher's soft targets:
+   reach for rehearsal when you have labelled genomic shards, distillation when you only have the
+   pretrained checkpoint.
 4. **Knowledge distillation (Learning without Forgetting)** — ``--distill-weight`` adds
    ``lambda * cross_entropy(teacher_soft_targets, student)`` on genomic anchor windows scored by
    a frozen copy of the pretrained model (``--distill-shards``). This needs **no genomic labels**
@@ -149,8 +158,11 @@ provides four optional, default-off controls to detect and counteract this:
    fine-tuning data and the original training data.
 
 Use ``--genomic-eval-dataset`` (e.g. held-out genomic test chromosomes) to log a per-epoch
-**forgetting curve** (donor/acceptor AUPRC + top-k) under ``LOG/GENOMIC/``, then pick the
-checkpoint / ``lambda`` that best trades in-distribution gains against retained genomic accuracy.
+**forgetting curve** (donor/acceptor AUPRC + top-k) under ``LOG/GENOMIC/``. This is *pure
+measurement* — each epoch the model is run on this set in eval mode with **no loss, no gradient, and
+no effect on training or checkpoint selection** — and it is distinct from ``--test-dataset`` (which is
+typically still your fine-tuning distribution). Plot the genomic curve against the in-distribution
+metrics across epochs and pick the checkpoint / ``lambda`` on the gain-vs-retention front.
 
 Example combining the mitigations:
 
