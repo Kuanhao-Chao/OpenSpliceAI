@@ -108,6 +108,25 @@ def parse_args_transfer(subparsers):
     parser_transfer.add_argument("--loss", '-l', type=str, default='cross_entropy_loss', choices=["cross_entropy_loss", "focal_loss"], help="Loss function for fine-tuning")
     parser_transfer.add_argument("--unfreeze-all", '-A', action='store_true', default=False, help='Unfreeze all layers for fine-tuning (default: freeze all but the last --unfreeze residual units)')
     parser_transfer.add_argument("--unfreeze", '-u', type=int, default=1, help="Number of layers to unfreeze for fine-tuning")
+    # --- Catastrophic-forgetting mitigation (all optional, default-off; see docs) ---
+    parser_transfer.add_argument("--weight-decay", type=float, default=0.01,
+                                 help="AdamW weight decay. Default 0.01 decays every trainable weight toward zero each step, which erodes pretrained splice features when finetuning on narrow data; set 0 (or use --l2sp) to reduce catastrophic forgetting.")
+    parser_transfer.add_argument("--l2sp", type=float, default=0.0,
+                                 help="L2-SP regularization strength: penalize drift of trainable weights away from the pretrained weights (toward the starting point instead of toward zero). 0 (default) disables. Only active alongside a distillation teacher (--distill-weight>0), whose weights serve as the reference.")
+    parser_transfer.add_argument("--genomic-eval-dataset", type=str, default=None,
+                                 help="Held-out genomic HDF5 (e.g. MANE test-chromosome shards). If set, donor/acceptor AUPRC + top-k are logged each epoch to LOG/GENOMIC/ so you can track catastrophic forgetting of canonical genomic splice sites alongside the in-distribution metrics. Off by default.")
+    parser_transfer.add_argument("--rehearsal-dataset", type=str, default=None,
+                                 help="Genomic HDF5 (e.g. a MANE dataset_train_*.h5 created at the same flanking size) whose shards are interleaved with the training shards during transfer (experience replay) to combat catastrophic forgetting. Off by default.")
+    parser_transfer.add_argument("--rehearsal-shards", type=int, default=-1,
+                                 help="Number of genomic anchor shards from --rehearsal-dataset to interleave (-1 = all). Controls the rehearsal mix ratio.")
+    parser_transfer.add_argument("--distill-weight", type=float, default=0.0,
+                                 help="Weight (lambda) for the knowledge-distillation / Learning-without-Forgetting auxiliary loss. Each step adds lambda * cross-entropy(teacher_soft_targets, student) on genomic anchor windows so the student keeps the pretrained model's genome-wide predictions. 0 (default) disables. Typical 0.1-1.0.")
+    parser_transfer.add_argument("--distill-teacher", type=str, default=None,
+                                 help="Frozen teacher checkpoint for the distillation loss. Defaults to --pretrained-model when --distill-weight>0.")
+    parser_transfer.add_argument("--distill-shards", type=str, default=None,
+                                 help="Genomic anchor HDF5 the teacher scores each step to provide soft targets (no labels needed). Required when --distill-weight>0; may reuse --genomic-eval-dataset.")
+    parser_transfer.add_argument("--distill-batch-size", type=int, default=-1,
+                                 help="Batch size for the genomic anchor (distillation) loader (-1 = same as the training batch size). Lower it if running the teacher + student together exhausts GPU memory at large flanking sizes.")
 
 
 def parse_args_predict(subparsers):
