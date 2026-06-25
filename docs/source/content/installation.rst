@@ -115,6 +115,34 @@ Alternatively, install OpenSpliceAI from source by cloning the GitHub repository
 
 |
 
+Install the development (devel) version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``devel`` branch tracks the latest integration work (currently ``0.0.8.dev0``) and may include
+features not yet in a tagged release. It is a **pre-release** build and can be less stable than PyPI/Bioconda.
+
+Install it directly with pip:
+
+.. code-block:: bash
+
+   pip install "git+https://github.com/Kuanhao-Chao/OpenSpliceAI.git@devel"
+
+Or, for development, clone the ``devel`` branch and install it **editable** with the dev tooling
+(pytest, pytest-cov, ruff, pre-commit):
+
+.. code-block:: bash
+
+   git clone --branch devel https://github.com/Kuanhao-Chao/OpenSpliceAI.git
+   cd OpenSpliceAI
+   pip install -e '.[dev]'
+
+Verify the build — the startup banner prints the installed version:
+
+.. code-block:: bash
+
+   openspliceai --help     # banner shows 0.0.8.dev0
+
+|
+
 Detailed Installation for PyTorch and mappy
 --------------------------------------------
 
