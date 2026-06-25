@@ -203,6 +203,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Local scratch / working notes (not part of the package; may hold confidential material)
+sandbox/
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore

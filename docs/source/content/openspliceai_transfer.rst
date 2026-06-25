@@ -98,6 +98,82 @@ Usage
          --unfreeze-all, -A    Unfreeze all layers for fine-tuning
          --unfreeze UNFREEZE, -u UNFREEZE
                                  Number of layers to unfreeze for fine-tuning
+         --weight-decay WEIGHT_DECAY
+                                 AdamW weight decay (default 0.01). Decays weights toward zero;
+                                 set 0 (or use --l2sp) to reduce catastrophic forgetting.
+         --l2sp L2SP           L2-SP strength: penalize drift from the pretrained weights
+                                 (toward the starting point, not zero). 0 disables. Active only
+                                 with a distillation teacher (--distill-weight > 0).
+         --genomic-eval-dataset GENOMIC_EVAL_DATASET
+                                 Held-out genomic HDF5; if set, donor/acceptor AUPRC + top-k are
+                                 logged each epoch to LOG/GENOMIC/ to track forgetting.
+         --rehearsal-dataset REHEARSAL_DATASET
+                                 Genomic HDF5 whose shards are interleaved with the training
+                                 shards (experience replay) to combat forgetting.
+         --rehearsal-shards REHEARSAL_SHARDS
+                                 Number of genomic anchor shards to interleave (-1 = all).
+         --distill-weight DISTILL_WEIGHT
+                                 Lambda for the knowledge-distillation / Learning-without-Forgetting
+                                 auxiliary loss (0 disables). Typical 0.1-1.0.
+         --distill-teacher DISTILL_TEACHER
+                                 Frozen teacher checkpoint (defaults to --pretrained-model).
+         --distill-shards DISTILL_SHARDS
+                                 Genomic anchor HDF5 the teacher scores for soft targets
+                                 (required when --distill-weight > 0).
+         --distill-batch-size DISTILL_BATCH_SIZE
+                                 Batch size for the anchor (distillation) loader (-1 = training
+                                 batch size). Lower it if teacher + student exhaust GPU memory.
+
+|
+
+Mitigating catastrophic forgetting
+----------------------------------
+
+When fine-tuning on a **narrow** dataset (for example a single locus, or an assay that
+covers only a few genes), a model that is fully unfrozen can **catastrophically forget**
+canonical splice sites elsewhere in the genome: donor/acceptor scores at well-annotated
+genomic junctions collapse toward zero even though those sites are unchanged. ``transfer``
+provides four optional, default-off controls to detect and counteract this:
+
+1. **Stop decaying toward zero** — ``--weight-decay 0`` (AdamW's default is 0.01, which pulls
+   every trainable weight toward zero each step and erodes pretrained splice features), and/or
+   ``--l2sp <mu>`` to instead regularize the weights toward the *pretrained* starting point.
+2. **Reduce plasticity** — prefer ``--unfreeze 1`` / ``--unfreeze 2`` (freeze most layers) over
+   ``--unfreeze-all``, so the general motif detectors are preserved.
+3. **Rehearsal / data-mixing** — ``--rehearsal-dataset`` interleaves real genomic shards (with
+   their true labels) into training, so the genome-wide distribution keeps supplying gradient.
+4. **Knowledge distillation (Learning without Forgetting)** — ``--distill-weight`` adds
+   ``lambda * cross_entropy(teacher_soft_targets, student)`` on genomic anchor windows scored by
+   a frozen copy of the pretrained model (``--distill-shards``). This needs **no genomic labels**
+   (the teacher provides soft targets), so it sidesteps any label-format mismatch between your
+   fine-tuning data and the original training data.
+
+Use ``--genomic-eval-dataset`` (e.g. held-out genomic test chromosomes) to log a per-epoch
+**forgetting curve** (donor/acceptor AUPRC + top-k) under ``LOG/GENOMIC/``, then pick the
+checkpoint / ``lambda`` that best trades in-distribution gains against retained genomic accuracy.
+
+Example combining the mitigations:
+
+.. code-block:: bash
+
+   openspliceai transfer \
+      --train-dataset narrow_train.h5 \
+      --test-dataset narrow_test.h5 \
+      --pretrained-model OpenSpliceAI-MANE-best.pt \
+      --flanking-size 10000 \
+      --unfreeze 2 \
+      --weight-decay 0 \
+      --rehearsal-dataset MANE_dataset_train.h5 --rehearsal-shards 20 \
+      --distill-weight 0.5 --distill-shards MANE_dataset_test.h5 \
+      --genomic-eval-dataset MANE_dataset_test.h5 \
+      --project-name narrow_transfer --output-dir ./transfer_outputs/
+
+.. note::
+
+   The genomic HDF5 files used for ``--rehearsal-dataset`` / ``--distill-shards`` /
+   ``--genomic-eval-dataset`` must be created with the **same flanking size** as the training
+   data (matching ``SL + CL_max`` input width), since per-batch context clipping assumes a fixed
+   width.
 
 |
 

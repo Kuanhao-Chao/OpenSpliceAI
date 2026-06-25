@@ -333,6 +333,24 @@ def load_data_from_shard(h5f, shard_idx, device, batch_size, params, shuffle=Fal
     return DataLoader(ds, batch_size=batch_size, shuffle=shuffle, drop_last=True, pin_memory=True)
 
 
+def resolve_shard_loader(h5f, shard_pos, device, batch_size, params, shuffle=False):
+    """Load a training shard, honouring an optional rehearsal ``SHARD_TABLE``.
+
+    When ``params['SHARD_TABLE']`` is set (rehearsal/data-mixing during
+    ``transfer``), ``shard_pos`` is an integer position into that table of
+    ``(source, real_idx)`` entries; ``source == 'rehearsal'`` reads from the
+    genomic ``params['REHEARSAL_H5F']`` handle, otherwise from ``h5f`` (the
+    training file). Without a table this is exactly ``load_data_from_shard`` on
+    ``h5f`` -- so the ``train`` subcommand path is unchanged.
+    """
+    table = params.get("SHARD_TABLE")
+    if table is None:
+        return load_data_from_shard(h5f, shard_pos, device, batch_size, params, shuffle=shuffle)
+    source, real_idx = table[int(shard_pos)]
+    handle = params["REHEARSAL_H5F"] if source == "rehearsal" else h5f
+    return load_data_from_shard(handle, real_idx, device, batch_size, params, shuffle=shuffle)
+
+
 def classwise_accuracy(true_classes, predicted_classes, num_classes):
     class_accuracies = []
     for i in range(num_classes):
@@ -472,12 +490,12 @@ def train_epoch(model, h5f, idxs, batch_size, criterion, optimizer, scheduler, d
     total_batches_in_epoch = 0
     for shard_idx in idxs:
         # Load the loader to get its length
-        loader = load_data_from_shard(h5f, shard_idx, device, batch_size, params, shuffle=False)
+        loader = resolve_shard_loader(h5f, shard_idx, device, batch_size, params, shuffle=False)
         total_batches_in_epoch += len(loader)
 
     for i, shard_idx in enumerate(shuffled_idxs, 1):
         print(f"Shard {i}/{len(shuffled_idxs)}")
-        loader = load_data_from_shard(h5f, shard_idx, device, batch_size, params, shuffle=True)
+        loader = resolve_shard_loader(h5f, shard_idx, device, batch_size, params, shuffle=True)
         pbar = tqdm(loader, leave=False, total=len(loader), desc=f'Shard {i}/{len(shuffled_idxs)}')
         for batch in pbar:
             DNAs, labels = batch[0].to(device), batch[1].to(device)
@@ -489,6 +507,10 @@ def train_epoch(model, h5f, idxs, batch_size, criterion, optimizer, scheduler, d
                 loss = categorical_crossentropy_2d(labels, yp)
             elif criterion == "focal_loss":
                 loss = focal_loss(labels, yp)
+            # Optional knowledge-distillation / Learning-without-Forgetting auxiliary loss:
+            # keep the student close to a frozen teacher on genomic anchor windows so it does
+            # not forget canonical genomic splice sites while finetuning on narrow data.
+            loss = loss + distillation_loss(model, params, device)
             with open(metric_files["loss_every_update"], 'a') as f:
                 f.write(f"{loss.item()}\n")
             loss.backward()
@@ -606,6 +628,42 @@ def focal_loss(y_true, y_pred, alpha=0.25, gamma=2.0):
                         + y_true[:, 2, :]*torch.log(y_pred[:, 2, :]+epsilon) * torch.pow(torch.sub(1, y_pred[:, 2, :]), gamma))
 
 
+def distillation_loss(model, params, device):
+    """Optional knowledge-distillation / Learning-without-Forgetting auxiliary loss.
+
+    Returns ``0.0`` (a no-op when added to the primary loss) unless distillation
+    is enabled via ``params['DISTILL_WEIGHT'] > 0``. When enabled, pulls one
+    genomic anchor batch from the cycled ``params['ANCHOR_ITER']``, runs the
+    frozen ``params['TEACHER']`` and the student on the *same* clipped window,
+    and returns ``DISTILL_WEIGHT * CE(teacher_probs.detach(), student_probs)``.
+    Both models apply softmax internally, so :func:`categorical_crossentropy_2d`
+    with the teacher's probabilities as soft targets is exactly the distillation
+    cross-entropy -- no extra log/softmax. Optionally adds an L2-SP term
+    (``params['L2SP']``) penalising drift of the trainable weights away from the
+    pretrained reference (``params['L2SP_REF']``), i.e. decay toward the starting
+    point instead of toward zero.
+    """
+    weight = params.get("DISTILL_WEIGHT", 0.0)
+    if not weight or weight <= 0:
+        return 0.0
+    teacher = params["TEACHER"]
+    a_DNAs, _ = next(params["ANCHOR_ITER"])
+    a_DNAs = a_DNAs.to(device)
+    a_DNAs, _ = clip_datapoints(a_DNAs, a_DNAs, params["CL"], CL_max, params["N_GPUS"])
+    a_DNAs = a_DNAs.to(torch.float32).to(device)
+    with torch.no_grad():
+        teacher_probs = teacher(a_DNAs)
+    student_probs = model(a_DNAs)
+    loss = weight * categorical_crossentropy_2d(teacher_probs.detach(), student_probs)
+    l2sp_weight = params.get("L2SP", 0.0)
+    if l2sp_weight and l2sp_weight > 0:
+        ref = params["L2SP_REF"]
+        l2sp = sum(((p - ref[n]) ** 2).sum()
+                   for n, p in model.named_parameters() if p.requires_grad and n in ref)
+        loss = loss + 0.5 * l2sp_weight * l2sp
+    return loss
+
+
 def train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, train_idxs, val_idxs, test_idxs,
                 model_output_base, args, device, params, 
                 train_metric_files, valid_metric_files, test_metric_files):
@@ -633,8 +691,15 @@ def train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, tra
                         train_idxs, params["BATCH_SIZE"], args.loss, optimizer, scheduler, device, params, train_metric_files, args.flanking_size, run_mode="train", global_batch_idx=global_batch_idx)
         val_loss = valid_epoch(model, valid_h5f, val_idxs, params["BATCH_SIZE"], args.loss, device, 
                                params, valid_metric_files, args.flanking_size, "validation")
-        test_loss = valid_epoch(model, test_h5f, test_idxs, params["BATCH_SIZE"], args.loss, device, 
+        test_loss = valid_epoch(model, test_h5f, test_idxs, params["BATCH_SIZE"], args.loss, device,
                                 params, test_metric_files, args.flanking_size, "test")
+        # Optional: track catastrophic forgetting on a held-out genomic set each epoch
+        # (donor/acceptor AUPRC + top-k logged to LOG/GENOMIC/). Pure measurement, no optimizer.
+        if params.get("GENOMIC_H5F") is not None:
+            genomic_loss = valid_epoch(model, params["GENOMIC_H5F"], params["GENOMIC_IDXS"],
+                                       params["BATCH_SIZE"], args.loss, device, params,
+                                       params["GENOMIC_METRIC_FILES"], args.flanking_size, "genomic")
+            print(f"Genomic forgetting-eval Loss: {genomic_loss}")
         print(f"Training Loss: {train_loss}")
         print(f"Validation Loss: {val_loss}")
         print(f"Testing Loss: {test_loss}")
