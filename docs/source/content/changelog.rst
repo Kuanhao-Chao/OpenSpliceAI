@@ -4,6 +4,28 @@
 Changelog
 ===========
 
+v0.0.8.dev0 (unreleased)
+------------------------
+
+**New features**
+
+- ``transfer``: added a suite of **catastrophic-forgetting mitigations** for fine-tuning on
+  narrow datasets (all optional, default-off, so existing runs are unchanged):
+
+  - ``--weight-decay`` exposes the AdamW weight decay (default ``0.01``); set ``0`` to stop
+    decaying pretrained weights toward zero. ``--l2sp`` instead regularizes the trainable
+    weights toward the **pretrained** weights (active with a distillation teacher).
+  - ``--rehearsal-dataset`` / ``--rehearsal-shards`` interleave real genomic shards
+    (experience replay) into training.
+  - ``--distill-weight`` / ``--distill-teacher`` / ``--distill-shards`` /
+    ``--distill-batch-size`` add a knowledge-distillation (Learning-without-Forgetting) loss
+    against a frozen teacher on genomic anchor windows — no genomic labels required.
+  - ``--genomic-eval-dataset`` logs a per-epoch **forgetting curve** (donor/acceptor AUPRC +
+    top-k) under ``LOG/GENOMIC/`` so you can pick the checkpoint on the gain-vs-retention front.
+
+  See the ``transfer`` docs ("Mitigating catastrophic forgetting") and
+  ``examples/transfer/transfer_forgetting_cmd.sh``.
+
 v0.0.7 (2026-06-23)
 -------------------
 

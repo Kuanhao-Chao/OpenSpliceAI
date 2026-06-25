@@ -70,7 +70,9 @@ Annotates VCF files with delta scores and positions to evaluate the impact of ge
 <pre><code>pip install openspliceai</code></pre>
 <p>or from <strong>Bioconda</strong> (make sure the <code>conda-forge</code> and <code>bioconda</code> channels are enabled):</p>
 <pre><code>conda install -c conda-forge -c bioconda openspliceai</code></pre>
-<p>See the <a class="reference external" href="https://ccb.jhu.edu/openspliceai/content/installation.html#installation">Installation Guide</a> for GPU/CUDA setup and other options.</p>
+<p>To try the in-development <strong>devel</strong> build (latest features, pre-release &mdash; currently <code>0.0.8.dev0</code>):</p>
+<pre><code>pip install "git+https://github.com/Kuanhao-Chao/OpenSpliceAI.git@devel"</code></pre>
+<p>See the <a class="reference external" href="https://ccb.jhu.edu/openspliceai/content/installation.html#installation">Installation Guide</a> for GPU/CUDA setup, the devel/editable workflow, and other options.</p>
 <div class="line-block">
 <div class="line"><br></div>
 </div>

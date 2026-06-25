@@ -18,8 +18,8 @@
 # -- Project information -----------------------------------------------------
 master_doc = 'index'
 project = 'OpenSpliceAI'
-release = '0.0.7'
-version = '0.0.7'
+release = '0.0.8.dev0'
+version = '0.0.8.dev0'
 copyright = '2024, Kuan-Hao Chao'
 author = 'Kuan-Hao Chao'
 
