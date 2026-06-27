@@ -1,0 +1,16 @@
+# Dependencies for building the OpenSpliceAI documentation (docs/Makefile -> Sphinx).
+#
+# Direct dependencies only, pinned for reproducible builds. Keep in sync with the
+# `extensions` list and `html_theme` in docs/source/conf.py.
+#
+# Version notes:
+#   sphinx 8.2.3    - requires Python >=3.11, so the same pins build locally and in CI.
+#   furo 2024.8.6   - requires sphinx>=6.0,<9.0.
+#   sphinx-panels   - provides the `.. dropdown::` directive used in content/how_to_page.rst
+#                     and content/installation.rst. Pinned to 0.4.1 because 0.6.0 caps
+#                     sphinx<5; 0.4.1 leaves sphinx unpinned. The project is unmaintained --
+#                     if it ever breaks, migrate the dropdowns to sphinx-design.
+
+sphinx==8.2.3
+furo==2024.8.6
+sphinx-panels==0.4.1

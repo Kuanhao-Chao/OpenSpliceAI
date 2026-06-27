@@ -28,6 +28,17 @@ def test_predict_flanking_size_rejects_unsupported():
         parse_args(["predict", "-i", "x", "-m", "m", "-f", "123"])
 
 
+def test_predict_gene_flank_defaults_to_auto():
+    """--gene-flank defaults to -1 (auto = flanking_size//2 of real genomic context)."""
+    args = parse_args(["predict", "-i", "x", "-m", "m", "-f", "10000"])
+    assert args.gene_flank == -1
+
+
+def test_predict_gene_flank_override():
+    args = parse_args(["predict", "-i", "x", "-m", "m", "-f", "10000", "--gene-flank", "0"])
+    assert args.gene_flank == 0
+
+
 def test_variant_flanking_size_rejects_unsupported():
     with pytest.raises(SystemExit):
         parse_args(["variant", "-R", "r", "-A", "grch38", "-f", "999"])

@@ -74,8 +74,8 @@
 .. image:: https://img.shields.io/badge/License-GPLv3-yellow.svg
     :target: https://img.shields.io/badge/License-GPLv3-yellow.svg
 
-.. image:: https://img.shields.io/badge/version-v.0.0.1-blue
-    :target: https://img.shields.io/badge/version-v.0.0.1-blue
+.. image:: https://img.shields.io/badge/version-v.0.0.7-blue
+    :target: https://img.shields.io/badge/version-v.0.0.7-blue
 
 .. image:: https://static.pepy.tech/personalized-badge/openspliceai?period=total&units=abbreviation&left_color=grey&right_color=blue&left_text=PyPi%20downloads
     :target: https://pepy.tech/project/openspliceai

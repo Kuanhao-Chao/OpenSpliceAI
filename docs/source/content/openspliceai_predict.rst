@@ -45,19 +45,24 @@ Input Files
 Output Files
 ------------
 
-- **Donor and Acceptor BED Files**:  
-  Two BED files listing genomic coordinates (if GFF supplied, else absolute coordinates) and scores for splice sites.  
+- **Donor and Acceptor BED Files**:
+  Two BED files listing genomic coordinates (if GFF supplied, else absolute coordinates) and scores for splice sites.
+
   - ``acceptor_predictions.bed``
   - ``donor_predictions.bed``
 
 - **Intermediate Files** (depending on parameters):
+
   - **HDF5 Files**: One-hot-encoded sequences and/or raw predictions.
-   - ``datafile.h5``: Raw extracted sequences
-   - ``dataset.h5``: Batched input for prediction
-   - ``predict.h5``: Raw predictions from the model (if ``--predict-all``)
+
+    - ``datafile.h5``: Raw extracted sequences
+    - ``dataset.h5``: Batched input for prediction
+    - ``predict.h5``: Raw predictions from the model (if ``--predict-all``)
+
   - **Extracted FASTA**: Refined versions of the input FASTA are created with overlapping regions to avoid missing predictions at chunk boundaries.
-   - ``[name]_genes.fa``: FASTA file containing only gene regions (if GFF provided)
-   - ``[name]_split.fa``: Split FASTA file (if any sequence in the input FASTA exceeds the ``--split-threshold``)
+
+    - ``[name]_genes.fa``: FASTA file containing only gene regions (if GFF provided)
+    - ``[name]_split.fa``: Split FASTA file (if any sequence in the input FASTA exceeds the ``--split-threshold``)
 
 |
 
@@ -67,7 +72,7 @@ Usage
 .. code-block:: text
 
    usage: openspliceai predict [-h] --output-dir OUTPUT_DIR --input-sequence INPUT_SEQUENCE --model MODEL --flanking-size {80,400,2000,10000}
-                              [--annotation-file ANNOTATION_FILE] [--threshold THRESHOLD] [--predict-all] [--debug] [--hdf-threshold HDF_THRESHOLD]
+                              [--annotation-file ANNOTATION_FILE] [--gene-flank GENE_FLANK] [--threshold THRESHOLD] [--predict-all] [--debug] [--hdf-threshold HDF_THRESHOLD]
                               [--flush-threshold FLUSH_THRESHOLD] [--split-threshold SPLIT_THRESHOLD] [--chunk-size CHUNK_SIZE]
 
    optional arguments:
@@ -81,7 +86,13 @@ Usage
          --input-sequence INPUT_SEQUENCE, -i INPUT_SEQUENCE
                                  Path to FASTA file of the input sequence
          --annotation-file ANNOTATION_FILE, -a ANNOTATION_FILE
-                                 Path to GFF file of coordinates for genes
+                                 Path to GFF file of coordinates for genes (minus-strand genes are
+                                 reverse-complemented automatically)
+         --gene-flank GENE_FLANK
+                                 With -a: bp of REAL genomic flanking included on each side of every
+                                 extracted gene so the model sees true context instead of 'N' padding at
+                                 gene boundaries. Default (-1) uses flanking_size/2; set 0 for the bare
+                                 gene body (legacy behavior).
          --threshold THRESHOLD, -t THRESHOLD
                                  Threshold to determine acceptor and donor sites
          --predict-all, -p     Writes all collected predictions to an intermediate file (Warning: on full genomes, will consume much space.)

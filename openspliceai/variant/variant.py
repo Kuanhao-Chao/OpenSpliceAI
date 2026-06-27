@@ -49,7 +49,8 @@ def variant(args):
     flanking_size = args.flanking_size
     model_type = args.model_type
     precision = args.precision
-    
+    batch_size = getattr(args, 'batch_size', 1)
+
     print(f'''Running with genome: {ref_genome}, annotation: {annotation}, 
           model(s): {model}, model_type: {model_type}, 
           input: {input_vcf}, output: {output_vcf}, 
@@ -86,11 +87,33 @@ def variant(args):
     ann = Annotator(ref_genome, annotation, model, model_type, flanking_size)
 
     # Obtain delta score for each variant in VCF
-    for record in tqdm(vcf):
-        scores = get_delta_scores(record, ann, distance, mask, flanking_size, precision)
-        if scores:
-            record.info['OpenSpliceAI'] = scores
-        output.write(record)
+    if batch_size > 1 and model_type == 'pytorch':
+        # Batched inference: buffer records, score their windows in one batched
+        # forward pass, then write in input order. Much faster on many-variant VCFs.
+        FLUSH = max(batch_size, 1024)   # records buffered per flush
+        buf = []
+
+        def _flush(records_buf):
+            results = get_delta_scores_batched(records_buf, ann, distance, mask,
+                                               flanking_size, precision, batch_size)
+            for rec, scores in zip(records_buf, results):
+                if scores:
+                    rec.info['OpenSpliceAI'] = scores
+                output.write(rec)
+
+        for record in tqdm(vcf):
+            buf.append(record)
+            if len(buf) >= FLUSH:
+                _flush(buf)
+                buf = []
+        if buf:
+            _flush(buf)
+    else:
+        for record in tqdm(vcf):
+            scores = get_delta_scores(record, ann, distance, mask, flanking_size, precision)
+            if scores:
+                record.info['OpenSpliceAI'] = scores
+            output.write(record)
 
     # Close input and output VCF files
     vcf.close()

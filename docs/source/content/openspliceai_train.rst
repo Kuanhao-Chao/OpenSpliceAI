@@ -7,7 +7,7 @@
 train
 =====
 
-The ``train`` subcommand takes the HDF5 datasets produced by the :ref:`create_data_subcommand` and trains a deep learning model (SpliceAI-PyTorch) to predict splice sites. It allows flexible configuration of model hyperparameters, learning rate schedulers, and loss functions, and supports early stopping. 
+The ``train`` subcommand takes the HDF5 datasets produced by the :ref:`create-data_subcommand` and trains a deep learning model (SpliceAI-PyTorch) to predict splice sites. It allows flexible configuration of model hyperparameters, learning rate schedulers, and loss functions, and supports early stopping. 
 
 |
 
@@ -100,7 +100,7 @@ Example: Training a Model on Human MANE Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Below is a sample command for training a SpliceAI-PyTorch model on human MANE datasets.  
-These HDF5 files can be generated via the :ref:`create_data_subcommand` or downloaded from the provided links.
+These HDF5 files can be generated via the :ref:`create-data_subcommand` or downloaded from the provided links.
 
 .. code-block:: bash
 

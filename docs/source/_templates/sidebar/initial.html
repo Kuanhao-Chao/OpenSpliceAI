@@ -1,4 +1,19 @@
+{# Swaps the sidebar JHU logos between light and dark variants with the furo theme toggle.
+   URLs are emitted by pathto() rather than hand-written relative prefixes: the previous
+   "./_static/..." / "../_static/..." pair only resolved at the site root and one level down,
+   so the logos 404'd on every deeper page (content/pretrained_models/, content/usage/, ...). #}
 <script type="text/javascript">
+
+    var OSAI_SIDEBAR_LOGOS = {
+        ccb: {
+            light: "{{ pathto('_static/JHU_ccb-dark.png', 1) }}",
+            dark:  "{{ pathto('_static/JHU_ccb-white.png', 1) }}"
+        },
+        wse: {
+            light: "{{ pathto('_static/JHU_wse-dark.png', 1) }}",
+            dark:  "{{ pathto('_static/JHU_wse-white.png', 1) }}"
+        }
+    };
 
     let mutation_fuc = function(mutations) {
         var dark = document.body.dataset.theme == 'dark';
@@ -6,25 +21,18 @@
         if (document.body.dataset.theme == 'auto') {
             dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         }
-        
 
-        tutorial_doc = document.getElementById("main_entry");
-        console.log("tutorial_doc: ", tutorial_doc)
+        var ccb = document.getElementsByClassName('sidebar_ccb')[0];
+        var wse = document.getElementsByClassName('sidebar_wse')[0];
 
-        if (tutorial_doc !== null) {
-            document.getElementsByClassName('sidebar_ccb')[0].src = dark ? './_static/JHU_ccb-white.png' : "./_static/JHU_ccb-dark.png";
-            document.getElementsByClassName('sidebar_wse')[0].src = dark ? './_static/JHU_wse-white.png' : "./_static/JHU_wse-dark.png";
-        } else {
-            document.getElementsByClassName('sidebar_ccb')[0].src = dark ? '../_static/JHU_ccb-white.png' : "../_static/JHU_ccb-dark.png";
-            document.getElementsByClassName('sidebar_wse')[0].src = dark ? '../_static/JHU_wse-white.png' : "../_static/JHU_wse-dark.png";
+        if (ccb) {
+            ccb.src = dark ? OSAI_SIDEBAR_LOGOS.ccb.dark : OSAI_SIDEBAR_LOGOS.ccb.light;
+        }
+        if (wse) {
+            wse.src = dark ? OSAI_SIDEBAR_LOGOS.wse.dark : OSAI_SIDEBAR_LOGOS.wse.light;
         }
 
-
-
-
         for (let i=0; i < document.getElementsByClassName('summary-title').length; i++) {
-            console.log(">> document.getElementsByClassName('summary-title')[i]: ", document.getElementsByClassName('summary-title')[i]);
-
             if (dark) {
                 document.getElementsByClassName('summary-title')[i].classList = "summary-title card-header bg-dark font-weight-bolder";
                 document.getElementsByClassName('summary-content')[i].classList = "summary-content card-body bg-dark text-left docutils";
@@ -38,6 +46,5 @@
     document.addEventListener("DOMContentLoaded", mutation_fuc);
     var observer = new MutationObserver(mutation_fuc)
     observer.observe(document.body, {attributes: true, attributeFilter: ['data-theme']});
-    console.log(document.body);
 </script>
-<link rel="preload" href="../_images/jhu-logo-dark.png" as="image">
+<link rel="preload" href="{{ pathto('_images/jhu-logo-dark.png', 1) }}" as="image">
