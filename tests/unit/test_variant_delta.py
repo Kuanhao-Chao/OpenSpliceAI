@@ -2,7 +2,7 @@
 
 These run the *real* PyTorch ``Annotator`` (built once from a packaged 80nt state_dict on
 CPU) over the synthetic ``variant_inputs`` fixture (~12kb ref + custom TSV + SNV / deletion /
-insertion / multi-allelic VCF near pos 6000). Every expected value here was grounded by first
+insertion / multi-allelic / multi-nucleotide VCF near pos 6000). Every expected value here was grounded by first
 running the function on the fixture and observing the actual output (number of scores, field
 counts, which mask fields zero out).
 """
@@ -127,8 +127,8 @@ def test_mask_runs_and_keeps_ten_fields_all_records(pytorch_annotator):
         for s in scores:
             assert len(s.split("|")) == 10
             total += 1
-    # SNV(1) + del(1) + ins(1) + multiallelic(2) == 5 scores total
-    assert total == 5
+    # SNV(1) + del(1) + ins(1) + multiallelic(2) + 3 MNVs(1 each) == 8 scores total
+    assert total == 8
 
 
 def test_ref_allele_longer_than_window_is_skipped(pytorch_annotator, tmp_path):
@@ -156,6 +156,81 @@ def test_ref_allele_longer_than_window_is_skipped(pytorch_annotator, tmp_path):
     assert len(rec.ref) > 2 * 50
     scores = get_delta_scores(rec, annotator, dist_var=50, mask=0, flanking_size=80)
     assert scores == []
+
+
+def test_ref_allele_in_reshape_gap_is_skipped_not_crashed(pytorch_annotator):
+    """REF alleles longer than the reshape can realign (dist_var+1 < ref_len <= 2*dist_var) are
+    skipped, not crashed. These lengths pass the old ``> 2*dist_var`` guard but overrun the score
+    realignment -- a large deletion empties the max-slice (np.max ValueError) and an equal-length
+    MNV overruns cov (concatenate shape mismatch) -- so both must now return []. Fixture records
+    [7] (60->1 deletion) and [8] (60->60 MNV).
+    """
+    from openspliceai.variant.utils import get_delta_scores
+    annotator, ref, ann, vcf = pytorch_annotator
+    recs = _records(vcf)
+
+    for idx in (7, 8):
+        rec = recs[idx]
+        assert 51 < len(rec.ref) <= 100          # in the gap: passes old guard, fails reshape
+        scores = get_delta_scores(rec, annotator, dist_var=50, mask=0, flanking_size=80)
+        assert scores == [], idx
+
+
+# ---------------------------------------------------------------------------------------
+# Multi-nucleotide variants (ref>1 AND alt>1). These used to be short-circuited to a
+# "<alt>|<gene>|.|.|.|.|.|.|.|." placeholder; this branch scores them for real via the
+# ``ref_len > 1 and alt_len > 1`` path in get_delta_scores. The fixture VCF supplies them as
+# records [4] (2->2), [5] (3->2 delins) and [6] (2->3 delins).
+# ---------------------------------------------------------------------------------------
+def test_equal_length_mnv_is_scored_not_placeholder(pytorch_annotator):
+    """A 2->2 MNV yields a real, fully numeric 10-field score (not a '.' placeholder).
+
+    Pre-branch this returned ``<alt>|<gene>|.|.|.|.|.|.|.|.`` and every DS/DP field was '.';
+    now the ``ref_len>1 and alt_len>1`` branch produces numbers, so float()/int() must parse.
+    """
+    from openspliceai.variant.utils import get_delta_scores
+    annotator, ref, ann, vcf = pytorch_annotator
+    mnv = _records(vcf)[4]
+    assert len(mnv.ref) == 2 and len(mnv.alts[0]) == 2
+
+    scores = get_delta_scores(mnv, annotator, dist_var=50, mask=0, flanking_size=80)
+    assert len(scores) == 1
+    fields = scores[0].split("|")
+    assert len(fields) == 10
+    assert fields[0] == mnv.alts[0]         # ALLELE
+    assert fields[1] == "GENE1"             # SYMBOL
+    # DS_AG/DS_AL/DS_DG/DS_DL parse as floats (would be '.' under the old placeholder path)
+    for f in fields[2:6]:
+        assert f != "."
+        float(f)
+    # DP_AG/DP_AL/DP_DG/DP_DL parse as ints
+    for f in fields[6:10]:
+        int(f)
+
+
+def test_delins_unequal_lengths_both_gt_one(pytorch_annotator):
+    """MNVs where ref and alt lengths differ but both exceed 1 (delins) are scored without
+    error. This exercises the zero-block sizing (``ref_len-1``) in the MNV branch, which only
+    matters when ref_len != alt_len. Records [5] (3->2) and [6] (2->3) cover both directions.
+    """
+    from openspliceai.variant.utils import get_delta_scores
+    annotator, ref, ann, vcf = pytorch_annotator
+    recs = _records(vcf)
+
+    for idx, (rl, al) in [(5, (3, 2)), (6, (2, 3))]:
+        rec = recs[idx]
+        assert len(rec.ref) == rl and len(rec.alts[0]) == al
+
+        scores = get_delta_scores(rec, annotator, dist_var=50, mask=0, flanking_size=80)
+        assert len(scores) == 1, idx
+        fields = scores[0].split("|")
+        assert len(fields) == 10, idx
+        assert fields[0] == rec.alts[0]
+        for f in fields[2:6]:
+            assert f != "."
+            float(f)
+        for f in fields[6:10]:
+            int(f)
 
 
 def test_get_name_and_strand_finds_overlapping_gene(pytorch_annotator):

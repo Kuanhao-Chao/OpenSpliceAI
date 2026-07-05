@@ -69,7 +69,7 @@ def test_batched_equals_sequential(pytorch_annotator, batch_size, mask):
 
 
 def test_batched_total_score_count_matches(pytorch_annotator):
-    """Sanity: across all records the batched path emits the same 5 scores as sequential."""
+    """Sanity: across all records the batched path emits the same 8 scores as sequential."""
     from openspliceai.variant.utils import get_delta_scores, get_delta_scores_batched
 
     annotator, vcf = pytorch_annotator
@@ -84,4 +84,5 @@ def test_batched_total_score_count_matches(pytorch_annotator):
             records, annotator, dist_var=50, mask=0, flanking_size=80, batch_size=4
         )
     )
-    assert seq_total == bat_total == 5   # SNV(1) + del(1) + ins(1) + multiallelic(2)
+    # SNV(1) + del(1) + ins(1) + multiallelic(2) + 3 MNVs(1 each)
+    assert seq_total == bat_total == 8

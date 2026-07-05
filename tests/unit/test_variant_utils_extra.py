@@ -61,8 +61,12 @@ def test_batched_equals_sequential_on_minus_strand(minus_annotator, mask):
 
 # --- MNV + bad record short circuits -------------------------------------------------
 
-def test_multinucleotide_variant_emits_dotted_score(minus_annotator):
-    """A REF>1 & ALT>1 record short-circuits to a '.'-filled score (no model run)."""
+def test_multinucleotide_variant_is_scored_minus_strand(minus_annotator):
+    """A REF>1 & ALT>1 record is scored for real on a minus-strand gene.
+
+    Formerly MNVs short-circuited to a '.'-filled placeholder; now the
+    ``ref_len>1 and alt_len>1`` branch runs the model, so the DS/DP fields are numeric.
+    """
     import pysam
     annotator, _vcf = minus_annotator
     pos = 6100
@@ -77,7 +81,14 @@ def test_multinucleotide_variant_emits_dotted_score(minus_annotator):
     rec = next(iter(pysam.VariantFile(mnv)))
     scores = vu.get_delta_scores(rec, annotator, 50, 0, flanking_size=80)
     assert len(scores) == 1
-    assert scores[0] == f"{alt2}|GENEM|.|.|.|.|.|.|.|."
+    fields = scores[0].split("|")
+    assert len(fields) == 10
+    assert fields[0] == alt2 and fields[1] == "GENEM"
+    for f in fields[2:6]:      # DS fields numeric, not '.'
+        assert f != "."
+        float(f)
+    for f in fields[6:10]:     # DP fields numeric
+        int(f)
 
 
 def test_bad_record_returns_empty(minus_annotator):
