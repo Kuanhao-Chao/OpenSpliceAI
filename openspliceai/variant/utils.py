@@ -450,8 +450,11 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision
         logging.warning('Skipping record (near chromosome end): {}'.format(record))
         return delta_scores
 
-    # Skip records with a reference allele longer than the distance variable
-    if len(record.ref) > 2 * dist_var:
+    # Skip records whose reference allele is too long for the score reshape to
+    # realign. The reshape below only stays cov-length when ref_len <= dist_var + 1;
+    # beyond that the max-slice empties (deletions) or the output overruns cov (MNVs),
+    # which would raise rather than score. dist_var == cov // 2.
+    if len(record.ref) > dist_var + 1:
         logging.warning('Skipping record (ref too long): {}'.format(record))
         return delta_scores
 
@@ -465,17 +468,11 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision
             if '<' in record.alts[j] or '>' in record.alts[j]:
                 continue
 
-            # Handle multi-nucleotide variants
-            if len(record.ref) > 1 and len(record.alts[j]) > 1:
-                delta_scores.append("{}|{}|.|.|.|.|.|.|.|.".format(record.alts[j], genes[i]))
-                continue
-
             # Calculate position-related distances
             dist_ann = ann.get_pos_data(idxs[i], record.pos)
             pad_size = [max(wid // 2 + dist_ann[0], 0), max(wid // 2 - dist_ann[1], 0)]
             ref_len = len(record.ref)
             alt_len = len(record.alts[j])
-            del_len = max(ref_len - alt_len, 0)
 
             # Construct reference and alternative sequences with padding
             x_ref = 'N' * pad_size[0] + seq[pad_size[0]: wid - pad_size[1]] + 'N' * pad_size[1]
@@ -547,17 +544,16 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision
                 y_alt = y_alt[:, start_idx : start_idx + cov + alt_len - ref_len, :]
 
 
-            # Adjust the alternative sequence scores based on reference and alternative lengths
-            if ref_len > 1 and alt_len == 1:
-                y_alt = np.concatenate([
-                    y_alt[:, : cov // 2 + alt_len],
-                    np.zeros((1, del_len, 3)),
-                    y_alt[:, cov // 2 + alt_len:]
-                ], axis=1)
-            elif ref_len == 1 and alt_len > 1:
+            # Adjust the alternative sequence scores for indels/MNVs so y_alt aligns
+            # with y_ref. The max-block collapses to a single position when alt_len==1
+            # and the zero-block vanishes when ref_len==1, so this one expression covers
+            # deletions, insertions, and MNVs alike. SNVs (ref_len==alt_len==1) need no
+            # reshaping and are skipped.
+            if ref_len > 1 or alt_len > 1:
                 y_alt = np.concatenate([
                     y_alt[:, : cov // 2],
                     np.max(y_alt[:, cov // 2 : cov // 2 + alt_len], axis=1)[:, None, :],
+                    np.zeros((1, ref_len - 1, 3)),
                     y_alt[:, cov // 2 + alt_len:]
                 ], axis=1)
 
@@ -666,7 +662,7 @@ def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, 
         if len(seq) != wid:
             logging.warning('Skipping record (near chromosome end): {}'.format(record))
             continue
-        if len(record.ref) > 2 * dist_var:
+        if len(record.ref) > dist_var + 1:   # see get_delta_scores: reshape needs ref_len <= dist_var + 1
             logging.warning('Skipping record (ref too long): {}'.format(record))
             continue
 
@@ -676,15 +672,11 @@ def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, 
                     continue
                 if '<' in record.alts[j] or '>' in record.alts[j]:
                     continue
-                if len(record.ref) > 1 and len(record.alts[j]) > 1:
-                    entries.append("{}|{}|.|.|.|.|.|.|.|.".format(record.alts[j], genes[i]))
-                    continue
 
                 dist_ann = ann.get_pos_data(idxs[i], record.pos)
                 pad_size = [max(wid // 2 + dist_ann[0], 0), max(wid // 2 - dist_ann[1], 0)]
                 ref_len = len(record.ref)
                 alt_len = len(record.alts[j])
-                del_len = max(ref_len - alt_len, 0)
 
                 x_ref = 'N' * pad_size[0] + seq[pad_size[0]: wid - pad_size[1]] + 'N' * pad_size[1]
                 x_alt = x_ref[: wid // 2] + str(record.alts[j]) + x_ref[wid // 2 + ref_len:]
@@ -707,7 +699,7 @@ def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, 
                 items.append({
                     'r': r, 'slot': slot, 'ref_idx': ref_index[rk], 'alt_idx': len(alt_list),
                     'strand': strands[i], 'gene': genes[i], 'alt': record.alts[j],
-                    'ref_len': ref_len, 'alt_len': alt_len, 'del_len': del_len, 'dist_ann': dist_ann,
+                    'ref_len': ref_len, 'alt_len': alt_len, 'dist_ann': dist_ann,
                 })
                 alt_list.append(x_alt[0])                                   # (4, wid)
 
@@ -744,7 +736,6 @@ def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, 
         for it in items:
             ref_len = it['ref_len']
             alt_len = it['alt_len']
-            del_len = it['del_len']
             dist_ann = it['dist_ann']
             y_ref = Yref[it['ref_idx']]        # (Lout, 3); ref shared across the position's alts
             y_alt = Yalt[it['alt_idx']]
@@ -759,13 +750,11 @@ def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, 
                 y_ref = y_ref[:, start_idx: start_idx + cov, :]
                 y_alt = y_alt[:, start_idx: start_idx + cov + alt_len - ref_len, :]
 
-            if ref_len > 1 and alt_len == 1:
-                y_alt = np.concatenate([
-                    y_alt[:, : cov // 2 + alt_len], np.zeros((1, del_len, 3)), y_alt[:, cov // 2 + alt_len:]], axis=1)
-            elif ref_len == 1 and alt_len > 1:
+            # Single expression covering deletions, insertions, and MNVs; see get_delta_scores.
+            if ref_len > 1 or alt_len > 1:
                 y_alt = np.concatenate([
                     y_alt[:, : cov // 2], np.max(y_alt[:, cov // 2: cov // 2 + alt_len], axis=1)[:, None, :],
-                    y_alt[:, cov // 2 + alt_len:]], axis=1)
+                    np.zeros((1, ref_len - 1, 3)), y_alt[:, cov // 2 + alt_len:]], axis=1)
 
             y = np.concatenate([y_ref, y_alt])
             idx_pa = (y[1, :, 1] - y[0, :, 1]).argmax()
