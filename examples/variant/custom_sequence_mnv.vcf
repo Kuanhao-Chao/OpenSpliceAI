@@ -1,0 +1,10 @@
+##fileformat=VCFv4.2
+##note=Reference-anchored custom-sequence scoring: encode a multi-variant window (adjacent or not)
+##note=as ONE multi-nucleotide record. REF must match your reference genome at POS; ALT is the
+##note=edited span. Its length must be <= (-D/--distance)+1 (default 50 -> up to 51 bp; raise -D
+##note=for wider windows). Replace CHROM/POS/REF/ALT below with a real locus from YOUR reference
+##note=(so REF matches), then run score_custom_mnv.sh. The example mirrors GitHub issue #15:
+##note=ref ATGATTCCT -> alt ACGAATCCA (three substitutions in a 9 bp window).
+##contig=<ID=chr1,length=248956422>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr1	1000000	.	ATGATTCCT	ACGAATCCA	.	.	.

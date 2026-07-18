@@ -55,7 +55,7 @@ Input Files
 Output Files
 ------------
 
-The primary output is a **VCF file** with added OpenSpliceAI annotations for each variant that passes filtering. Only SNVs and simple INDELs (REF or ALT is a single base) within genes are annotated. Variants in multiple genes have separate predictions for each gene. Each variant line in the annotated VCF contains a string in the ``INFO`` field with the format:
+The primary output is a **VCF file** with added OpenSpliceAI annotations for each variant that passes filtering. SNVs, simple INDELs, and multi-nucleotide variants (MNVs / delins, where REF **and** ALT are both multiple bases) within genes are annotated, as long as the REF allele is no longer than ``dist_var + 1`` bases (``dist_var`` is the ``-D/--distance`` window, default 50, so REF ≤ 51 bp by default; raise ``-D`` for longer spans). Records whose REF exceeds that are skipped with a warning rather than scored. Variants in multiple genes have separate predictions for each gene. Each variant line in the annotated VCF contains a string in the ``INFO`` field with the format:
 
 .. code-block:: text
 
@@ -257,13 +257,75 @@ This command:
 
 |
 
+Scoring custom sequences
+------------------------
+
+Sometimes you want to score changes that don't fit a one-row-per-single-variant VCF — for
+example **several substitutions within a short window** (adjacent or not), comparing a wild-type
+span to an arbitrary mutant span while keeping the surrounding genomic context. There are two
+ways to do this with OpenSpliceAI.
+
+**1. Reference-anchored windows → a single MNV record (recommended).**
+If the sequence you want to score corresponds to a real locus in your reference genome, encode
+the whole edited window as **one multi-nucleotide VCF record**: REF is the reference span, ALT is
+your edited span. ``variant`` extracts the flanking context around it automatically and returns
+delta scores for the combined edit. For example, to score ``ref: ATGATTCCT`` → ``alt: ACGAATCCA``
+at ``chr1:1000000``:
+
+.. code-block:: text
+
+   #CHROM  POS      ID  REF        ALT        QUAL  FILTER  INFO
+   chr1    1000000  .   ATGATTCCT  ACGAATCCA  .     .       .
+
+.. code-block:: bash
+
+   openspliceai variant -R GRCh38.fa -A grch38 -m /path/to/models/ -f 10000 \
+      -I custom.vcf -O custom.annotated.vcf
+
+The REF allele must match the reference at that position, and its length must be
+≤ ``-D/--distance`` + 1 (default 50 → up to 51 bp; raise ``-D`` for wider windows). The changes
+inside the window need not be adjacent — any span of substitutions/indels is treated as one
+combined edit and collapsed to a single delta per event.
+
+**2. Fully-synthetic sequences (not in any reference).**
+If your sequences are not tied to a reference locus, score them directly against a loaded model,
+the same way the original SpliceAI does for custom sequences. Provide a wild-type and a mutant
+sequence of length ``flanking_size + 1`` (the extra base is the position being scored; pad with
+``N`` if you don't have full context) and take the per-position difference of the donor/acceptor
+channels:
+
+.. code-block:: python
+
+   import numpy as np, torch
+   from openspliceai.variant.utils import one_hot_encode
+   from openspliceai.train_base.openspliceai import SpliceAI  # or load a packaged checkpoint
+
+   flank = 80                                   # must match the model's flanking size
+   ref = "…"                                    # length flank + L (L = bases you want scored)
+   alt = "…"                                    # same length as ref (substitutions), N-padded ends OK
+
+   model = ...                                  # build SpliceAI(...) and load_state_dict(...); model.eval()
+   def scores(seq):
+       x = torch.tensor(one_hot_encode(seq)[None].transpose(0, 2, 1), dtype=torch.float32)
+       with torch.no_grad():
+           y = model(x).permute(0, 2, 1).numpy()[0]   # (L, 3): [null, acceptor, donor]
+       return y
+   y_ref, y_alt = scores(ref), scores(alt)
+   delta_acceptor = y_alt[:, 1] - y_ref[:, 1]   # >0 gain, <0 loss, per position
+   delta_donor    = y_alt[:, 2] - y_ref[:, 2]
+
+A runnable version of both approaches is in ``examples/variant/``: ``custom_sequence_mnv.vcf`` +
+``score_custom_mnv.sh`` for the VCF path, and ``score_custom_sequence.py`` for the synthetic path.
+
+|
+
 Processing Pipeline
 -------------------
 
 #. **VCF Parsing/Filtering**
 
    - For each variant, the subcommand checks if it lies within an annotated gene region. If it isn't, it will be filtered out.  
-   - Variants that are too close to the chromosome ends (< ``flanking-size`` / 2 bases on either side), have deletions of length > 2 * ``distance``, or have reference alleles mismatching the FASTA are automatically skipped.
+   - Variants that are too close to the chromosome ends (< ``flanking-size`` / 2 bases on either side), have a reference allele longer than ``distance`` + 1 bases (beyond which the score window can no longer be realigned), or have reference alleles mismatching the FASTA are automatically skipped.
 
 #. **Reference & Mutant Sequence Extraction**
 
