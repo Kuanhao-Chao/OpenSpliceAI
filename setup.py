@@ -27,13 +27,19 @@ setuptools.setup(
 	# install_requires=
     install_requires=[
         'h5py>=3.9.0',
-        'numpy>=1.24.4',
+        # numpy>=2.0: numpy removed `np.long` in 1.24 and re-added it in 2.0, so
+        # 1.24-1.26 is a gap where a numpy-2-era dependency reading `np.long`
+        # crashes on import (GitHub issue #19). OpenSpliceAI's own code is
+        # numpy-2.0 clean, so we floor at 2.0 to keep the whole stack on the same
+        # side of that gap. torch>=2.3 is the first release with numpy-2 support,
+        # so the two floors move together.
+        'numpy>=2.0.0',
         'gffutils>=0.12',
         'pysam>=0.22.0',
-        'pandas>=1.5.3',
+        'pandas>=2.2.2',
         'pyfaidx>=0.8.1.1',
         'tqdm>=4.65.2',
-        'torch>=2.2.1',
+        'torch>=2.3.0',
         'scikit-learn>=1.4.1.post1',
         'biopython>=1.83',
         'matplotlib>=3.8.3',

@@ -8,13 +8,16 @@ Description: Main script to run OpenSpliceAI toolkit.
 import argparse
 import sys
 from openspliceai import header
-from openspliceai.create_data import create_datafile, create_dataset, verify_h5_file
-from openspliceai.train import train
-# from openspliceai.test import test
-from openspliceai.calibrate import calibrate
-from openspliceai.transfer import transfer
-from openspliceai.predict import predict
-from openspliceai.variant import variant
+
+# NOTE: the subcommand packages (create_data, train, calibrate, transfer,
+# predict, variant) are imported lazily inside main()'s dispatch, NOT here. Each
+# one pulls a heavy dependency stack (torch, pandas, scikit-learn/scipy,
+# biopython, pysam, matplotlib, ...). Importing them at module load makes even
+# `openspliceai` with no arguments or `openspliceai --help` drag in the entire
+# stack, so a numpy/alias incompatibility in any single transitive dependency
+# (e.g. GitHub issue #19: a dependency reading numpy's removed `np.long`) breaks
+# the whole CLI. Deferring these imports keeps argument parsing dependency-free
+# and scopes each subcommand's imports to when that subcommand actually runs.
 
 __VERSION__ = header.__version__
 
@@ -218,19 +221,26 @@ Deep learning framework that decodes splicing across species
     args = parse_args(arglist)
     
     if args.command == 'create-data':
+        from openspliceai.create_data import create_datafile, create_dataset, verify_h5_file
         create_datafile.create_datafile(args)
         create_dataset.create_dataset(args)
         if args.verify_h5:
             verify_h5_file.verify_h5(args)
     elif args.command == 'train':
+        from openspliceai.train import train
         train.train(args)
     # elif args.command == 'test':
+    #     from openspliceai.test import test
     #     test.test(args)
     elif args.command == 'calibrate':
+        from openspliceai.calibrate import calibrate
         calibrate.calibrate(args)
     elif args.command == 'transfer':
+        from openspliceai.transfer import transfer
         transfer.transfer(args)
     elif args.command == 'predict':
+        from openspliceai.predict import predict
         predict.predict_cli(args)
     elif args.command == 'variant':
+        from openspliceai.variant import variant
         variant.variant(args)

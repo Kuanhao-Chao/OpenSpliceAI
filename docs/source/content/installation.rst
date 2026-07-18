@@ -52,13 +52,13 @@ This command installs third‐party libraries including:
 
    * python >= 3.9.0
    * h5py >= 3.9.0
-   * numpy >= 1.24.4
+   * numpy >= 2.0.0
    * gffutils >= 0.12
    * pysam >= 0.22.0
-   * pandas >= 1.5.3
+   * pandas >= 2.2.2
    * pyfaidx >= 0.8.1.1
    * tqdm >= 4.65.2
-   * torch >= 2.2.1
+   * torch >= 2.3.0
    * scikit-learn >= 1.4.1.post1
    * biopython >= 1.83
    * matplotlib >= 3.8.3
@@ -69,7 +69,12 @@ This command installs third‐party libraries including:
 .. admonition:: Version Warning
    :class: important
 
-   If your numpy version is >= 1.25.0, it requires Python >= 3.9. For further guidance, please refer to the scientific python ecosystem coordination guideline `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`_.
+   OpenSpliceAI requires **numpy >= 2.0** (paired with **torch >= 2.3**). numpy removed
+   ``np.long`` in 1.24 and re-added it in 2.0, so installing into an environment pinned to
+   numpy 1.24–1.26 can surface ``module 'numpy' has no attribute 'long'`` from a numpy-2-era
+   dependency that reads it; the ``>= 2.0`` floor keeps the whole stack on one side of that gap.
+   numpy 2.x requires Python >= 3.9 — for further guidance see the scientific python ecosystem
+   coordination guideline `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`_.
 
 |
 

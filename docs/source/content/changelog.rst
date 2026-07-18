@@ -26,6 +26,22 @@ v0.0.8.dev0 (unreleased)
   See the ``transfer`` docs ("Mitigating catastrophic forgetting") and
   ``examples/transfer/transfer_forgetting_cmd.sh``.
 
+**Bug fixes**
+
+- CLI: ``openspliceai`` (and ``openspliceai --help``) no longer imports the full dependency
+  stack at startup. Each subcommand's heavy dependencies (torch, pandas, scikit-learn/scipy,
+  biopython, pysam, ...) are now imported lazily inside dispatch, so an import-time failure in
+  a single transitive dependency can no longer break the whole CLI
+  (`#19 <https://github.com/Kuanhao-Chao/OpenSpliceAI/issues/19>`_:
+  ``module 'numpy' has no attribute 'long'`` on a no-argument invocation).
+
+**Dependencies**
+
+- Floored ``numpy>=2.0`` (together with ``torch>=2.3`` and ``pandas>=2.2.2``). numpy removed
+  ``np.long`` in 1.24 and re-added it in 2.0, so 1.24–1.26 is a gap where a numpy-2-era
+  dependency reading ``np.long`` fails to import. OpenSpliceAI's own code is numpy-2.0 clean,
+  so keeping the whole stack on the numpy-2 side of that gap avoids the failure (issue #19).
+
 v0.0.7 (2026-06-23)
 -------------------
 
