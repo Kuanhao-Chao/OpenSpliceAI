@@ -26,6 +26,17 @@ v0.0.8.dev0 (unreleased)
   See the ``transfer`` docs ("Mitigating catastrophic forgetting") and
   ``examples/transfer/transfer_forgetting_cmd.sh``.
 
+- ``variant``: **multi-nucleotide variants (MNVs / delins)** — records where REF and ALT are
+  both multiple bases — are now scored instead of emitting a ``.|.|.|.`` placeholder
+  (`#18 <https://github.com/Kuanhao-Chao/OpenSpliceAI/issues/18>`_, thanks to @bpow). Deletion,
+  insertion, and MNV score-reshaping are unified into one expression, and the "ref too long"
+  guard is tightened to ``len(REF) > dist_var + 1`` — the exact point beyond which the reshape
+  can no longer realign within the score window (this also fixes a latent bug where large
+  deletions previously produced silently misaligned scores). This enables scoring
+  reference-anchored multi-variant windows as a single MNV record; see "Scoring custom
+  sequences" in the ``variant`` docs (addresses
+  `#15 <https://github.com/Kuanhao-Chao/OpenSpliceAI/issues/15>`_).
+
 **Bug fixes**
 
 - CLI: ``openspliceai`` (and ``openspliceai --help``) no longer imports the full dependency
