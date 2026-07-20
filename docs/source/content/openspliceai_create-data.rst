@@ -158,7 +158,7 @@ Processing Pipeline
 -------------------
 
 1. Gene Sequence Processing
-   ===========================
+===========================
 
    - **Sequence Conversion**:  
      Each gene is transformed into a 3D tensor :math:`X` using one-hot encoding. The nucleotides are represented as follows:
@@ -188,7 +188,7 @@ Processing Pipeline
         \lceil 12000 / 5000 \rceil \times (10000 + 5000) \times 4 = 3 \times 15000 \times 4
 
 2. Label Generation
-   =================
+===================
 
    - **Label Tensor Construction**:  
      Labels are generated from genome annotations and encoded as follows:
@@ -204,7 +204,7 @@ Processing Pipeline
         \lceil L / W \rceil \times W \times 3
 
 3. Gene Sequence Chunking
-   ========================
+=========================
 
    - **Overlapping Chunks**:  
      Following SpliceAI’s methodology, gene sequences are divided into overlapping chunks using a step size equal to the window size (5,000 nucleotides). Flanking sequences (also defaulted to 5,000 nucleotides) are appended on each side.
@@ -212,13 +212,13 @@ Processing Pipeline
      *Example*: A 22,000-nucleotide gene is divided into 5 chunks, resulting in a tensor shape of ``(5, 15,000, 4)`` for the sequences and ``(5, 5,000, 3)`` for the labels.
 
 4. Canonical Transcript Selection
-   ===============================
+=================================
 
    - For each gene locus, the longest transcript is selected as the canonical transcript.
    - By default, the ``--biotype`` flag is set to **protein-coding**, thereby filtering out non-coding genes.
 
 5. Training and Testing Data Splitting
-   =====================================
+======================================
 
    - **Automatic Splitting**:  
      If not explicitly provided, the toolkit splits chromosomes into training and testing sets with an approximate 80:20 ratio.
@@ -231,7 +231,7 @@ Processing Pipeline
      Use the ``--chr-split`` option to manually specify chromosome assignments.
 
 6. Removal of Pseudogenes and Paralogous Genes
-   =============================================
+==============================================
 
    - **Pseudogenes Filtering**:  
      Genes marked as ``pseudogene`` (either in the feature type or via the ``gene_biotype`` attribute) are excluded from the test dataset.
@@ -240,7 +240,7 @@ Processing Pipeline
      To avoid sequence similarity between training and testing sets (and thus data leakage), the toolkit uses *mappy* (a Python wrapper for minimap2) with the ``--asm20`` argument (allowing a divergence threshold of 5%). Test sequences sharing over 80% similarity and 80% coverage with training sequences are removed.
 
 7. Splice Site Labeling Options
-   =============================
+===============================
 
    - **Canonical-only Mode**:  
      The ``--canonical-only`` flag restricts label generation to conserved splice site motifs. These include:

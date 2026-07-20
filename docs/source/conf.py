@@ -142,6 +142,7 @@ html_static_path = ['_static']
 
 # html_logo = "./_static/logo.png"
 # html_extra_path = ['image']
+html_extra_path = ['google5ed79d6dabf65a2d.html']
 
 def setup(app):
     app.add_css_file('custom.css')

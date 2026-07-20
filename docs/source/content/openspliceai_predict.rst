@@ -52,12 +52,12 @@ Output Files
 
 - **Intermediate Files** (depending on parameters):
   - **HDF5 Files**: One-hot-encoded sequences and/or raw predictions.
-   - ``datafile.h5``: Raw extracted sequences
-   - ``dataset.h5``: Batched input for prediction
-   - ``predict.h5``: Raw predictions from the model (if ``--predict-all``)
+    - ``datafile.h5``: Raw extracted sequences
+    - ``dataset.h5``: Batched input for prediction
+    - ``predict.h5``: Raw predictions from the model (if ``--predict-all``)
   - **Extracted FASTA**: Refined versions of the input FASTA are created with overlapping regions to avoid missing predictions at chunk boundaries.
-   - ``[name]_genes.fa``: FASTA file containing only gene regions (if GFF provided)
-   - ``[name]_split.fa``: Split FASTA file (if any sequence in the input FASTA exceeds the ``--split-threshold``)
+    - ``[name]_genes.fa``: FASTA file containing only gene regions (if GFF provided)
+    - ``[name]_split.fa``: Split FASTA file (if any sequence in the input FASTA exceeds the ``--split-threshold``)
 
 |
 
