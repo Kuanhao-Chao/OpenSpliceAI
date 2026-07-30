@@ -3,6 +3,7 @@
 *.h5
 *.png
 !/docs/source/_images/*
+!/docs/source/_static/*
 *.txt
 !requirements.txt
 !openspliceai/variant/annotations/*.txt

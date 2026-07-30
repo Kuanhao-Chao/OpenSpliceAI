@@ -105,7 +105,7 @@ Initial release
 - Initial release of OpenSpliceAI, distributed on `PyPI
   <https://pypi.org/project/openspliceai/>`_ and `GitHub
   <https://github.com/Kuanhao-Chao/OpenSpliceAI>`_.
-- Released via the documentation (https://ccb.jhu.edu/openspliceai) and the paper
+- Released via the documentation (https://khchao.com/OpenSpliceAI) and the paper
   (https://doi.org/10.7554/eLife.107454).
 
 

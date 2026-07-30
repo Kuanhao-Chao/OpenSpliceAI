@@ -35,7 +35,7 @@ Input Files
 
 2. **Testing HDF5 File**
 
-   An HDF5 file for held-out testing. The data format should match the one produced by the :ref:`create_data_subcommand`.
+   An HDF5 file for held-out testing. The data format should match the one produced by the :ref:`create-data_subcommand`.
 
 3. **Pre-trained Model (PT File)**
 

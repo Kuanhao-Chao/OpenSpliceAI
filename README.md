@@ -47,17 +47,17 @@ If you need to predict how genetic variants affect splicing, OpenSpliceAI’s va
 <section id="what-openspliceai-does">
 <h1>What OpenSpliceAI Does<a class="headerlink" href="#what-openspliceai-does" title="Permalink to this heading">#</a></h1>
 <ul class="simple">
-<li><p><strong>Data Preprocessing</strong> (<a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_create-data.html#create-data-subcommand"><span class="std std-ref">create-data</span></a>):
+<li><p><strong>Data Preprocessing</strong> (<a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_create-data.html#create-data-subcommand"><span class="std std-ref">create-data</span></a>):
 Converts genome FASTA and annotation (GFF/GTF) files into one-hot encoded datasets (HDF5 format) for training and testing.</p></li>
-<li><p><strong>Model Training</strong> (<a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_train.html#train-subcommand"><span class="std std-ref">train</span></a>):
+<li><p><strong>Model Training</strong> (<a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_train.html#train-subcommand"><span class="std std-ref">train</span></a>):
 Trains deep residual convolutional neural networks on the preprocessed datasets. OpenSpliceAI supports training from scratch and employs adaptive learning rate schedulers and early stopping.</p></li>
-<li><p><strong>Transfer Learning</strong> (<a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_transfer.html#transfer-subcommand"><span class="std std-ref">transfer</span></a>):
+<li><p><strong>Transfer Learning</strong> (<a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_transfer.html#transfer-subcommand"><span class="std std-ref">transfer</span></a>):
 Fine-tunes a pre-trained human model for other species, reducing training time and improving performance on species with limited data.</p></li>
-<li><p><strong>Model Calibration</strong> (<a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_calibrate.html#calibrate-subcommand"><span class="std std-ref">calibrate</span></a>):
+<li><p><strong>Model Calibration</strong> (<a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_calibrate.html#calibrate-subcommand"><span class="std std-ref">calibrate</span></a>):
 Adjusts model output probabilities to better reflect true splice site likelihoods, enhancing prediction accuracy.</p></li>
-<li><p><strong>Prediction</strong> (<a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_predict.html#predict-subcommand"><span class="std std-ref">predict</span></a>):
+<li><p><strong>Prediction</strong> (<a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_predict.html#predict-subcommand"><span class="std std-ref">predict</span></a>):
 Uses trained models to generate splice site predictions from FASTA sequences, outputting BED files with donor and acceptor site coordinates.</p></li>
-<li><p><strong>Variant Analysis</strong> (<a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#variant-subcommand"><span class="std std-ref">variant</span></a>):
+<li><p><strong>Variant Analysis</strong> (<a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html#variant-subcommand"><span class="std std-ref">variant</span></a>):
 Annotates VCF files with delta scores and positions to evaluate the impact of genetic variants on splicing.</p></li>
 </ul>
 <div class="line-block">
@@ -70,7 +70,7 @@ Annotates VCF files with delta scores and positions to evaluate the impact of ge
 <pre><code>pip install openspliceai</code></pre>
 <p>or from <strong>Bioconda</strong> (make sure the <code>conda-forge</code> and <code>bioconda</code> channels are enabled):</p>
 <pre><code>conda install -c conda-forge -c bioconda openspliceai</code></pre>
-<p>See the <a class="reference external" href="https://ccb.jhu.edu/openspliceai/content/installation.html#installation">Installation Guide</a> for GPU/CUDA setup and other options.</p>
+<p>See the <a class="reference external" href="https://khchao.com/OpenSpliceAI/content/installation.html#installation">Installation Guide</a> for GPU/CUDA setup and other options.</p>
 <div class="line-block">
 <div class="line"><br></div>
 </div>
@@ -96,7 +96,7 @@ Annotates VCF files with delta scores and positions to evaluate the impact of ge
 </section>
 <section id="next-steps">
 <h1>Next Steps<a class="headerlink" href="#next-steps" title="Permalink to this heading">#</a></h1>
-<p>Check out the <a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html#installation"><span class="std std-ref">Installation Guide</span></a> to get started with OpenSpliceAI. For a quick overview of the main commands and subcommands, see the <a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/quick_start_guide/index.html#quick-start-home"><span class="std std-ref">Quick Start Guide</span></a>.</p>
+<p>Check out the <a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/installation.html#installation"><span class="std std-ref">Installation Guide</span></a> to get started with OpenSpliceAI. For a quick overview of the main commands and subcommands, see the <a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/quick_start_guide/index.html#quick-start-home"><span class="std std-ref">Quick Start Guide</span></a>.</p>
 <div class="line-block">
 <div class="line"><br></div>
 </div>
@@ -112,7 +112,7 @@ pytest                                      # full suite</code></pre>
 <p><strong>Lint and pre-commit hooks</strong> (configured in <code>ruff.toml</code> and <code>.pre-commit-config.yaml</code>):</p>
 <pre><code>ruff check .            # lint (add --fix to auto-fix)
 pre-commit install      # run ruff + checks on every commit</code></pre>
-<p>See the <a class="reference external" href="https://ccb.jhu.edu/openspliceai/">full documentation</a> for the complete development and testing guide.</p>
+<p>See the <a class="reference external" href="https://khchao.com/OpenSpliceAI/">full documentation</a> for the complete development and testing guide.</p>
 <div class="line-block">
 <div class="line"><br></div>
 </div>
@@ -121,111 +121,112 @@ pre-commit install      # run ruff + checks on every commit</code></pre>
 <h1>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html#prerequisites">Prerequisites</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html#installation-methods">Installation Methods</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html#detailed-installation-for-pytorch-and-mappy">Detailed Installation for PyTorch and mappy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html#check-openspliceai-installation">Check OpenSpliceAI Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html#terminal-output-example">Terminal Output Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/installation.html#next-steps">Next Steps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/installation.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/installation.html#installation-methods">Installation Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/installation.html#detailed-installation-for-pytorch-and-mappy">Detailed Installation for PyTorch and mappy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/installation.html#check-openspliceai-installation">Check OpenSpliceAI Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/installation.html#terminal-output-example">Terminal Output Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/installation.html#next-steps">Next Steps</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/quick_start_guide/index.html">Quick Start Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/quick_start_guide/index.html#usage-1-predict">Usage 1 – Predict</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/quick_start_guide/index.html#usage-2-train-from-scratch">Usage 2 – Train from Scratch</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/quick_start_guide/index.html#usage-3-transfer-learning">Usage 3 – Transfer Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/quick_start_guide/index.html">Quick Start Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/quick_start_guide/index.html#usage-1-predict">Usage 1 – Predict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/quick_start_guide/index.html#usage-2-train-from-scratch">Usage 2 – Train from Scratch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/quick_start_guide/index.html#usage-3-transfer-learning">Usage 3 – Transfer Learning</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_create-data.html">create-data</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_create-data.html#input-files">Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_create-data.html#output-files">Output Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_create-data.html#usage">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_create-data.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_create-data.html#processing-pipeline">Processing Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_create-data.html#conclusion">Conclusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_create-data.html">create-data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_create-data.html#input-files">Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_create-data.html#output-files">Output Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_create-data.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_create-data.html#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_create-data.html#processing-pipeline">Processing Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_create-data.html#conclusion">Conclusion</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_train.html">train</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_train.html#subcommand-description">Subcommand Description</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_train.html#input-files">Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_train.html#output-files">Output Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_train.html#usage">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_train.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_train.html#processing-steps">Processing Steps</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_train.html#conclusion">Conclusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_train.html">train</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_train.html#subcommand-description">Subcommand Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_train.html#input-files">Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_train.html#output-files">Output Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_train.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_train.html#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_train.html#processing-steps">Processing Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_train.html#conclusion">Conclusion</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_transfer.html">transfer</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_transfer.html#subcommand-description">Subcommand Description</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_transfer.html#input-files">Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_transfer.html#output-files">Output Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_transfer.html#usage">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_transfer.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_transfer.html#processing-pipeline">Processing Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_transfer.html#conclusion">Conclusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_transfer.html">transfer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_transfer.html#subcommand-description">Subcommand Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_transfer.html#input-files">Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_transfer.html#output-files">Output Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_transfer.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_transfer.html#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_transfer.html#processing-pipeline">Processing Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_transfer.html#conclusion">Conclusion</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_calibrate.html">calibrate</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_calibrate.html#subcommand-description">Subcommand Description</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_calibrate.html#input-files">Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_calibrate.html#output-files">Output Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_calibrate.html#usage">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_calibrate.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_calibrate.html#processing-steps">Processing Steps</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_calibrate.html#conclusion">Conclusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_calibrate.html">calibrate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_calibrate.html#subcommand-description">Subcommand Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_calibrate.html#input-files">Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_calibrate.html#output-files">Output Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_calibrate.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_calibrate.html#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_calibrate.html#processing-steps">Processing Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_calibrate.html#conclusion">Conclusion</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_predict.html">predict</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_predict.html#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_predict.html#input-files">Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_predict.html#output-files">Output Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_predict.html#usage">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_predict.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_predict.html#processing-pipeline">Processing Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_predict.html#conclusion">Conclusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_predict.html">predict</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_predict.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_predict.html#input-files">Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_predict.html#output-files">Output Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_predict.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_predict.html#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_predict.html#processing-pipeline">Processing Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_predict.html#conclusion">Conclusion</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html">variant</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#input-files">Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#output-files">Output Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#delta-score-computation">Delta Score Computation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#usage">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#processing-pipeline">Processing Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_variant.html#conclusion">Conclusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html">variant</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html#input-files">Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html#output-files">Output Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html#delta-score-computation">Delta Score Computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html#processing-pipeline">Processing Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_variant.html#conclusion">Conclusion</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/train_your_own_model/index.html">Steps &amp; Commands to Train OpenSpliceAI Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/pretrained_models/index.html">Released OpenSpliceAI models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_vs_spliceai.html">OpenSpliceAI vs. SpliceAI</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_vs_spliceai.html#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_vs_spliceai.html#architectural-and-implementation-differences">Architectural and Implementation Differences</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_vs_spliceai.html#performance-and-efficiency">Performance and Efficiency</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_vs_spliceai.html#training-flexibility-and-transfer-learning">Training Flexibility and Transfer Learning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_vs_spliceai.html#model-calibration-and-variant-analysis">Model Calibration and Variant Analysis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/openspliceai_vs_spliceai.html#conclusion">Conclusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/train_your_own_model/index.html">Steps &amp; Commands to Train OpenSpliceAI Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/pretrained_models/index.html">Released OpenSpliceAI models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_vs_spliceai.html">OpenSpliceAI vs. SpliceAI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_vs_spliceai.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_vs_spliceai.html#architectural-and-implementation-differences">Architectural and Implementation Differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_vs_spliceai.html#performance-and-efficiency">Performance and Efficiency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_vs_spliceai.html#training-flexibility-and-transfer-learning">Training Flexibility and Transfer Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_vs_spliceai.html#model-calibration-and-variant-analysis">Model Calibration and Variant Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/openspliceai_vs_spliceai.html#conclusion">Conclusion</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/behind_scenes.html">Behind the Scenes</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/behind_scenes.html#architecture-and-framework">Architecture and Framework</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/behind_scenes.html#data-preprocessing-and-one-hot-encoding">Data Preprocessing and One-Hot Encoding</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/behind_scenes.html#training-and-optimization">Training and Optimization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/behind_scenes.html#transfer-learning">Transfer Learning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/behind_scenes.html#model-calibration">Model Calibration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/behind_scenes.html#variant-effect-analysis">Variant Effect Analysis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/behind_scenes.html#performance-and-benchmarking">Performance and Benchmarking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/behind_scenes.html#conclusion">Conclusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/behind_scenes.html">Behind the Scenes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/behind_scenes.html#architecture-and-framework">Architecture and Framework</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/behind_scenes.html#data-preprocessing-and-one-hot-encoding">Data Preprocessing and One-Hot Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/behind_scenes.html#training-and-optimization">Training and Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/behind_scenes.html#transfer-learning">Transfer Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/behind_scenes.html#model-calibration">Model Calibration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/behind_scenes.html#variant-effect-analysis">Variant Effect Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/behind_scenes.html#performance-and-benchmarking">Performance and Benchmarking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/behind_scenes.html#conclusion">Conclusion</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/how_to_page.html">Q &amp; A</a></li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/changelog.html">Changelog</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/changelog.html#v1-0-0">v1.0.0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/how_to_page.html">Q &amp; A</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/changelog.html#v0-0-7-2026-06-23">v0.0.7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/changelog.html#v0-0-6-2026-06-13">v0.0.6</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/license.html">License</a></li>
-<li class="toctree-l1"><a class="reference internal" href="https://ccb.jhu.edu/openspliceai/content/contact.html">Contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="https://khchao.com/OpenSpliceAI/content/contact.html">Contact</a></li>
 </ul>
 </div>
 <div class="line-block">

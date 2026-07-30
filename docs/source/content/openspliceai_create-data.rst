@@ -158,97 +158,97 @@ Processing Pipeline
 -------------------
 
 1. Gene Sequence Processing
-   ===========================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   - **Sequence Conversion**:  
-     Each gene is transformed into a 3D tensor :math:`X` using one-hot encoding. The nucleotides are represented as follows:
-     
-     - **A** = [1, 0, 0, 0]
-     - **C** = [0, 1, 0, 0]
-     - **G** = [0, 0, 1, 0]
-     - **T (or U)** = [0, 0, 0, 1]
-     - **N** = [0, 0, 0, 0]
+- **Sequence Conversion**:  
+  Each gene is transformed into a 3D tensor :math:`X` using one-hot encoding. The nucleotides are represented as follows:
+  
+  - **A** = [1, 0, 0, 0]
+  - **C** = [0, 1, 0, 0]
+  - **G** = [0, 0, 1, 0]
+  - **T (or U)** = [0, 0, 0, 1]
+  - **N** = [0, 0, 0, 0]
 
-   - **Chunking and Padding**:  
-     The gene sequence is split into overlapping chunks with:
-     
-     - **Window size (W)**: Default 5,000 nucleotides.
-     - **Flanking sequence (F)**: Typical sizes include 80, 400, 2,000, or 10,000 nucleotides.
-     
-     The tensor :math:`X` is given by:
+- **Chunking and Padding**:  
+  The gene sequence is split into overlapping chunks with:
+  
+  - **Window size (W)**: Default 5,000 nucleotides.
+  - **Flanking sequence (F)**: Typical sizes include 80, 400, 2,000, or 10,000 nucleotides.
+  
+  The tensor :math:`X` is given by:
 
-     .. math::
-        \lceil L / W \rceil \times (F + W) \times 4
+  .. math::
+     \lceil L / W \rceil \times (F + W) \times 4
 
-     where :math:`L` is the gene length. Any remaining sequence is padded with ``N`` characters so that each chunk is a multiple of the window size.
+  where :math:`L` is the gene length. Any remaining sequence is padded with ``N`` characters so that each chunk is a multiple of the window size.
 
-     *Example*: For a gene of 12,000 nucleotides with ``W = 5000`` and ``F = 10,000``, the tensor :math:`X` will have the shape:
+  *Example*: For a gene of 12,000 nucleotides with ``W = 5000`` and ``F = 10,000``, the tensor :math:`X` will have the shape:
 
-     .. math::
-        \lceil 12000 / 5000 \rceil \times (10000 + 5000) \times 4 = 3 \times 15000 \times 4
+  .. math::
+     \lceil 12000 / 5000 \rceil \times (10000 + 5000) \times 4 = 3 \times 15000 \times 4
 
 2. Label Generation
-   =================
+~~~~~~~~~~~~~~~~~~~
 
-   - **Label Tensor Construction**:  
-     Labels are generated from genome annotations and encoded as follows:
+- **Label Tensor Construction**:  
+  Labels are generated from genome annotations and encoded as follows:
 
-     - **Donor site**: [0, 0, 1]
-     - **Acceptor site**: [0, 1, 0]
-     - **Non-splice site**: [1, 0, 0]
-     - **Padding**: [0, 0, 0]
+  - **Donor site**: [0, 0, 1]
+  - **Acceptor site**: [0, 1, 0]
+  - **Non-splice site**: [1, 0, 0]
+  - **Padding**: [0, 0, 0]
 
-     The resulting label tensor :math:`Y` has the shape:
+  The resulting label tensor :math:`Y` has the shape:
 
-     .. math::
-        \lceil L / W \rceil \times W \times 3
+  .. math::
+     \lceil L / W \rceil \times W \times 3
 
 3. Gene Sequence Chunking
-   ========================
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   - **Overlapping Chunks**:  
-     Following SpliceAI’s methodology, gene sequences are divided into overlapping chunks using a step size equal to the window size (5,000 nucleotides). Flanking sequences (also defaulted to 5,000 nucleotides) are appended on each side.
+- **Overlapping Chunks**:  
+  Following SpliceAI’s methodology, gene sequences are divided into overlapping chunks using a step size equal to the window size (5,000 nucleotides). Flanking sequences (also defaulted to 5,000 nucleotides) are appended on each side.
 
-     *Example*: A 22,000-nucleotide gene is divided into 5 chunks, resulting in a tensor shape of ``(5, 15,000, 4)`` for the sequences and ``(5, 5,000, 3)`` for the labels.
+  *Example*: A 22,000-nucleotide gene is divided into 5 chunks, resulting in a tensor shape of ``(5, 15,000, 4)`` for the sequences and ``(5, 5,000, 3)`` for the labels.
 
 4. Canonical Transcript Selection
-   ===============================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   - For each gene locus, the longest transcript is selected as the canonical transcript.
-   - By default, the ``--biotype`` flag is set to **protein-coding**, thereby filtering out non-coding genes.
+- For each gene locus, the longest transcript is selected as the canonical transcript.
+- By default, the ``--biotype`` flag is set to **protein-coding**, thereby filtering out non-coding genes.
 
 5. Training and Testing Data Splitting
-   =====================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   - **Automatic Splitting**:  
-     If not explicitly provided, the toolkit splits chromosomes into training and testing sets with an approximate 80:20 ratio.
-     
-     - Chromosome lengths are retrieved from the GFFUtils database
-       (https://github.com/daler/gffutils).
-     - For non-human species, a random shuffling method is applied by default.
-     
-   - **User-Specified Splitting**:  
-     Use the ``--chr-split`` option to manually specify chromosome assignments.
+- **Automatic Splitting**:  
+  If not explicitly provided, the toolkit splits chromosomes into training and testing sets with an approximate 80:20 ratio.
+  
+  - Chromosome lengths are retrieved from the GFFUtils database
+    (https://github.com/daler/gffutils).
+  - For non-human species, a random shuffling method is applied by default.
+  
+- **User-Specified Splitting**:  
+  Use the ``--chr-split`` option to manually specify chromosome assignments.
 
 6. Removal of Pseudogenes and Paralogous Genes
-   =============================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   - **Pseudogenes Filtering**:  
-     Genes marked as ``pseudogene`` (either in the feature type or via the ``gene_biotype`` attribute) are excluded from the test dataset.
-     
-   - **Paralogous Gene Removal**:  
-     To avoid sequence similarity between training and testing sets (and thus data leakage), the toolkit uses *mappy* (a Python wrapper for minimap2) with the ``--asm20`` argument (allowing a divergence threshold of 5%). Test sequences sharing over 80% similarity and 80% coverage with training sequences are removed.
+- **Pseudogenes Filtering**:  
+  Genes marked as ``pseudogene`` (either in the feature type or via the ``gene_biotype`` attribute) are excluded from the test dataset.
+  
+- **Paralogous Gene Removal**:  
+  To avoid sequence similarity between training and testing sets (and thus data leakage), the toolkit uses *mappy* (a Python wrapper for minimap2) with the ``--asm20`` argument (allowing a divergence threshold of 5%). Test sequences sharing over 80% similarity and 80% coverage with training sequences are removed.
 
 7. Splice Site Labeling Options
-   =============================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   - **Canonical-only Mode**:  
-     The ``--canonical-only`` flag restricts label generation to conserved splice site motifs. These include:
-     
-     - **U2-snRNP motifs**: ``GT-AG`` and ``GC-AG``
-     - **U12-snRNP motifs**: ``GT-AG`` and ``AT-AC``
+- **Canonical-only Mode**:  
+  The ``--canonical-only`` flag restricts label generation to conserved splice site motifs. These include:
+  
+  - **U2-snRNP motifs**: ``GT-AG`` and ``GC-AG``
+  - **U12-snRNP motifs**: ``GT-AG`` and ``AT-AC``
 
-     This option helps mitigate the effect of misannotated splice sites.
+  This option helps mitigate the effect of misannotated splice sites.
 
 |
 

@@ -127,4 +127,4 @@ directory). `mane` is the human GRCh38/MANE model. `models/spliceai/` holds the 
   databases (`*.gff_db`) and `examples/data/*` genomes are large local artifacts, not committed.
 - The hyperparameter table duplication (see Architecture) is the most common source of subtle bugs — a change in one
   subcommand's `(W, AR, BATCH_SIZE)` must be mirrored in the others.
-- Full user docs (Sphinx) are in `docs/source/` and hosted at https://ccb.jhu.edu/openspliceai/.
+- Full user docs (Sphinx) are in `docs/source/` and hosted at https://khchao.com/OpenSpliceAI/.

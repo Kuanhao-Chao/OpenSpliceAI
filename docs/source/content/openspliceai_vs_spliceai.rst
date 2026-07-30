@@ -1,7 +1,7 @@
 
 |
 
-.. _behind-the-scenes-splam:
+.. _openspliceai-vs-spliceai:
 
 OpenSpliceAI vs. SpliceAI
 =========================
