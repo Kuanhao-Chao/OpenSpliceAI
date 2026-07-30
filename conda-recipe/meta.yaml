@@ -60,7 +60,7 @@ about:
   license_family: GPL3
   license_file: LICENSE
   summary: Deep learning framework that decodes splicing across species
-  doc_url: https://ccb.jhu.edu/openspliceai/
+  doc_url: https://khchao.com/OpenSpliceAI/
   dev_url: https://github.com/Kuanhao-Chao/OpenSpliceAI
 
 extra:

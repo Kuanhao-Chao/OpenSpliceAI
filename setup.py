@@ -10,6 +10,11 @@ setuptools.setup(
 	author_email="kh.chao@cs.jhu.edu",
 	description="Deep learning framework that decodes splicing across species",
 	url="https://github.com/Kuanhao-Chao/OpenSpliceAI",
+	project_urls={
+	    "Documentation": "https://khchao.com/OpenSpliceAI/",
+	    "Source": "https://github.com/Kuanhao-Chao/OpenSpliceAI",
+	    "Bug Tracker": "https://github.com/Kuanhao-Chao/OpenSpliceAI/issues",
+	},
 	license="GPL-3.0-only",
 	classifiers=[
 	    "Development Status :: 4 - Beta",

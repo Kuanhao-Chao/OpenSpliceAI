@@ -11,7 +11,7 @@ Overview
 There are three ways to install OpenSpliceAI: via pip, through conda, or from source. OpenSpliceAI requires Python 3.9 or higher and depends on several third‐party packages, including:
 
 - **PyTorch** – used for deep learning model training and inference. See the `PyTorch website <https://pytorch.org/>`_ for more details.
-- **mappy** – provides Python bindings for minimap2, enabling fast genomic alignments. Visit its page on `PyPI <https://pypi.org/project/mappy/>`_ for further information.
+- **mappy** – provides Python bindings for minimap2, enabling fast genomic alignments. Visit its page on `PyPI <https://pypi.org/project/mappy/>`__ for further information.
 
 |
 
@@ -40,7 +40,7 @@ Installation Methods
 
 Install through pip
 ~~~~~~~~~~~~~~~~~~~~~
-OpenSpliceAI is available on `PyPI <https://pypi.org/project/OpenSpliceAI/>`_. Pip automatically resolves and installs all required dependencies.
+OpenSpliceAI is available on `PyPI <https://pypi.org/project/OpenSpliceAI/>`__. Pip automatically resolves and installs all required dependencies.
 
 .. code-block:: bash
 
