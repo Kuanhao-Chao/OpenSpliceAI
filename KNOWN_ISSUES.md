@@ -77,7 +77,7 @@ below) show the code is **correct**; do not "fix" them.
 A dedicated audit validated the two scoring subcommands step by step (`validation/ALGORITHM.md`,
 `validation/VALIDATION_REPORT.md`).
 
-- **Proven correct:** `variant --model-type keras --flanking-size 10000` reproduces the original Illumina
+- **Historical v0.0.7 result:** `variant --model-type keras --flanking-size 10000` reproduced the original Illumina
   `spliceai` 1.3.1 **exactly** (100% of DS and DP fields, across `--mask {0,1}` × `--distance {50,500,1000}`
   on 35 variants incl. both strands, indels, multiallelic, MNV). Locked by
   `tests/equivalence/test_keras_equivalence.py`. Equivalence requires **flanking 10000** (original hardcodes
@@ -93,3 +93,39 @@ A dedicated audit validated the two scoring subcommands step by step (`validatio
 - **Caveat (not a bug):** whole-genome `predict` writes **duplicate BED rows** in the `CL_max//2` overlap
   zones of sequences split beyond `--split-threshold` (1.5 Mb). Coordinates are correct, rows are redundant;
   dedup with `validation/dedup_predictions.py`.
+
+## September 2026 hardening
+
+Calibration bin counts now align with occupied bins, include endpoint probabilities,
+and use the calibrated curve's own counts. Calibration loads complete checkpoints,
+uses evaluation mode when restoring a temperature, and broadcasts the three class
+values over sequence outputs. Empty evaluation splits and unusable transfer checkpoints
+fail explicitly. Inference rejects incomplete ensembles and recognizes both `.pt` and
+`.pth` state dictionaries. The `.pt` `predict --predict-all` route now loads its saved
+predictions. Architecture schedules are centralized without changing their values.
+Dataset handles close on initialization/training failures. Atomic VCF publication and
+its validation/signal tests are carried forward from the existing local scorer.
+
+Preserved limitations:
+
+- `--random-seed` controls NumPy shuffling in training but does not seed PyTorch model
+  initialization or all data-selection randomness. The test fixture seeds all three
+  generators; passing seeded tests does not imply fully reproducible CLI training.
+- Transfer freezing controls parameter gradients. Running batch-normalization buffers
+  still update under `model.train()` in frozen residual units. This existing behavior
+  is characterized in `test_transfer_freeze.py`; changing it would change fine-tuning.
+- Calibration materializes validation logits and labels; it is not a streaming,
+  bounded-memory optimizer. Its shared CLI training options do not alter its fixed
+  temperature-optimization loop. Full calibrated model objects are not accepted by
+  the inference state-dictionary loaders.
+- Scheduler cadence, focal-loss hyperparameters, HDF5 label layout and overlapping
+  split-FASTA BED rows retain their established behavior as described above.
+- Missing optional backends are skips, not successful backend validation. Once Keras
+  dependencies and weights exist, initialization errors fail the equivalence tests.
+
+The development branch extends MNV/delins scoring and narrows the accepted REF
+realignment boundary. Original SpliceAI 1.3.1 emits placeholders for MNV/delins;
+its outputs therefore cannot be claimed as numerically identical on those inputs.
+The current real-Keras equivalence test compares shared supported alleles and
+explicitly counts excluded extension fixtures. MNV/realignment behavior is tested
+separately. This distinction also applies to historical parity claims in reports.

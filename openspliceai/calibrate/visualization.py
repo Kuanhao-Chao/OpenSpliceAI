@@ -86,10 +86,10 @@ def plot_calibration_curves(calibration_data, calibration_data_scaled, classes, 
     fig, axs = plt.subplots(1, 3, figsize=(20, 5.5))
     for i, (class_name, (orig_data, scaled_data)) in enumerate(zip(classes, zip(calibration_data, calibration_data_scaled))):
         prob_true, prob_pred, bin_counts = orig_data
-        prob_true_s, prob_pred_s, _ = scaled_data
+        prob_true_s, prob_pred_s, bin_counts_s = scaled_data
         
         ci_lower, ci_upper = compute_confidence_intervals(prob_true, bin_counts)
-        ci_lower_s, ci_upper_s = compute_confidence_intervals(prob_true_s, bin_counts)
+        ci_lower_s, ci_upper_s = compute_confidence_intervals(prob_true_s, bin_counts_s)
         
         axs[i].plot(prob_pred, prob_true, 'o-', color='blue', label='Original')
         axs[i].fill_between(prob_pred, ci_lower, ci_upper, color='blue', alpha=0.1)

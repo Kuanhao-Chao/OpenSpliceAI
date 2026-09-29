@@ -85,3 +85,15 @@ def test_optimizer_only_holds_trainable_params(packaged_80nt_state):
     expected_ids = {id(p) for p in last.parameters()}
     opt_ids = {id(p) for group in optimizer.param_groups for p in group["params"]}
     assert opt_ids == expected_ids
+
+
+def test_frozen_parameters_keep_legacy_batchnorm_updates(packaged_80nt_state):
+    """Parameter freezing does not freeze running buffers during transfer training."""
+    model, _, _, _ = _build(packaged_80nt_state, unfreeze=1, unfreeze_all=False)
+    first = _residual_units(model)[0]
+    assert all(not parameter.requires_grad for parameter in first.parameters())
+    before = first.batchnorm1.num_batches_tracked.clone()
+    model.train()
+    with torch.no_grad():
+        model(torch.randn(2, 4, 180))
+    assert torch.equal(first.batchnorm1.num_batches_tracked, before + 1)

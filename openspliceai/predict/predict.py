@@ -3,6 +3,7 @@ import sys
 import glob
 import re
 import numpy as np
+from openspliceai.model_config import model_hyperparameters
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
@@ -515,37 +516,7 @@ def load_pytorch_models(model_path, device, SL, CL):
         # L: Number of convolution kernels
         # W: Convolution window size in each residual unit
         # AR: Atrous rate in each residual unit
-        L = 32
-
-        W = np.asarray([11, 11, 11, 11])
-        AR = np.asarray([1, 1, 1, 1])
-        N_GPUS = 2
-        BATCH_SIZE = 18*N_GPUS
-
-        if int(flanking_size) == 80:
-            W = np.asarray([11, 11, 11, 11])
-            AR = np.asarray([1, 1, 1, 1])
-            BATCH_SIZE = 18*N_GPUS
-        elif int(flanking_size) == 400:
-            W = np.asarray([11, 11, 11, 11, 11, 11, 11, 11])
-            AR = np.asarray([1, 1, 1, 1, 4, 4, 4, 4])
-            BATCH_SIZE = 18*N_GPUS
-        elif int(flanking_size) == 2000:
-            W = np.asarray([11, 11, 11, 11, 11, 11, 11, 11,
-                            21, 21, 21, 21])
-            AR = np.asarray([1, 1, 1, 1, 4, 4, 4, 4,
-                            10, 10, 10, 10])
-            BATCH_SIZE = 12*N_GPUS
-        elif int(flanking_size) == 10000:
-            W = np.asarray([11, 11, 11, 11, 11, 11, 11, 11,
-                            21, 21, 21, 21, 41, 41, 41, 41])
-            AR = np.asarray([1, 1, 1, 1, 4, 4, 4, 4,
-                            10, 10, 10, 10, 25, 25, 25, 25])
-            BATCH_SIZE = 6*N_GPUS
-        else:
-            raise ValueError(f"Invalid flanking size: {flanking_size}. "
-                             "Must be one of 80, 400, 2000, 10000.")
-
+        L, N_GPUS, W, AR, BATCH_SIZE = model_hyperparameters(flanking_size)
         CL = 2 * np.sum(AR*(W-1))
 
         print(f"\t[INFO] Context nucleotides {CL}")
@@ -562,30 +533,31 @@ def load_pytorch_models(model_path, device, SL, CL):
         model_files = glob.glob(os.path.join(model_path, '*.pth')) + glob.glob(os.path.join(model_path, '*.pt')) # gets all PyTorch models from supplied directory
         if not model_files:
             print(f"\t[ERR] No PyTorch model files found in directory: {model_path}")
-            exit()
+            raise SystemExit(1)
             
         models = []
         for model_file in model_files:
             try:
-                model = torch.load(model_file, map_location=device)
+                model = torch.load(model_file, map_location=device, weights_only=True)
                 models.append(model)
             except Exception as e:
-                print(f"\t[ERR] Error loading PyTorch model from file {model_file}: {e}. Skipping...")
+                print(f"\t[ERR] Error loading PyTorch model from file {model_file}: {e}. Aborting ensemble load.")
+                raise SystemExit(1) from e
                 
         if not models:
             print(f"\t[ERR] No valid PyTorch models found in directory: {model_path}")
-            exit()
+            raise SystemExit(1)
     
     elif os.path.isfile(model_path):
         try:
-            models = [torch.load(model_path, map_location=device)]
+            models = [torch.load(model_path, map_location=device, weights_only=True)]
         except Exception as e:
             print(f"\t[ERR] Error loading PyTorch model from file {model_path}: {e}.")
-            exit()
+            raise SystemExit(1)
         
     else:
         print(f"\t[ERR] Invalid path: {model_path}")
-        exit()
+        raise SystemExit(1)
     
     # Load state of model to device
     # NOTE: supplied model paths should be state dicts, not model files  
@@ -604,12 +576,12 @@ def load_pytorch_models(model_path, device, SL, CL):
         except RuntimeError as e:
             err_msg = str(e)
             if "size mismatch" in err_msg or "shape" in err_msg:
-                print("\t[WARN] Skipping model due to incompatible tensor shapes.")
+                print("\t[WARN] Cannot load model due to incompatible tensor shapes.")
                 print("\t[WARN] This typically happens when the checkpoint was trained with a different flanking size.")
                 print(mismatch_hint)
-                continue
-            print(f"\t[ERR] Error processing model for device: {err_msg}. Skipping...")
-            continue
+                raise SystemExit(1) from e
+            print(f"\t[ERR] Error processing model for device: {err_msg}. Aborting ensemble load.")
+            raise SystemExit(1) from e
 
         model = model.to(device)                # puts model on device
         model.eval()                            # puts model in evaluation mode
@@ -617,7 +589,7 @@ def load_pytorch_models(model_path, device, SL, CL):
             
     if not loaded_models:
         print("\t[ERR] No models were successfully loaded to the device.")
-        exit()
+        raise SystemExit(1)
         
     return loaded_models, params # NOTE: returns the last params, assuming all models have the same hyperparameters
 
@@ -754,7 +726,7 @@ def get_prediction(models, dataset_path, device, batch_size, output_dir, flush_p
         predict_path = f'{output_dir}predict.pt'
 
         # load all data and reshape to (N, channels, length)
-        X = torch.load(dataset_path).permute(0, 2, 1)
+        X = torch.load(dataset_path, map_location="cpu", weights_only=True).permute(0, 2, 1)
         X = X.to(torch.float32)
         ds = TensorDataset(X)
         loader = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False, pin_memory=True)
@@ -918,8 +890,8 @@ def generate_bed(predict_file, NAME, LEN, output_dir, threshold=1e-6, batch_ypre
         with h5py.File(predict_file, 'r') as h5f:
             batch_ypred_np = h5f['predictions'][:]
         batch_ypred = torch.tensor(batch_ypred_np)
-    elif batch_ypred is not None:
-        batch_ypred = torch.load(predict_file)
+    elif batch_ypred is None:
+        batch_ypred = torch.load(predict_file, map_location="cpu", weights_only=True)
 
     if debug:
         print('\n\t[DEBUG] generate_bed', file=sys.stderr)
@@ -1057,7 +1029,7 @@ def predict_and_write(models, dataset_path, device, batch_size, NAME, LEN, outpu
     else: # read from the PyTorch file
 
         # load all data and reshape to (N, channels, length)
-        X = torch.load(dataset_path).permute(0, 2, 1)
+        X = torch.load(dataset_path, map_location="cpu", weights_only=True).permute(0, 2, 1)
         X = X.to(torch.float32)
         ds = TensorDataset(X)
         loader = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False, pin_memory=True)

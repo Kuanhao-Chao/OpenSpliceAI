@@ -102,10 +102,7 @@ def test_variant_keras_delta_score_snv(variant_inputs, repo_root):
     from openspliceai.variant.utils import Annotator, get_delta_scores
 
     ref, ann, vcf = variant_inputs
-    try:
-        annotator = Annotator(ref, ann, model_path=str(single_model), model_type="keras", CL=10000)
-    except Exception as e:  # tensorflow import / model load failure
-        pytest.skip(f"keras Annotator could not be built: {e}")
+    annotator = Annotator(ref, ann, model_path=str(single_model), model_type="keras", CL=10000)
 
     assert annotator.keras is True
     assert len(annotator.models) == 1

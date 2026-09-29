@@ -1,61 +1,47 @@
-# OpenSpliceAI test suite
+# OpenSpliceAI tests
 
-Strict, reproducible, CPU-only tests for the packaged `openspliceai` pipeline
-(create-data → train / transfer → calibrate → predict / variant).
+Install an isolated environment with `python -m pip install -e '.[dev]'`.
+The Makefile uses the active `python`; override `PYTHON=/path/to/python` if needed.
+CPU targets bound BLAS/TensorFlow threads and use the headless plotting backend.
 
-## Running
-
-All commands are wrapped in the repo `Makefile`, which pins the interpreter and forces
-CPU-only, headless, bounded-thread execution so runs are deterministic:
-
-```bash
-make test       # fast unit + regression suite (integration & slow deselected)  ~10s
-make test-all   # the whole suite incl. integration / slow / keras              ~3-4min
-make coverage   # full suite + term/html coverage + gate (fails under the floor)
-make lint       # ruff over openspliceai/ and tests/
-```
-
-> **Interpreter gotcha (this machine):** the default `python` has a broken numpy/torch ABI and is
-> missing deps. The Makefile uses `/home/kchao10/miniconda3/envs/pytorch_cuda/bin/python` (numpy 1.26,
-> torch 2.2.1, scikit-learn/h5py/pyfaidx/gffutils/biopython/pysam; TensorFlow present so keras tests
-> run). Override with `make test PYTHON=/path/to/python`. Install dev deps with `pip install -e '.[dev]'`
-> (or `'.[test]'` for just pytest + pytest-cov).
-
-Determinism is enforced by the autouse `_seed_everything` fixture (`conftest.py`), which seeds
-`random` / `numpy` / `torch` before every test.
-
-## Layout & taxonomy
-
-| Directory | Purpose |
+| Command | Scope |
 |---|---|
-| `tests/unit/` | Pure-function / single-component tests (encoding, windowing, losses, metrics, model shape, BED coordinate math, chromosome splitting, argparse, CLI dispatch, model loaders, temperature scaling, plotting smoke). Fast, no heavy I/O. The bulk of coverage. |
-| `tests/integration/` | End-to-end flows on tiny synthetic fixtures (create-data, train/transfer, predict, variant, calibrate, merge). Marked `integration` (+ `slow` for the training runs). |
-| `tests/regression/` | Characterization tests that **lock** specific conclusions: hyperparameter-table sync across the 5 call sites, encode↔decode round-trips, minus-strand labeling, the `clip_datapoints` invariant, and batched==sequential variant scoring. |
-| `tests/equivalence/` | Bit-exact parity vs the original Illumina SpliceAI (Keras, flanking 10000). Marked `keras`+`slow`+`integration`. |
-| `tests/fixtures/synthetic.py` | Builders for the tiny on-disk schemas (HDF5 shards, mini genome+GFF, variant ref/TSV/VCF) — they mirror the *real* formats so loaders are exercised, not stand-ins. |
-| `tests/conftest.py` | Shared fixtures (`model_80nt`, `packaged_80nt_state/_dir`, dataset builders) + the keras/gpu auto-skip hook. |
+| `make test` | Fast unit/regression checks; integration, slow and optional backends excluded |
+| `make test-cpu` | All CPU workflows, including end-to-end integration |
+| `make test-all` | All tests; unavailable optional backends report skips |
+| `make test-keras` | Original SpliceAI comparison; requires TensorFlow, spliceai and weights |
+| `make test-gpu` | CUDA numerical comparison; does not clear visible devices |
+| `make coverage` | Full available suite, 95% line-coverage gate |
+| `make coverage-branch` | Branch report, measured separately from the line gate |
+| `make lint` | Ruff for package and tests |
+| `make package` | Build sdist and wheel |
 
-## Markers (`pytest.ini`)
+`tests/unit` checks components; `tests/integration` exercises the six commands on
+synthetic files; `tests/regression` protects strand labels, context schedules,
+checkpoint loading, scoring and evaluation contracts; `tests/equivalence` compares
+optional backends. Research helpers under `validation/` have synthetic tests for
+count pooling, thresholds, provenance, VCF alignment and simulated scheduler state.
+No tests submit production jobs. Test count and runtime depend on environment; use
+`python -m pytest --collect-only` for the current inventory.
 
-- `integration` — end-to-end on tiny fixtures (CPU). Deselected by `make test`.
-- `slow` — long-running. Deselected by `make test`.
-- `keras` — needs TensorFlow/Keras; **auto-skipped** when TF is absent.
-- `gpu` — needs CUDA; **auto-skipped** when no CUDA device is present.
+Expected scientific values are independently specified for strand labels, one-hot
+encoding, loss/metric formulas, probability normalization, BED coordinates, all
+four variant events and masks, and calibration bin counts. The four predict
+storage/execution combinations must agree on complete BED rows. The existing Keras
+comparison checks formatted DS/DP fields against the original SpliceAI software;
+it does not establish biological accuracy or prove equivalence of independently
+trained PyTorch and Keras weights. CUDA checks use explicit numerical tolerances.
 
-## Coverage policy
+The autouse fixture seeds Python, NumPy and Torch. This ensures controlled test
+inputs, not fully reproducible CLI training. Scientific defaults and known
+limitations are recorded in `KNOWN_ISSUES.md`.
 
-`make coverage` runs the **full** suite (integration contributes most of the covered lines) with
-`--cov-fail-under` (the `COV_MIN` variable in the `Makefile`). Pure/logic/encoding modules sit at
-≥95%; the heavy I/O modules (`predict/predict.py`, `train_base/utils.py`, `variant/utils.py`) at ≥90%.
+Software CI defines Python 3.9–3.12 jobs, full CPU coverage and wheel checks.
+Configured jobs are distinct from executed evidence. Optional backend tests must
+report skips precisely; initialization failures with an available backend fail.
 
-A few lines are excluded with `# pragma: no cover` because they are unreachable from the packaged
-PyTorch CLI; listed here so the exclusions stay auditable:
-
-- `openspliceai/train_base/utils.py` — `process_batch`, `test_SpliceAI_Keras_model`: Keras-only
-  (`model.predict`) evaluation helpers, reachable only via the disabled `test` subcommand.
-
-`.coveragerc` additionally omits legacy/dead modules: `openspliceai/scripts/*`, `openspliceai/test/*`,
-`create_data/gff_to_tsv.py`, `variant/get_anno.py`, `calibrate/temperature_scaling_site_only.py`.
-
-See `../KNOWN_ISSUES.md` for the behavior-changing issues that are deliberately deferred (and pinned
-by characterization tests) and the two bugs fixed during the v0.0.7 test-hardening pass.
+Coverage omits legacy `openspliceai/scripts`, the disabled `test` command and
+standalone alternatives listed in `.coveragerc`. Exclusions are not evidence those
+features work. Retain the 95% line gate; report branches separately and compare
+against the audit baseline. See `docs/development/repository-audit.md` for evidence
+and limits of the current audit.

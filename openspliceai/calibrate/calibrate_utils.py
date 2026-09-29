@@ -16,12 +16,17 @@ def compute_calibration_curve(labels, probs, n_bins=10, strategy='quantile'):
         bin_edges = np.quantile(probs, quantiles)
     else:
         bin_edges = np.linspace(0, 1, n_bins + 1)
-    bin_indices = np.digitize(probs, bin_edges) - 1
-    bin_counts = np.array([np.sum(bin_indices == i) for i in range(n_bins)])
+    # Match sklearn's interior-edge convention, including probabilities 0 and 1.
+    # calibration_curve omits empty bins; counts must use the same occupied bins.
+    bin_indices = np.searchsorted(bin_edges[1:-1], probs)
+    bin_counts = np.bincount(bin_indices, minlength=n_bins)
+    bin_counts = bin_counts[bin_counts > 0]
     return prob_true, prob_pred, bin_counts
 
 
 def compute_confidence_intervals(prob_true, bin_counts, z=1.96):
+    if np.shape(prob_true) != np.shape(bin_counts):
+        raise ValueError("Calibration probabilities and counts must have matching shapes")
     ci_lower, ci_upper = [], []
     for p, n in zip(prob_true, bin_counts):
         std_error = np.sqrt(p * (1 - p) / n) if n > 0 else 0

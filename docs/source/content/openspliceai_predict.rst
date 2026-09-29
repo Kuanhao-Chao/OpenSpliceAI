@@ -225,3 +225,13 @@ The ``predict`` subcommand is the final step of the OpenSpliceAI pipeline, takin
    :alt: My Logo
    :class: logo, header-image only-dark
    :align: center
+
+
+Checkpoint validation
+---------------------
+
+PyTorch inputs must be complete state dictionaries matching ``--flanking-size``.
+Directory inputs include ``.pt`` and ``.pth`` files. Every member must load successfully;
+a corrupt or incompatible member stops prediction with a nonzero exit status.
+The full ``calibrated_model.pt`` object produced by ``calibrate`` is a different
+artifact and cannot be passed to this state-dictionary loader.
