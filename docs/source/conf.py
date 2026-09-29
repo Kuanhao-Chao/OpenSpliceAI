@@ -32,14 +32,16 @@ numfig = True
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['recommonmark',
-              'sphinx_rtd_theme',
-              'sphinx.ext.autosectionlabel',
-              'sphinx_toolbox.collapse',
-            #   'sphinx_design',
-              'sphinx_panels',
-              'sphinxcontrib.bibtex',
-              ]
+# Keep in sync with docs/requirements.txt.
+extensions = [
+    'sphinx.ext.autosectionlabel',
+    'sphinx_panels',            # `.. dropdown::` in how_to_page.rst / installation.rst
+]
+
+# Section titles are turned into cross-reference targets by autosectionlabel. Without a
+# per-document prefix, the many pages that share headings ("Prerequisites", "Next steps",
+# "Released models", ...) collide and every duplicate is reported as a warning.
+autosectionlabel_prefix_document = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -49,16 +51,12 @@ templates_path = ['_templates']
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = 'English'
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
-bibtex_bibfiles = ['references.bib']
-bibtex_encoding = 'latin'
-bibtex_default_style = 'unsrt'
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -66,9 +64,13 @@ bibtex_default_style = 'unsrt'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-# html_theme = "sphinx_rtd_theme"
 html_theme = 'furo'
-# html_theme = 'scrolls'
+
+# Canonical URL of the published site. The account-level custom domain on
+# Kuanhao-Chao.github.io means project pages are served from khchao.com, and
+# https://kuanhao-chao.github.io/OpenSpliceAI/ 301-redirects here -- so this, not the
+# github.io address, is the canonical URL. The path is case-sensitive: /openspliceai/ 404s.
+html_baseurl = 'https://khchao.com/OpenSpliceAI/'
 
 # pygments_style = "sphinx"
 # pygments_dark_style = "monokai"
@@ -76,21 +78,15 @@ html_theme = 'furo'
 # html_logo = "./_static/logo.png"
 html_theme_options = {
     "announcement": "OpenSpliceAI: A Comprehensive Framework for Cross-Species Splicing Prediction and Variant Impact Analysis",
-    
-    "display_version": True,
-    "logo_only": True,
+
     "sidebar_hide_name": True,
 
     "source_repository": "https://github.com/Kuanhao-Chao/OpenSpliceAI",
     "source_branch": "main",
     "source_directory": "docs/",
 
-    "prefers-color-scheme": "light",
-    
     "navigation_with_keys": True,
-    "top_of_page_button": "edit",    
-    'collapse_navigation': True,
-    'navigation_depth': -1,
+    "top_of_page_button": "edit",
 
     "light_logo": "logo_black.png",
     "dark_logo": "logo_white.png",
