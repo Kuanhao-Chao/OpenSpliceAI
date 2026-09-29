@@ -1,0 +1,76 @@
+name: Docs
+
+# Builds the Sphinx documentation in docs/ and publishes it to GitHub Pages at
+# https://kuanhao-chao.github.io/OpenSpliceAI/
+#
+# Pull requests get the build as a check; only pushes to main publish.
+# Pages must be enabled once, under Settings -> Pages -> Source: GitHub Actions.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+
+      - name: Install documentation dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Build documentation (warnings are errors)
+        run: make -C docs html SPHINXOPTS="-W"
+
+      - name: Check that every local link and asset resolves
+        # Sphinx does not validate URLs written by hand inside `.. raw:: html` blocks or in
+        # _templates/*.html, and the docs rely on both, so -W alone is not enough.
+        run: python docs/check_links.py docs/build/html
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build/html
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    # Queue deployments rather than cancelling one midway through.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

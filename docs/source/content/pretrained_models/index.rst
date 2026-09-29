@@ -64,7 +64,6 @@ This page provides all released models trained with different flanking sequence 
     bee_insect
     arabidopsis_plant
 
-    .. GRCh38_RefSeq
 
 |
 |
