@@ -1,2 +1,6 @@
 recursive-include logo *
 recursive-include openspliceai/variant/annotations *.txt
+include Makefile pytest.ini .coveragerc ruff.toml KNOWN_ISSUES.md
+recursive-include tests *.py *.md
+recursive-include validation *.py *.md *.mdx *.json *.sh *.sbatch *.html
+recursive-include ci *.constraints

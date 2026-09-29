@@ -6,6 +6,7 @@ Description: Utility functions for training and testing the OpenSpliceAI model.
 """
 
 import h5py
+from contextlib import ExitStack
 import platform
 import sys
 import os
@@ -247,14 +248,17 @@ def initialize_paths(args):
 
 
 def load_datasets(args):
-    train_h5f = h5py.File(args.train_dataset, 'r')
-    os.path.dirname(args.train_dataset)
-    valid_dataset = os.path.join(os.path.dirname(args.train_dataset), os.path.basename(args.train_dataset).replace("train", "validation"))
-    valid_h5f = h5py.File(valid_dataset, 'r')
-    test_h5f = h5py.File(args.test_dataset, 'r')
-    batch_num = len(train_h5f.keys()) // 2
-    print("* Batch_num: ", batch_num, file=sys.stderr)
-    return train_h5f, valid_h5f, test_h5f, batch_num
+    # Transfer ownership only after all files were opened successfully.
+    with ExitStack() as stack:
+        train_h5f = stack.enter_context(h5py.File(args.train_dataset, 'r'))
+        valid_dataset = os.path.join(os.path.dirname(args.train_dataset),
+                                    os.path.basename(args.train_dataset).replace("train", "validation"))
+        valid_h5f = stack.enter_context(h5py.File(valid_dataset, 'r'))
+        test_h5f = stack.enter_context(h5py.File(args.test_dataset, 'r'))
+        batch_num = len(train_h5f.keys()) // 2
+        print("* Batch_num: ", batch_num, file=sys.stderr)
+        stack.pop_all()
+        return train_h5f, valid_h5f, test_h5f, batch_num
 
 
 def generate_indices(train_h5f, valid_h5f, test_h5f):
@@ -397,6 +401,8 @@ def metrics(batch_ypred, batch_ylabel, metric_files, run_mode):
 
 
 def model_evaluation(batch_ylabel, batch_ypred, metric_files, run_mode, criterion):
+    if not batch_ylabel or not batch_ypred:
+        raise ValueError("No evaluation batches: check shard sizes, batch size and split contents")
     batch_ylabel = torch.cat(batch_ylabel, dim=0)
     batch_ypred = torch.cat(batch_ypred, dim=0)
     is_expr = (batch_ylabel.sum(axis=(1,2)) >= 1).cpu().numpy()
@@ -437,6 +443,7 @@ def model_evaluation(batch_ylabel, batch_ypred, metric_files, run_mode, criterio
     return loss
 
 
+@torch.no_grad()
 def valid_epoch(model, h5f, idxs, batch_size, criterion, device, params, metric_files, flanking_size, run_mode):
     print(f"\033[1m{run_mode.capitalize()}ing model...\033[0m")
     model.eval()

@@ -1,6 +1,7 @@
 from importlib.resources import files
 import pandas as pd
 import numpy as np
+from openspliceai.model_config import model_hyperparameters
 from pyfaidx import Fasta
 import logging
 import platform
@@ -58,37 +59,7 @@ def load_pytorch_models(model_path, CL):
         # L: Number of convolution kernels
         # W: Convolution window size in each residual unit
         # AR: Atrous rate in each residual unit
-        L = 32
-        W = np.asarray([11, 11, 11, 11])
-        AR = np.asarray([1, 1, 1, 1])
-        N_GPUS = 2
-        BATCH_SIZE = 18*N_GPUS
-
-        if int(flanking_size) == 80:
-            W = np.asarray([11, 11, 11, 11])
-            AR = np.asarray([1, 1, 1, 1])
-            BATCH_SIZE = 18*N_GPUS
-        elif int(flanking_size) == 400:
-            W = np.asarray([11, 11, 11, 11, 11, 11, 11, 11])
-            AR = np.asarray([1, 1, 1, 1, 4, 4, 4, 4])
-            BATCH_SIZE = 18*N_GPUS
-        elif int(flanking_size) == 2000:
-            W = np.asarray([11, 11, 11, 11, 11, 11, 11, 11,
-                            21, 21, 21, 21])
-            AR = np.asarray([1, 1, 1, 1, 4, 4, 4, 4,
-                            10, 10, 10, 10])
-            BATCH_SIZE = 12*N_GPUS
-        elif int(flanking_size) == 10000:
-            W = np.asarray([11, 11, 11, 11, 11, 11, 11, 11,
-                            21, 21, 21, 21, 41, 41, 41, 41])
-            AR = np.asarray([1, 1, 1, 1, 4, 4, 4, 4,
-                            10, 10, 10, 10, 25, 25, 25, 25])
-            BATCH_SIZE = 6*N_GPUS
-        else:
-            raise ValueError(
-                f"Unsupported flanking_size {flanking_size}; expected one of 80, 400, 2000, 10000."
-            )
-
+        L, N_GPUS, W, AR, BATCH_SIZE = model_hyperparameters(flanking_size)
         CL = 2 * np.sum(AR*(W-1))
 
         print(f"\t[INFO] Context nucleotides {CL}")
@@ -104,33 +75,34 @@ def load_pytorch_models(model_path, CL):
     
     # Load all model state dicts given the supplied model path
     if os.path.isdir(model_path):
-        model_files = glob.glob(os.path.join(model_path, '*.p[th]')) # gets all PyTorch models from supplied directory
+        model_files = glob.glob(os.path.join(model_path, '*.pt')) + glob.glob(os.path.join(model_path, '*.pth')) # gets all PyTorch models from supplied directory
         if not model_files:
             logging.error(f"No PyTorch model files found in directory: {model_path}")
-            exit()
+            raise SystemExit(1)
             
         models = []
         for model_file in model_files:
             try:
-                model = torch.load(model_file, map_location=device)
+                model = torch.load(model_file, map_location=device, weights_only=True)
                 models.append(model)
             except Exception as e:
-                logging.error(f"Error loading PyTorch model from file {model_file}: {e}. Skipping...")
+                logging.error(f"Error loading PyTorch model from file {model_file}: {e}. Aborting ensemble load.")
+                raise SystemExit(1) from e
                 
         if not models:
             logging.error(f"No valid PyTorch models found in directory: {model_path}")
-            exit()
+            raise SystemExit(1)
     
     elif os.path.isfile(model_path):
         try:
-            models = [torch.load(model_path, map_location=device)]
+            models = [torch.load(model_path, map_location=device, weights_only=True)]
         except Exception as e:
             logging.error(f"Error loading PyTorch model from file {model_path}: {e}.")
-            exit()
+            raise SystemExit(1)
         
     else:
         logging.error(f"Invalid path: {model_path}")
-        exit()
+        raise SystemExit(1)
     
     # Load state of model to device
     # NOTE: supplied model paths should be state dicts, not model files  
@@ -149,12 +121,12 @@ def load_pytorch_models(model_path, CL):
         except RuntimeError as e:
             err_msg = str(e)
             if "size mismatch" in err_msg or "shape" in err_msg:
-                logging.warning("Skipping model due to incompatible tensor shapes.")
+                logging.warning("Cannot load model due to incompatible tensor shapes.")
                 logging.warning("This typically indicates a flanking-size mismatch between the model and CLI arguments.")
                 logging.warning(mismatch_hint)
-                continue
-            logging.error(f"Error processing model for device: {err_msg}. Skipping...")
-            continue
+                raise SystemExit(1) from e
+            logging.error(f"Error processing model for device: {err_msg}. Aborting ensemble load.")
+            raise SystemExit(1) from e
 
         model = model.to(device)                # puts model on device
         model.eval()                            # puts model in evaluation mode
@@ -162,7 +134,7 @@ def load_pytorch_models(model_path, CL):
             
     if not loaded_models:
         logging.error("No models were successfully loaded to the device.")
-        exit()
+        raise SystemExit(1)
         
     return loaded_models
 
@@ -182,7 +154,7 @@ def load_keras_models(model_path):
         model_files = glob.glob(os.path.join(model_path, '*.h5')) # get all Keras models from a directory
         if not model_files:
             logging.error(f"No Keras model files found in directory: {model_path}")
-            exit()
+            raise SystemExit(1)
             
         models = []
         for model_file in model_files:
@@ -190,11 +162,12 @@ def load_keras_models(model_path):
                 model = keras.models.load_model(model_file)
                 models.append(model)
             except Exception as e:
-                logging.error(f"Error loading Keras model from file {model_file}: {e}. Skipping...")
+                logging.error(f"Error loading Keras model from file {model_file}: {e}. Aborting ensemble load.")
+                raise SystemExit(1) from e
 
         if not models:
             logging.error(f"No valid Keras models found in directory: {model_path}")
-            exit()
+            raise SystemExit(1)
             
         return models
     
@@ -203,11 +176,11 @@ def load_keras_models(model_path):
             return [keras.models.load_model(model_path)]
         except Exception as e:
             logging.error(f"Error loading Keras model from file {model_path}: {e}")
-            exit()
+            raise SystemExit(1)
         
     else: # invalid path
         logging.error(f"Invalid path: {model_path}")
-        exit()
+        raise SystemExit(1)
 
 ##############################################
 ## FORMATTING INPUT DATA FOR PREDICTION
@@ -292,17 +265,17 @@ class Annotator:
                               for c in df['EXON_END'].to_numpy()]
         except IOError as e:
             logging.error('{}'.format(e)) 
-            exit()  # Exit if the file cannot be read
+            raise SystemExit(1)  # Exit if the file cannot be read
         except (KeyError, pd.errors.ParserError) as e:
             logging.error('Gene annotation file {} not formatted properly: {}'.format(annotations, e))
-            exit()  # Exit if the file format is incorrect
+            raise SystemExit(1)  # Exit if the file format is incorrect
 
         # Load the reference genome fasta file
         try:
             self.ref_fasta = Fasta(ref_fasta, sequence_always_upper=True, rebuild=False)
         except IOError as e:
             logging.error('{}'.format(e))  # Log file read error
-            exit()  # Exit if the file cannot be read
+            raise SystemExit(1)  # Exit if the file cannot be read
 
         # Load models based on the specified model type or file
         if model_path == 'SpliceAI':
@@ -312,7 +285,7 @@ class Annotator:
             if missing:
                 logging.error('Default SpliceAI Keras models not found: {}. '
                               'Pass an explicit --model path/directory instead.'.format(missing))
-                exit()
+                raise SystemExit(1)
             self.models = [keras.models.load_model(x) for x in paths]
             self.keras = True
         elif model_type == 'keras': # load models using keras
@@ -323,7 +296,7 @@ class Annotator:
             self.keras = False
         else:
             logging.error('Model type {} not supported'.format(model_type))
-            exit()
+            raise SystemExit(1)
         
         print(f'\t[INFO] {len(self.models)} model(s) loaded successfully')
 
@@ -629,9 +602,15 @@ def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, 
     # (reproducible across hardware, batched==single) at lower throughput.
     _bench = os.environ.get('OSAI_CUDNN_BENCH', '1') == '1'
     _tf32 = os.environ.get('OSAI_TF32', '1') == '1'
+    _deterministic = os.environ.get('OSAI_DETERMINISTIC', '0') == '1'
     torch.backends.cudnn.benchmark = _bench
     torch.backends.cudnn.allow_tf32 = _tf32
     torch.backends.cuda.matmul.allow_tf32 = _tf32
+    torch.backends.cudnn.deterministic = _deterministic
+    if _deterministic:
+        # With CUBLAS_WORKSPACE_CONFIG set by the campaign runner, this fails
+        # closed if a model operation lacks a deterministic CUDA implementation.
+        torch.use_deterministic_algorithms(True)
 
     out_per_record = [[] for _ in records]   # ordered entries per record (strings or None placeholders)
     items = []                               # model work items (one per variant,alt,gene)

@@ -28,6 +28,8 @@ def get_validation_loader(h5f, idxs, batch_size):
         X, Y = load_data_from_shard(h5f, shard_idx)
         X_list.append(X)
         Y_list.append(Y)
+    if not X_list:
+        raise ValueError("No calibration shards: the selected split is empty")
     X = np.concatenate(X_list, axis=0)
     Y = np.concatenate(Y_list, axis=0)
     X = torch.tensor(X, dtype=torch.float32)
@@ -59,6 +61,10 @@ class ModelWithTemperature(nn.Module):
         self.temperature[c]. If logits is [N, C], we broadcast over the batch dimension.
         """
         temperature = torch.clamp(self.temperature, min=0.05, max=5.0)
+        # The model returns (batch, classes, sequence); collected logits are
+        # (observations, classes). In both forms temperature scales the class axis.
+        if logits.ndim == 3:
+            temperature = temperature.view(1, -1, 1)
         return logits / temperature
 
     def save_temperature(self, filepath):
@@ -73,8 +79,14 @@ class ModelWithTemperature(nn.Module):
         Load the temperature parameter (vector) from a file, then compute and store
         logits/labels on the validation loader.
         """
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        temperature = torch.load(filepath, map_location=device)
+        device = self.temperature.device
+        temperature = torch.load(filepath, map_location=device, weights_only=True)
+        if not isinstance(temperature, torch.Tensor) or temperature.shape != self.temperature.shape:
+            raise ValueError("Temperature must contain one value per model class")
+        if not torch.isfinite(temperature).all():
+            raise ValueError("Temperature values must be finite")
+        self.to(device)
+        self.model.eval()
         self.temperature = nn.Parameter(temperature.to(device))
         self.temperature.data = torch.clamp(self.temperature.data, min=0.05, max=5.0)
         print(f"Loaded temperature vector: {self.temperature.data.cpu().numpy()}")
@@ -103,7 +115,7 @@ class ModelWithTemperature(nn.Module):
         """
         Tune the vector of temperature parameters using the validation set.
         """
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = self.temperature.device
         self.to(device)
         self.model.eval()
 
@@ -137,7 +149,7 @@ class ModelWithTemperature(nn.Module):
         # Optimize the temperature vector
         optimizer = torch.optim.Adam([self.temperature], lr=0.01)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.1, patience=2, verbose=True)
+            optimizer, mode='min', factor=0.1, patience=2)
 
         best_loss = float('inf')
         best_temp = self.temperature.data.clone()
@@ -185,7 +197,7 @@ class ModelWithTemperature(nn.Module):
         print(f'{phase} - NLL: {nll:.4f}, ECE: {ece:.4f}')
 
     def compute_ece_nll(self, logits, labels):
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = self.temperature.device
         nll_criterion = nn.CrossEntropyLoss().to(device)
         ece_criterion = _ECELoss().to(device)
         nll = nll_criterion(logits.to(device), labels.to(device)).item()

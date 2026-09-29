@@ -175,7 +175,7 @@ def test_generate_bed_pt_backend(tmp_path):
     preds[:, 1, :] = 0.9
     pf = tmp_path / "predict.pt"
     torch.save(preds, pf)
-    # the .pt branch only loads when batch_ypred is passed (non-None)
+    # Explicitly supplied predictions are used directly; the CLI load path is tested separately.
     pr.generate_bed(str(pf), ["chr1:1-20(+)"], [2], str(tmp_path) + "/", batch_ypred=preds)
     assert (tmp_path / "acceptor_predictions.bed").exists()
 

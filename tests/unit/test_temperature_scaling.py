@@ -101,9 +101,9 @@ def test_compute_calibration_curve_uniform_shapes_and_bin_counts():
     # sklearn drops empty bins, so prob_true/prob_pred have <= n_bins entries and match each other.
     assert prob_true.shape == prob_pred.shape
     assert prob_true.shape[0] <= 5
-    # bin_counts always has exactly n_bins entries.
-    assert bin_counts.shape == (5,)
-    assert bin_counts.sum() <= len(probs)
+    # Counts align with occupied bins and conserve every observation.
+    assert bin_counts.shape == prob_true.shape
+    assert bin_counts.sum() == len(probs)
     assert (bin_counts >= 0).all()
 
 
@@ -117,8 +117,8 @@ def test_compute_calibration_curve_quantile_strategy():
         labels, probs, n_bins=5, strategy="quantile"
     )
     assert prob_true.shape == prob_pred.shape
-    assert bin_counts.shape == (5,)
-    assert bin_counts.sum() <= len(probs)
+    assert bin_counts.shape == prob_true.shape
+    assert bin_counts.sum() == len(probs)
     # Calibration probabilities are valid probabilities.
     assert ((prob_true >= 0) & (prob_true <= 1)).all()
     assert ((prob_pred >= 0) & (prob_pred <= 1)).all()

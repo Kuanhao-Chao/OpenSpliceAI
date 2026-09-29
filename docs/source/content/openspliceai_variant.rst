@@ -48,7 +48,7 @@ Input Files
 
 4. **Trained Model Checkpoint(s)**
 
-   A directory or file containing one or more OpenSpliceAI model checkpoints (PyTorch ``.pt`` or Keras ``.h5``). The subcommand can average predictions across multiple models.
+   A directory or file containing one or more OpenSpliceAI model checkpoints (PyTorch ``.pt`` / ``.pth`` state dictionaries or Keras ``.h5``). The subcommand averages predictions across all supplied models. An unreadable or incompatible member aborts the ensemble with a nonzero exit status.
 
 |
 
@@ -88,8 +88,8 @@ The primary output is a **VCF file** with added OpenSpliceAI annotations for eac
    * - DP_DL
      - Delta position (donor loss)
 
-- **Delta Scores**: Acceptor gain, acceptor loss, donor gain, and donor loss. The scores range from 0 to 1, and can be interpreted as the probability of the variant being splice-site-altering.
-- **Delta Positions**: Relative positions (±50 by default) of these maximum changes. Positive values are downstream, negative values are upstream.
+- **Delta Scores**: Acceptor gain, acceptor loss, donor gain, and donor loss. Each score is a maximum change in predicted splice-site probability within the scoring window. It is not a calibrated probability that the variant alters splicing.
+- **Delta Positions**: Relative positions (±50 by default) of these maximum changes. Positive values indicate increasing genomic coordinates; negative values indicate decreasing genomic coordinates, on either gene strand.
 
 For example,
 .. code-block:: text
@@ -99,10 +99,10 @@ For example,
 This string shows:
 - Alternate allele is A
 - We are on MYGENE
-- The base positon 3 downstream of the variant has the highest acceptor gain score of 0.27
-- The base position 4 upstream of the variant has the highest acceptor loss score of 0.00 (no loss)
-- The base position 7 downstream of the variant has the highest donor gain score of 0.09
-- The base position 2 upstream of the variant has the highest donor loss score of 0.02
+- The base positon 3 bases toward increasing genomic coordinates of the variant has the highest acceptor gain score of 0.27
+- The base position 4 bases toward decreasing genomic coordinates of the variant has the highest acceptor loss score rounded to 0.00
+- The base position 7 bases toward increasing genomic coordinates of the variant has the highest donor gain score of 0.09
+- The base position 2 bases toward decreasing genomic coordinates of the variant has the highest donor loss score of 0.02
 
 |
 
@@ -127,7 +127,7 @@ The “delta” score measures how much a mutation changes splice site predictio
    \mathrm{DS}(\mathrm{Donor\,Loss}) = \max\bigl(d_{ref} - d_{alt}\bigr)
    :label: eq:15
 
-where each maximum is taken over a window of 101 positions (±50) centered on the variant. The position of the maximum difference is recorded as the “delta position” (negative if upstream of the variant, positive if downstream).
+where each maximum is taken over a window of 101 positions (±50) centered on the variant. The position of the maximum difference is recorded as the “delta position” (negative toward decreasing genomic coordinates, positive toward increasing coordinates).
 
 |
 
@@ -325,7 +325,7 @@ Processing Pipeline
 #. **VCF Parsing/Filtering**
 
    - For each variant, the subcommand checks if it lies within an annotated gene region. If it isn't, it will be filtered out.  
-   - Variants that are too close to the chromosome ends (< ``flanking-size`` / 2 bases on either side), have a reference allele longer than ``distance`` + 1 bases (beyond which the score window can no longer be realigned), or have reference alleles mismatching the FASTA are automatically skipped.
+   - Variants that are too close to the chromosome ends (within half of the full input window, ``flanking-size`` / 2 + ``distance``, of an end), have a reference allele longer than ``distance`` + 1 bases (beyond which the score window can no longer be realigned), or have reference alleles mismatching the FASTA are automatically skipped.
 
 #. **Reference & Mutant Sequence Extraction**
 

@@ -272,3 +272,18 @@ The ``transfer`` subcommand provides an efficient path to adapt a pre-trained Op
    :alt: My Logo
    :class: logo, header-image only-dark
    :align: center
+
+
+Freezing and reproducibility
+----------------------------
+
+Partial transfer loading retains checkpoint parameters whose names and shapes
+match the selected architecture and prints missing keys. A checkpoint with no
+matching model parameters is rejected. Inference and calibration require complete
+checkpoints because their results must not depend on randomly initialized layers.
+
+``--unfreeze`` controls parameter gradients. During training, batch-normalization
+running statistics still update in frozen residual units. This preserves the
+existing fine-tuning behavior. ``--random-seed`` controls NumPy shuffling but does
+not seed every random generator used by the CLI; see ``KNOWN_ISSUES.md`` before
+interpreting separate runs as fully reproducible.

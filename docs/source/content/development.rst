@@ -39,9 +39,9 @@ The ``dev`` extra installs ``pytest`` (test runner), ``pytest-cov`` (coverage), 
 Running the test suite
 -----------------------
 
-The suite lives under ``tests/`` and contains **143 tests** (collected via
-``pytest --collect-only``). It is designed to run **CPU-only** so it can execute on any
-machine, including CI runners without a GPU.
+The suite lives under ``tests/``. Use ``python -m pytest --collect-only`` for the
+current inventory. The main suite runs on CPU; optional Keras and CUDA checks
+report unavailable backends as skips.
 
 Run the full suite from the repository root:
 
@@ -174,10 +174,17 @@ Add ``--cov-report=html`` to generate a browsable HTML report under ``htmlcov/``
 Continuous validation
 ----------------------
 
-There is no proprietary build system to run — validation is exactly the commands above:
-``pytest`` for behavior, ``ruff`` for static checks, and ``pre-commit`` to wire both into the
-commit workflow. Because the suite is CPU-only and self-contained (all inputs are synthetic
-fixtures), it can be run anywhere without GPUs or large downloads.
+``.github/workflows/tests.yml`` defines Python 3.9–3.12 checks, the full CPU
+suite with a 95% line-coverage gate, and distribution installation checks.
+The documentation workflow builds with warnings treated as errors and checks
+local links. A configured CI matrix is not evidence that every job has passed.
+
+The portable Makefile provides ``make test``, ``make test-cpu``,
+``make test-all``, ``make test-keras`` and ``make test-gpu``. Override
+``PYTHON=/path/to/python`` when needed. ``make coverage`` enforces line coverage;
+``make coverage-branch`` reports branch coverage separately. Tests seed their
+fixtures; this does not establish full CLI training reproducibility. See
+``KNOWN_ISSUES.md`` for preserved scientific defaults and limitations.
 
 |
 |

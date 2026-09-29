@@ -8,6 +8,7 @@ Description: Calibrate the OpenSpliceAI model.
 import os
 import time
 import torch
+from contextlib import ExitStack
 from torch.nn import functional as F
 from openspliceai.train_base.utils import *
 from openspliceai.calibrate.calibrate_utils import *
@@ -41,14 +42,14 @@ def get_logits_labels(model, loader, device, params):
 
 def evaluate_and_visualize(calibrated_model, data_loader, device, output_base_dir, dataset_name, params, flanking_size):
     print(f"\n--- Evaluating on {dataset_name} set ---")
-    
+
     results_dir = os.path.join(output_base_dir, "results", dataset_name)
     os.makedirs(results_dir, exist_ok=True)
     calib_data_dir = os.path.join(results_dir, "calibration_data")
     os.makedirs(calib_data_dir, exist_ok=True)
     plots_dir = os.path.join(results_dir, "plots")
     os.makedirs(plots_dir, exist_ok=True)
-    
+
     # Compute logits and labels using the base model
     base_model = calibrated_model.model
     logits, labels = get_logits_labels(base_model, data_loader, device, params)
@@ -59,7 +60,7 @@ def evaluate_and_visualize(calibrated_model, data_loader, device, output_base_di
     # Compute metrics
     metric_original_file = os.path.join(results_dir, "metrics_original.txt")
     metric_calibrated_file = os.path.join(results_dir, "metrics_calibrated.txt")
-    
+
     original_nll, original_ece = calibrated_model.compute_ece_nll(logits, labels)
     with open(metric_original_file, 'w') as f:
         f.write("Original_NLL\tOriginal_ECE\n")
@@ -82,7 +83,7 @@ def evaluate_and_visualize(calibrated_model, data_loader, device, output_base_di
     # Plotting, calibration curve computations, etc. remain the same
     for idx in [0, 1, 2]:
         plot_score_distribution(probs, probs_scaled, labels, plots_dir, idx)
-    
+
     classes = ["Non-splice site", "Acceptor site", "Donor site"]
     calibration_data = []
     calibration_data_scaled = []
@@ -90,16 +91,16 @@ def evaluate_and_visualize(calibrated_model, data_loader, device, output_base_di
         class_labels = (labels == i).astype(int)
         class_probs = probs[:, i]
         class_probs_scaled = probs_scaled[:, i]
-        
+
         prob_true, prob_pred, bin_counts = compute_calibration_curve(
             class_labels, class_probs, n_bins=30, strategy='uniform')
-        prob_true_scaled, prob_pred_scaled, _ = compute_calibration_curve(
+        prob_true_scaled, prob_pred_scaled, bin_counts_scaled = compute_calibration_curve(
             class_labels, class_probs_scaled, n_bins=30, strategy='uniform')
-        
+
         calibration_data.append((prob_true, prob_pred, bin_counts))
-        calibration_data_scaled.append((prob_true_scaled, prob_pred_scaled, bin_counts))
+        calibration_data_scaled.append((prob_true_scaled, prob_pred_scaled, bin_counts_scaled))
         save_calibration_data(calib_data_dir, classes[i], flanking_size, prob_true, prob_pred, bin_counts, 'original')
-        save_calibration_data(calib_data_dir, classes[i], flanking_size, prob_true_scaled, prob_pred_scaled, bin_counts, 'calibrated')
+        save_calibration_data(calib_data_dir, classes[i], flanking_size, prob_true_scaled, prob_pred_scaled, bin_counts_scaled, 'calibrated')
 
     plot_calibration_curves(calibration_data, calibration_data_scaled, classes, plots_dir)
     brier_uncal, brier_cal = calculate_brier_scores(labels, probs, probs_scaled)
@@ -113,71 +114,74 @@ def calibrate(args):
     """Temperature-scale a trained SpliceAI model (entry point for the ``calibrate`` subcommand).
 
     Loads ``args.pretrained_model``, wraps it in a ``ModelWithTemperature``, and
-    fits a single temperature parameter on the validation set. Reports
+    fits class-specific temperatures on the validation set. Reports
     calibration metrics (ECE/NLL/Brier) and writes calibration-curve plots and
     per-dataset metric files, plus ``temperature.pt``/``.txt`` and a full
     ``calibrated_model.pt`` under ``{output_dir}/calibration``. Returns nothing.
     """
     print("Running OpenSpliceAI with 'calibrate' mode")
     start_time = time.time()
-    
+
     # Create the main output directory structure
     base_output_dir = args.output_dir
     os.makedirs(base_output_dir, exist_ok=True)
     calibration_output_dir = os.path.join(base_output_dir, "calibration")
     os.makedirs(calibration_output_dir, exist_ok=True)
-    
+
     # Set up the device, datasets, and indices
     device = setup_environment(args)
     train_h5f, valid_h5f, test_h5f, batch_num = load_datasets(args)
-    train_idxs, val_idxs, test_idxs = generate_indices(train_h5f, valid_h5f, test_h5f)
-    
-    # Initialize the model
-    model, model_params = initialize_model_and_optim(device, args.flanking_size, args.pretrained_model)
+    with ExitStack() as stack:
+        for handle in (train_h5f, valid_h5f, test_h5f):
+            stack.enter_context(handle)
+        train_idxs, val_idxs, test_idxs = generate_indices(train_h5f, valid_h5f, test_h5f)
 
-    # -----------------------------
-    # NEW: Provide num_classes here
-    # (for example 3, if you know you have 3 classes)
-    # If it's variable, you can determine dynamically from the model output dimension.
-    num_classes = 3
+        # Initialize the model
+        model, model_params = initialize_model_and_optim(device, args.flanking_size, args.pretrained_model)
 
-    calibrated_model = ModelWithTemperature(model, num_classes=num_classes)
-    print("Initialized calibrated model:", calibrated_model)    
-    print("Validation indices count:", len(val_idxs))
-    print("Test indices count:", len(test_idxs))
-    
-    # Create data loaders for the validation (calibration) and test sets.
-    # val_idxs index the validation file, so the loader must read from valid_h5f.
-    validation_loader = get_validation_loader(valid_h5f, val_idxs, model_params["BATCH_SIZE"])
-    test_loader = get_validation_loader(test_h5f, test_idxs, model_params["BATCH_SIZE"])
-    
-    # Load or determine the temperature vector
-    if args.temperature_file:
-        calibrated_model.load_temperature(args.temperature_file, validation_loader, model_params)
-        # Because we have a vector, show the full array
-        print(f"Loaded temperature from {args.temperature_file}: {calibrated_model.temperature.data.cpu().numpy()}")
-    else:
-        # Calibrate
-        calibrated_model.set_temperature(validation_loader, model_params)
-        temperature_save_path = os.path.join(base_output_dir, "temperature.pt")
-        calibrated_model.save_temperature(temperature_save_path)
-        print(f"Saved calibrated temperature to {temperature_save_path}")
-    
-    # Save the temperature vector in text form
-    temperature_txt_save_path = os.path.join(base_output_dir, "temperature.txt")
-    with open(temperature_txt_save_path, 'w') as f:
-        f.write(str(calibrated_model.temperature.data.cpu().numpy()))
-    
-    # Save the full calibrated model (including the temperature vector)
-    model_save_path = os.path.join(base_output_dir, "calibrated_model.pt")
-    torch.save(calibrated_model, model_save_path)
-    print(f"Calibrated model saved to: {model_save_path}")
-    
-    # Evaluate and visualize on the validation set
-    evaluate_and_visualize(calibrated_model, validation_loader, device, calibration_output_dir, "validation", model_params, args.flanking_size)
-    
-    # Evaluate and visualize on the test set
-    evaluate_and_visualize(calibrated_model, test_loader, device, calibration_output_dir, "test", model_params, args.flanking_size)
-    
-    end_time = time.time()
-    print(f"\nTotal calibration and evaluation time: {end_time - start_time:.2f} seconds")
+        # -----------------------------
+        # NEW: Provide num_classes here
+        # (for example 3, if you know you have 3 classes)
+        # If it's variable, you can determine dynamically from the model output dimension.
+        num_classes = 3
+
+        calibrated_model = ModelWithTemperature(model, num_classes=num_classes)
+        print("Initialized calibrated model:", calibrated_model)
+        print("Validation indices count:", len(val_idxs))
+        print("Test indices count:", len(test_idxs))
+
+        # Create data loaders for the validation (calibration) and test sets.
+        # val_idxs index the validation file, so the loader must read from valid_h5f.
+        validation_loader = get_validation_loader(valid_h5f, val_idxs, model_params["BATCH_SIZE"])
+        test_loader = get_validation_loader(test_h5f, test_idxs, model_params["BATCH_SIZE"])
+
+        # Load or determine the temperature vector
+        if args.temperature_file:
+            calibrated_model.load_temperature(args.temperature_file, validation_loader, model_params)
+            # Because we have a vector, show the full array
+            print(f"Loaded temperature from {args.temperature_file}: {calibrated_model.temperature.data.cpu().numpy()}")
+        else:
+            # Calibrate
+            calibrated_model.set_temperature(validation_loader, model_params)
+            temperature_save_path = os.path.join(base_output_dir, "temperature.pt")
+            calibrated_model.save_temperature(temperature_save_path)
+            print(f"Saved calibrated temperature to {temperature_save_path}")
+
+        # Save the temperature vector in text form
+        temperature_txt_save_path = os.path.join(base_output_dir, "temperature.txt")
+        with open(temperature_txt_save_path, 'w') as f:
+            f.write(str(calibrated_model.temperature.data.cpu().numpy()))
+
+        # Save the full calibrated model (including the temperature vector)
+        model_save_path = os.path.join(base_output_dir, "calibrated_model.pt")
+        torch.save(calibrated_model, model_save_path)
+        print(f"Calibrated model saved to: {model_save_path}")
+
+        # Evaluate and visualize on the validation set
+        evaluate_and_visualize(calibrated_model, validation_loader, device, calibration_output_dir, "validation", model_params, args.flanking_size)
+
+        # Evaluate and visualize on the test set
+        evaluate_and_visualize(calibrated_model, test_loader, device, calibration_output_dir, "test", model_params, args.flanking_size)
+
+        end_time = time.time()
+        print(f"\nTotal calibration and evaluation time: {end_time - start_time:.2f} seconds")
