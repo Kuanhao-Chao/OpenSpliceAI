@@ -1,0 +1,633 @@
+---
+title: 'A genome-wide SNV scoring campaign: OpenSpliceAI, SpliceAI and a matched comparison of training seeds'
+description: 'A technical report on the genome-wide SNV re-scoring campaign behind OpenSpliceAI: how three billion variants were scored on a shared GPU cluster under hard scheduler limits, how the results were audited and analysed without ever materialising a multi-billion-row table, and what the resulting mask-matched comparison with SpliceAI shows about where the two predictors differ.'
+authors:
+  - Kuan-Hao Chao
+abstract: >-
+  SpliceAI publishes a precomputed collection of masked genic single-nucleotide variant scores, and OpenSpliceAI
+  reimplements and retrains the model that produces them. Comparing the two at scale is not a modelling
+  problem but an engineering one: it requires re-scoring the same three billion variants under matched
+  conditions, auditing that the analyzed files preserve the source, and then computing agreement statistics
+  over that volume without ever building a table of it. This report documents that campaign end to end.
+  On the scoring side: a batched, reference-deduplicated variant scorer; a partition into 100,000 chunks;
+  and a submission design shaped by two hard scheduler limits — a ten-GPU account cap and a controller-wide
+  ceiling of about 100,000 array tasks — that is idempotent at chunk granularity and is designed not to exceed
+  its configured GPU footprint. On the analysis side: a streaming map/reduce that reduces
+  {{primary.coverage.paired_annotations|,d}} exact-gene paired annotations to additive counters, with
+  fail-closed contracts on completeness, provenance and code identity, verified against an independent
+  reimplementation that shares no code with it. The recorded scoring setup matches masking, annotation,
+  distance and reference. Legacy outputs remain structurally audited without embedded model receipts. Agreement on the maximum
+  delta score is moderate (Pearson {{primary.agreement.MAX.pearson_r|.3f}}), but it is not uniform: loss
+  scores agree closely while gain scores do not, and scoring a second independently seeded checkpoint shows
+  the mean loss-score gap is similar in size to the observed seed difference, while the gain-score gap is larger. Anchoring every
+  variant to the annotated splice sites both predictors were scored against localises the difference
+  further. We also report what went wrong — two latent defects that made the analysis pipeline fail on its
+  first real cluster execution, and a packaging incident that silently produced empty output for days.
+date: {{study.date}}
+venue: 'Technical Report'
+institution: 'Johns Hopkins University'
+tags:
+  - Splice prediction
+  - Variant effect prediction
+  - Genomics
+  - Reproducibility
+  - Scientific computing
+image: ../../assets/reports/full-snv-scoring-technical-report/f02_joint_density.png
+imageAlt: 'Calibration of OpenSpliceAI against SpliceAI over three billion paired variant annotations: loss panels track exact agreement while gain panels stay near zero until the SpliceAI score is well above 0.5.'
+scholar: false
+unlisted: false
+references:
+  - text: "Jaganathan K, Kyriazopoulou Panagiotopoulou S, McRae JF, et al. Predicting Splicing from Primary Sequence with Deep Learning. Cell, 2019."
+    doi: https://doi.org/10.1016/j.cell.2018.12.015
+  - text: "Chao K-H, Mao A, Liu A, Salzberg SL, Pertea M. OpenSpliceAI provides an efficient modular implementation of SpliceAI enabling easy retraining across nonhuman species. eLife 14:RP107454, 2025."
+    doi: https://doi.org/10.7554/eLife.107454.3
+  - text: "Yoo AB, Jette MA, Grondona M. SLURM: Simple Linux Utility for Resource Management. Job Scheduling Strategies for Parallel Processing (JSSPP), 2003."
+    doi: https://doi.org/10.1007/10968987_3
+---
+import '../../styles/snvReport.css';
+import ZoomFigure from '../../components/ZoomFigure.astro';
+import depthFigure13 from '../../assets/reports/full-snv-scoring-technical-report/f16_seed_method_by_gene.png';
+import depthFigure11 from '../../assets/reports/full-snv-scoring-technical-report/f15_site_conditioned_dp.png';
+import depthFigure10 from '../../assets/reports/full-snv-scoring-technical-report/f14_site_conditioned_calibration.png';
+import depthFigure9 from '../../assets/reports/full-snv-scoring-technical-report/f13_site_score_distributions.png';
+import depthFigure7 from '../../assets/reports/full-snv-scoring-technical-report/f07_dp_agreement.png';
+import depthFigure5 from '../../assets/reports/full-snv-scoring-technical-report/f11_quantization.png';
+import depthFigure0 from '../../assets/reports/full-snv-scoring-technical-report/f01_coverage.png';
+import calibration from '../../assets/reports/full-snv-scoring-technical-report/f02_joint_density.png';
+import tails from '../../assets/reports/full-snv-scoring-technical-report/f03_difference_distributions.png';
+import thresholdCurves from '../../assets/reports/full-snv-scoring-technical-report/f04_threshold_agreement.png';
+import operatingPoint from '../../assets/reports/full-snv-scoring-technical-report/f05_operating_point_transfer.png';
+import dominantEvent from '../../assets/reports/full-snv-scoring-technical-report/f06_dominant_event.png';
+import landscape from '../../assets/reports/full-snv-scoring-technical-report/f08_chromosome.png';
+import geneDivergence from '../../assets/reports/full-snv-scoring-technical-report/f09_gene_divergence.png';
+import seedVsMethod from '../../assets/reports/full-snv-scoring-technical-report/f10_seed_versus_model.png';
+import siteDistance from '../../assets/reports/full-snv-scoring-technical-report/f12_site_distance.png';
+
+*Center for Computational Biology, Johns Hopkins University, Baltimore, MD, USA. Correspondence: kh.chao@jhu.edu. Code: [github.com/Kuanhao-Chao/OpenSpliceAI](https://github.com/Kuanhao-Chao/OpenSpliceAI). [Architecture and benchmark report](/reports/openspliceai-technical-report/). This report covers the campaign as of {{study.date}}; scoring is incomplete and every result is labelled provisional by the analysis pipeline's own contract.*
+
+## 1. Introduction
+
+A reimplementation earns trust by being compared with the thing it reimplements. For a splice-site
+predictor the interesting comparison is not per-position accuracy on a held-out test set — that is
+reported in the OpenSpliceAI paper [2] — but agreement on the quantity people actually act on: the delta
+score assigned to a variant.
+
+That comparison is available in principle, because SpliceAI ships a precomputed collection of genic
+SNV scores across the human genome. Here, **genome-wide** describes the collection's genomic extent;
+the collection does not include every genomic base or every possible GRCh38 SNV. Coverage percentages
+refer to this published collection. The comparison is hard in practice for three reasons. The published scores are
+**masked**, so an unmasked re-scoring is not comparable. They are computed against a **specific gene
+annotation**, so a re-scoring against a different one measures the annotations as much as the models. And
+there are **3.4 billion of them**, which is too many to hold in a table and enough that a silent failure
+in the middle of a month-long job is entirely plausible.
+
+This report is about meeting those three requirements. Section 2 covers the scorer, section 3 the scoring
+campaign, section 4 the analysis pipeline, and section 5 the results. Sections 3 and 4 include what went
+wrong, because the failures were more instructive than the successes and two of them would recur for
+anyone attempting the same thing.
+
+### What this study can and cannot establish
+
+It is a **concordance** study with one annotation-anchored extension. SpliceAI is the comparator, not
+ground truth: no experimentally validated splicing outcome enters the analysis. Section 5.7 anchors
+variants to annotated splice sites, which bounds the interpretation of a disagreement but does not settle
+it — a call far from any annotated site may be a genuine unannotated site rather than an error. Nothing
+here ranks the two predictors on biological accuracy.
+
+## 2. Scoring a variant, and scoring three billion of them
+
+### 2.1 What a delta score is
+
+For a variant, OpenSpliceAI and SpliceAI both compute four numbers: the change in the model's predicted
+probability that a position is used as a splice acceptor or donor, decomposed into gain and loss. Each is
+accompanied by the position at which that change is largest, within a window of `-D` to `+D` bases. The
+model is evaluated twice — once on the reference sequence and once on the alternate — and the delta scores
+are differences of those two predictions.
+
+Two properties of that definition matter later. First, the four scores are **not independent**: they are
+derived from the same pair of forward passes, so an implementation difference propagates into all four.
+Second, the maximum of the four is what a caller thresholds, so it is the quantity whose agreement matters
+operationally even though it is the least mechanistically interpretable.
+
+### 2.2 Masking
+
+With `-M 1` a score is suppressed unless it is consistent with the annotation: a **gain** is zeroed when
+the position of the predicted gain coincides with an already-annotated splice site, and a **loss** is
+zeroed when it does *not*. The published SpliceAI scores are masked this way, so the re-scoring must be
+too.
+
+The precise rule is worth stating because section 5.7 depends on it. For each variant the scorer computes
+the offset to the nearest annotated exon boundary, pooling acceptor and donor boundaries together, and
+masks on whether the predicted position equals that offset. The consequence is that under masking a
+**loss score is retained only when its selected position matches the nearest per-gene
+exon boundary**, including transcript ends. A gain score is suppressed when its selected
+position matches that boundary. That asymmetry in what the two kinds of score are even allowed to say turns
+out to predict which of them the two predictors agree about.
+
+### 2.3 The batched, reference-deduplicated scorer
+
+Scored naively, each variant costs two forward passes over a {{study.flanking_size|,d}}-nucleotide
+context. Two observations make the campaign tractable. Variants at the same position share a reference
+pass, and within a chunk many variants fall in the same gene, so the reference computation is
+**deduplicated within a position** rather than repeated per alternate allele. And the A100 is far from
+saturated by a single window, so windows are **batched** — the campaign used `-b 128`. Deduplication and batching reduce repeated inference; the
+throughput depends on the device, gene overlap and input composition.
+
+### 2.4 Determinism
+
+The campaign records settings that support deterministic execution in the configured environment:
+`{{study.deterministic_runtime}}`. TF32 is disabled, and cuDNN autotuning is off to avoid
+benchmark-driven algorithm selection. `torch.use_deterministic_algorithms(True)` requests deterministic
+implementations and raises an error for known nondeterministic operations without an alternative.
+These settings do not guarantee identical results across different hardware or library versions.
+
+## 3. The scoring campaign
+
+### 3.1 Partition and scale
+
+The variant collection is partitioned into **{{study.source_chunks|,d}} chunks** with consecutive source records in each file. The analyzed subset has
+{{primary.coverage.source_rows|,d}} source rows, which must not be confused with its gene-annotation count. A chunk is the atomic unit of scoring, auditing
+and resume. Two independently seeded MANE checkpoints are scored (rs10 and rs13) as single models rather
+than as the five-model ensemble SpliceAI publishes, which is a deliberate asymmetry discussed in
+section 5.8.
+
+### 3.2 Two hard limits that shaped the design
+
+Neither limit is about the science, and both are invisible until you hit them.
+
+- The GPU **QOS caps the account at ten GPUs**, shared across everyone using it.
+- The controller's **`MaxJobCount` is about 100,000 array tasks in total**, with `MaxArraySize` 15,000.
+  A one-task-per-chunk submission for a single seed is 100,000 tasks and therefore impossible; submitting
+  past roughly 90,000 pending tasks simply returns `Resource temporarily unavailable`.
+
+### 3.3 The submission design
+
+Four choices follow from those limits.
+
+- **Several chunks per task, scored sequentially.** Each array task scores its chunks one at a time on one
+  GPU. Batched inference already saturates the device, so fanning out inside a task would only run out of
+  memory. This keeps the task count comfortably inside both ceilings.
+- **Idempotent at chunk granularity.** A chunk is skipped when its output already has the correct record
+  count; a partial file from a killed task is detected by count mismatch, deleted and redone. Pausing and
+  resuming costs only the handful of chunks in flight.
+- **A whole-campaign GPU cap by construction.** SLURM's `%N` array throttle is *per array job*, so two
+  seed arrays each throttled at four would use eight GPUs. Instead the seeds are **serialized into a
+  dependency chain**, so only one array is ever runnable and the total concurrent GPU count is the
+  throttle by construction rather than by convention.
+- **Resume from a deep audit, not from filenames.** The resume path plans from a full audit of what is
+  actually on disk, not from which files exist.
+
+### 3.4 The audit
+
+Before anything is analysed, every chunk is audited: exact byte size, nanosecond mtime, record count, a
+canonical record digest, and raw SHA-256 of both the input and the output. The audit also verifies that
+the output preserved the source — the seven fixed VCF columns and the original SpliceAI annotation must be
+byte-identical after removing the added field — and that every added annotation is well-formed with its
+predicted positions inside the allowed distance.
+
+Provenance is graded rather than assumed. Outputs written after the scorer gained a cryptographic receipt
+are `receipt_bound`; the outputs analysed here predate it and are `legacy_unprovenanced`, meaning they are
+structurally audited and hash-pinned but their model identity is not cryptographically provable. The
+reports say so rather than eliding it.
+
+### 3.5 What went wrong: two incidents worth recording
+
+**A packaging change silently emptied the campaign for days.** A routine `rm -rf build dist *.egg-info`
+during a release deleted the editable install's metadata directory. `import openspliceai` continued to
+work, because the path entry survived — so any check based on importing the package looked healthy — but
+the **console script** could no longer resolve its distribution metadata and every task exited with
+`PackageNotFoundError`, producing zero records. The lesson that generalised: a health check must exercise
+the same entry point the work uses, not a convenient proxy for it.
+
+**The campaign is currently stalled on allocation, not on error.** {{study.campaign_status}} The campaign handoff recorded `AssocGrpBillingMinutes` as the GPU scheduling reason;
+this CPU analysis does not resume the GPU campaign. The
+rs10 coverage was already sufficient for the analysis reported here, so the study proceeds and is labelled
+provisional.
+
+## 4. Analysing three billion paired annotations
+
+### 4.1 Why not a table
+
+{{primary.coverage.paired_annotations|,d}} paired annotations will not fit in memory, and materialising
+them as an expanded analysis table would add substantial storage and I/O cost. Every statistic in this report is
+therefore computed as an **additive counter**: sums, sums of squares and cross-products for the moment
+statistics; fixed-width histograms for distributions; and explicit contingency tables for calls. A mapper
+reduces a slice of chunks to those counters, and a reducer merges them. Nothing row-level survives except
+a bounded deterministic sample and a bounded list of the largest discrepancies.
+
+The cost of that choice is that rank and distribution statistics — Spearman, Kolmogorov–Smirnov,
+Wasserstein, Jensen–Shannon — are computed from binned joint and marginal histograms and are **approximate**. They are marked
+as such wherever they appear. Configured threshold counts are exact; moment statistics use floating-point sums,
+and histogram-based transfer and difference tails retain their stated approximations.
+
+### 4.2 The analysis unit
+
+The unit is the tuple `(CHROM, POS, REF, ALT, gene)`, not a VCF row. A source row may carry annotations
+for several overlapping genes, and a prediction may repeat an identical multi-gene annotation on every
+row. The parser deduplicates identical repeats, counts and **excludes** conflicting values for the same
+method and gene, and pairs only on an exact allele and an exact gene symbol. An annotation present on one
+side and absent on the other stays in the coverage denominator and is never silently treated as a zero.
+
+### 4.3 Fail-closed contracts
+
+The pipeline refuses to produce a result it cannot stand behind. A reduction fails on a missing or
+duplicated mapper task, a duplicated chunk, a pair list whose hash changed, mixed run labels or mixed
+mapper configurations. A run may only be labelled **final** when its chunk domain is exactly the complete
+one; everything short of that is **provisional**, and the report renderer refuses to describe a
+provisional run as final. Every queued job re-verifies both the frozen input list and a recursive hash of
+the analysis code before it runs, so code cannot drift between submission and execution.
+
+### 4.4 What went wrong: two latent defects, found on first contact with the cluster
+
+The analysis package was written, reviewed and unit-tested before it had ever been run on the scheduler.
+Both of the following passed every test and failed every job.
+
+**The code fingerprint could not be computed where it was checked.** Each job verified a recursive SHA-256
+of the analysis package before running — and resolved the hashing script relative to `BASH_SOURCE`. SLURM
+copies a batch script into a per-job spool directory, so that path did not exist at execution time and
+every task exited on a check that was meant to protect it.
+
+**The fingerprint was locale-dependent.** The digest sorted filenames without pinning collation, so the
+submitting shell and the `--export=NONE` batch job hashed the same tree to different values. This did not
+fail deterministically: a pilot submitted from the same shell passed because it happened to land on a node
+whose locale matched, and the production arms then failed. Pinning `LC_ALL=C` inside the digest made it a
+property of the tree rather than of the caller.
+
+A third defect appeared only when the splice-site analysis was added: the reducer was assumed to be a pure
+merger, when in fact it **rejoins the chunk-boundary groups the mappers defer**, which are real rows. It
+therefore needed the same annotation the mappers used, and now verifies that it has exactly that one by
+digest. A one-task pilot caught it before the production launch.
+
+### 4.5 Independent verification
+
+An independent standard-library implementation rereads the VCFs with its own parser,
+grouping, conflict handling, three-way intersection, site derivation and arithmetic.
+The primary window contains {{study.verification.primary.chunks|d}} contiguous chunks and
+{{study.verification.primary.paired_annotations|,d}} paired observations; the matched window
+contains {{study.verification.matched.chunks|d}} chunks and
+{{study.verification.matched.paired_annotations|,d}} common observations.
+
+The primary check is **{{study.verification.primary.status}}** across
+{{study.verification.primary.checks|,d}} comparisons; the matched check is
+**{{study.verification.matched.status}}** across {{study.verification.matched.checks|,d}}.
+Integer counts, call tables, joint and marginal histograms, and DP counts must agree exactly.
+The check also recomputes event statistics in every requested stratum. Continuous statistics
+are compared with relative tolerance {{study.verification.relative_tolerance}} and absolute
+tolerance {{study.verification.absolute_tolerance}}. The maximum observed absolute errors are
+{{study.verification.primary.max_error}} and {{study.verification.matched.max_error}},
+respectively. These are implementation checks on real windows, not independent biological
+validation or an exhaustive reread of the full production domain.
+
+The verification artifacts bind the requested inputs, annotation, comparison kind, verifier
+configuration and compared summary digest. Cached independent data are accepted only if their
+identity matches the requested run; absent expected comparisons cannot count as a passing check.
+
+## 5. Results
+
+### 5.1 Coverage and the comparison domain
+
+{{table:runs_overview}}
+
+The primary arm uses {{primary.chunks|,d}} audited chunks and
+{{primary.coverage.paired_annotations|,d}} exact-gene paired annotations. Source rows,
+alleles and gene annotations are different counting units; the coverage diagram records
+that distinction. Missing predictions remain missing, and conflicting annotations are
+excluded rather than replaced by zero.
+
+<ZoomFigure src={depthFigure0} alt="Processing flow distinguishing source rows, variant groups and exact-gene paired annotations" variant="wide">
+Figure 1. Coverage flow with the unit labelled at every stage. Multiple genes can annotate one variant group, so annotation counts are not a decreasing sequence of row counts. Arrows describe processing; their widths do not encode quantities.
+</ZoomFigure>
+
+{{table:coverage}}
+
+The seed comparison and both restricted method comparisons use the **same three-way
+variant/gene intersection**, containing {{arms.B_seeds_rs10_rs13.coverage.paired_annotations|,d}}
+observations. The intersection is taken after duplicate resolution and chunk-boundary joining.
+This is stricter than the earlier September 8 analysis, which matched chunk lists but paired
+genes separately in each comparison. Its slightly different pairwise denominators are
+preserved in the archived baseline and are not mixed into these seed-to-method ratios.
+The restricted region is {{study.rs13_genomic_extent}}; it is not a random genomic sample.
+
+### 5.2 Score agreement and the gain–loss distinction
+
+{{table:agreement}}
+
+MAX Pearson correlation is {{primary.agreement.MAX.pearson_r|.4f}} and Lin concordance is
+{{primary.agreement.MAX.lin_ccc|.4f}}. Loss-event correlations are
+{{primary.agreement.AL.pearson_r|.4f}} for AL and {{primary.agreement.DL.pearson_r|.4f}} for DL;
+gain-event correlations are {{primary.agreement.AG.pearson_r|.4f}} for AG and
+{{primary.agreement.DG.pearson_r|.4f}} for DG. The signed bias is defined throughout as
+OpenSpliceAI minus SpliceAI. Correlation measures covariation; it does not establish equal
+values, equal calls, or biological correctness.
+
+<ZoomFigure src={calibration} alt="Paired score distributions and conditional medians for all four events and MAX" variant="wide">
+Figure 2. Calibration: the distribution of the OpenSpliceAI score conditional on the SpliceAI score. Orange dots mark the conditional median; vertical intervals are the central 50% and 90%. A perfectly agreeing pair would track the dashed line. Empty comparator bins remain gaps; the two-decimal score grid naturally leaves some bins unoccupied.
+</ZoomFigure>
+
+{{table:equivalence}}
+
+Shared zeros dominate the full population. The following subsets condition on either
+system carrying signal, making their changed denominator explicit. They are descriptive
+subsets selected using the scores themselves, not independent validation sets.
+
+{{table:signal_subsets}}
+
+The tail curves show the fraction of paired annotations at each magnitude of positive or
+negative score difference. They summarize the direction as well as the size of disagreement.
+These tails use differences rounded to histogram centres and are approximate.
+
+<ZoomFigure src={tails} alt="Negative and positive score-difference tail probabilities by event" variant="wide">
+Figure 3. Tail asymmetry of the signed score difference. Left: the probability that each predictor exceeds the other by at least x. Right: their ratio, where 1.0 would mean the two disagree in both directions equally often. Difference magnitudes are rounded to histogram centres, so these tail estimates are approximate.
+</ZoomFigure>
+
+{{table:tail_asymmetry}}
+
+### 5.3 Threshold agreement and operating-point transfer
+
+Configured exact thresholds are {{primary.configured_thresholds}}. The joint histogram
+adds {{primary.agreement_curve.points|d}} interior cutoff points at
+{{primary.histogram_binning.width|.3f}} spacing. A cutoff of one cannot be isolated from
+the final histogram bin and is excluded from the transfer search.
+
+{{table:thresholds_max}}
+
+<ZoomFigure src={thresholdCurves} alt="Jaccard, kappa, MCC and call-rate ratio across the score cutoff grid" variant="wide">
+Figure 4. Chance-corrected and positive-class agreement, and the ratio of call volumes, as continuous functions of a cutoff applied to both predictors. The dashed line on the right marks equal call volume. Values below one mean fewer OpenSpliceAI calls, without implying greater specificity.
+</ZoomFigure>
+
+At a MAX cutoff of 0.5, positive-call Jaccard is
+{{primary.thresholds.MAX[0.5].jaccard|.4f}} and MCC is
+{{primary.thresholds.MAX[0.5].mcc|.4f}}. Overall agreement is
+{{primary.thresholds.MAX[0.5].overall_agreement|pct3}} and is dominated by shared negatives.
+For this reason the report emphasizes positive-call overlap and chance-corrected agreement.
+
+The event-specific snapshot below uses the same 0.5 cutoff:
+
+{{table:thresholds_by_event}}
+
+Rate matching chooses the OpenSpliceAI cutoff whose number of calls is closest to SpliceAI's;
+MCC optimization chooses the cutoff with greatest agreement with SpliceAI. Neither procedure
+optimizes agreement with a biological outcome. A matched number of calls need not identify
+the same variants. These cutoffs were selected and evaluated on the same population and are
+descriptive, without a held-out transfer guarantee.
+
+<ZoomFigure src={operatingPoint} alt="Per-event OpenSpliceAI cutoffs chosen by call-rate matching and MCC optimization" variant="wide">
+Figure 5. Per-event operating-point transfer at every configured threshold. Matching call volume and maximising MCC answer different questions; neither optimises biological accuracy. Candidate cutoffs use the histogram grid and exclude the unresolved endpoint at one.
+</ZoomFigure>
+
+{{table:operating_points_by_event}}
+
+### 5.4 Output precision
+
+The comparator carries {{study.source_precision_dp|d}} decimal places and OpenSpliceAI
+{{study.openspliceai_precision_dp|d}}. Rounding the latter to the comparator's precision
+changes exact-value agreement. The residual MAE after subtracting a half-grid allowance
+bounds the part that cannot be attributed to this quantization allowance alone; it does
+not recover the unpublished full-precision comparator scores.
+
+{{table:quantization}}
+
+<ZoomFigure src={depthFigure5} alt="MAE and exact-match rates before and after matching output precision" variant="wide">
+Figure 6. SpliceAI publishes two decimals. Left: how much exact agreement is recovered by rounding OpenSpliceAI to the same grid. Right: the fraction of mean absolute difference that cannot be explained by that grid.
+</ZoomFigure>
+
+### 5.5 Event identity, selected discrepancies and collapsed annotations
+
+{{table:dominant}}
+
+<ZoomFigure src={dominantEvent} alt="Row-normalized dominant-event confusion with NONE and ties retained" variant="wide">
+Figure 7. Which event each predictor considers dominant, normalised within SpliceAI's category. TIE and NONE are explicit categories, not discarded.
+</ZoomFigure>
+
+Dominant-event categories describe the largest score within each predictor. The next table
+conditions MAX statistics on the pair of dominant categories; this is a score-selected
+stratification and is not an independent test of the event labels.
+
+{{table:dominant_pair_strata}}
+
+The taxonomy below describes the selected
+{{primary.discordance_depth.records|,d}} largest absolute discrepancies, grouped by the
+event driving the difference, its direction and variant proximity. Equal largest differences
+are labelled TIE. These are extreme records selected from the population; their category
+frequencies are **not genome-wide prevalence estimates**. The complete record and gene
+tables are distributed with the study.
+
+{{table:discordance_depth}}
+
+As an annotation sensitivity check, the primary comparison also takes each predictor's
+maximum per event across its own genes, then pairs on the variant allele. This changes both
+the unit and the gene assignment: signal assigned to different genes may now be paired.
+It should be interpreted alongside exact-gene matching rather than replacing it. In the
+matched B/C/D pass, collapsing occurs within the common gene set so those arms retain their
+shared domain.
+
+{{table:collapsed_view}}
+
+### 5.6 Predicted-position agreement
+
+For each event, positional agreement is conditioned on both scores meeting the stated
+threshold. A zero offset is a valid predicted position. The table below uses 0.5; companion
+tables contain every configured cutoff and tolerance. An empty eligible group is n/a.
+
+{{table:dp_agreement}}
+
+<ZoomFigure src={depthFigure7} alt="Agreement of predicted event offsets among jointly called annotations" variant="wide">
+Figure 8. Predicted-position agreement among variants both predictors call at a given score threshold. Every configured cutoff is shown. Denominators are jointly-called pairs; undefined groups are gaps and a measured zero remains zero.
+</ZoomFigure>
+
+This measures agreement about the selected position among jointly called annotations.
+It does not cover calls unique to one predictor, nor establish that the shared position
+is used in vivo.
+
+### 5.7 Context around annotated internal splice boundaries
+
+The index contains {{study.sites_count|,d}} unique internal boundary coordinates derived
+from the exact scoring gene table. Exon starts are converted from zero-based to one-based
+coordinates; exon ends remain unchanged. Donor and acceptor roles follow strand. Transcript
+ends are excluded, and coordinates with conflicting roles or equidistant nearest sites of
+different type are labelled ambiguous.
+
+The index pools boundaries across genes on a contig. The scorer's mask instead uses a
+per-gene boundary set that includes transcript ends. Consequently proximity in this figure
+is descriptive context and is **not identical to the masking rule**. The plotted distance is
+from the variant position, whereas the mask applies to the position selected by each event's
+DP offset. A symmetric 1–2 bp bin is not an essential-dinucleotide annotation; more than
+500 bp from these boundaries is not an intron annotation.
+
+<ZoomFigure src={siteDistance} alt="Event-specific call rates at 0.5 by distance from the variant to the nearest internal boundary" variant="wide">
+Figure 9. Event-specific call rates at threshold 0.5, pooled over nearest-site types. Zeros are omitted from the logarithmic axis and retained in the accompanying table. Distance is annotation context, not an experimental truth label.
+</ZoomFigure>
+
+{{table:site_events_depth}}
+
+The score distributions compare variants at or within 2 bp of an internal boundary with
+variants more than 500 bp away. Both groups retain their own denominator and include all
+nearest-site types. Zero call rates are retained in the tables even when omitted on a log axis.
+
+<ZoomFigure src={depthFigure9} alt="Per-event score survival curves near boundaries and more than 500 bp away" variant="wide">
+Figure 10. Score survival distributions near internal splice boundaries versus variants more than 500 bp away, for each event. Curves use histogram edges at 0.005 resolution. The distant group includes any genomic context present in the input; it is not labelled deep intron.
+</ZoomFigure>
+
+<ZoomFigure src={depthFigure10} alt="Conditional median and interquartile range of OpenSpliceAI scores by annotation proximity" variant="wide">
+Figure 11. Median and interquartile range of the right score conditional on the left score, separated by annotation proximity. Empty conditioning bins remain gaps. This is agreement calibration against a comparator, not calibration against observed splice outcomes.
+</ZoomFigure>
+
+Conditional medians and interquartile ranges show score agreement within each comparator
+score bin. Empty bins remain gaps. This is calibration against another predictor, not
+against measured probabilities of altered splicing.
+
+<ZoomFigure src={depthFigure11} alt="Exact and within-two-base predicted-position agreement by variant proximity" variant="wide">
+Figure 12. Predicted-position agreement by variant proximity. Both event scores must be at least 0.5; DP=0 is eligible. Empty eligible groups are gaps, and the table retains all five tolerances.
+</ZoomFigure>
+
+Distance-conditioned DP agreement retains the requirement that both event scores are at
+least 0.5. Proximity can locate disagreements for follow-up, but none of these distance
+panels measures sensitivity, specificity or false-positive rate.
+
+### 5.8 Seed variation and regional heterogeneity
+
+{{table:seed_versus_model_events}}
+
+On the common observations, the rs10 method-to-seed MAE ratios are
+{{seed_versus_model.events.AG.ratios.C_rs10_matched.mae|.3f}} for AG,
+{{seed_versus_model.events.AL.ratios.C_rs10_matched.mae|.3f}} for AL,
+{{seed_versus_model.events.DG.ratios.C_rs10_matched.mae|.3f}} for DG and
+{{seed_versus_model.events.DL.ratios.C_rs10_matched.mae|.3f}} for DL.
+The seed contrast uses two checkpoints, so it measures this pair's variability and does not
+estimate the full distribution across training runs. The method contrast also includes the
+published ensemble-versus-single-checkpoint difference.
+
+<ZoomFigure src={seedVsMethod} alt="Method disagreement compared with seed disagreement on the same variant and gene observations" variant="wide">
+Figure 13. Left: mean absolute difference between two training seeds of OpenSpliceAI, and between SpliceAI and each seed, on identical three-way variant/gene observations. Right: rs10 method MAE divided by seed MAE, per event. A value near 1 indicates similar average score differences for these contrasts; it does not establish interchangeability.
+</ZoomFigure>
+
+<ZoomFigure src={depthFigure13} alt="Distribution across genes of method-to-seed MAE ratios for each event" variant="wide">
+Figure 14. Distribution across genes of method-to-seed MAE ratios on the exact three-way intersection, restricted in the figure to genes with at least 1,000 paired observations and positive, defined ratios. The complete table retains excluded and undefined entries and all genomic strata.
+</ZoomFigure>
+
+The gene figure includes genes with at least 1,000 paired observations and positive, defined
+ratios. The full exports retain zero and undefined cases. The following summary gives equal
+weight to strata, which differs from the observation-weighted global MAE ratio. A ratio is
+undefined when the seed MAE is zero. Dominant-pair categories are excluded from matched-stratum
+ratios because their membership depends on the comparison itself.
+
+{{table:seed_method_strata}}
+
+<ZoomFigure src={landscape} alt="MAX score bias across genomic one-megabase blocks" variant="wide">
+Figure 15. Mean signed MAX difference in each 1-Mb block with at least 10,000 pairs. Blocks are ordered and evenly spaced within each chromosome; gaps are not drawn to scale. Point area scales with the number of paired annotations in the block. The dashed line is the genome-wide mean; blocks below it are where OpenSpliceAI scores relatively lower still.
+</ZoomFigure>
+
+<ZoomFigure src={geneDivergence} alt="Distribution of gene-level divergence with labelled outliers" variant="wide">
+Figure 16. Per-gene divergence against how much splice signal the gene carries. Point area is the number of paired annotations; the labelled genes are the most negative. The histogram shows the same values as a distribution.
+</ZoomFigure>
+
+The primary arm contains {{primary.landscape.blocks|,d}} one-megabase blocks containing at least 10,000 paired annotations.
+The figure orders retained blocks within equal-width chromosome panels; genomic gaps are not
+drawn to scale.
+Chromosome, gene, block and substitution exports include MAX and all four events. A local
+outlier is a prioritization lead, not evidence of a causal effect of gene length or density.
+Comparing the restricted rs10 arm with the broad primary arm describes sensitivity to the
+regional domain and the common-gene restriction:
+
+{{table:generalization}}
+
+These aggregate comparisons cannot guarantee that the seed pattern transfers to unscored
+regions or to genes excluded by the three-way intersection.
+
+## 6. Discussion
+
+The comparison separates several questions that are easy to conflate: numerical equality,
+call overlap, agreement on the dominant event, and agreement on the selected position.
+Shared zeros explain much of the apparent all-annotation agreement. The event-specific
+statistics and signal-conditioned summaries reveal the difference hidden by that denominator.
+
+The gain–loss contrast persists under the intended common masking, annotation, distance and
+reference settings. Its cause is not isolated by this experiment. The two score collections
+also differ in training, checkpoint identity, implementation and ensembling, and the published
+comparator is rounded. The two-seed contrast provides a useful scale for comparison without
+separating these causes.
+
+Annotated-site proximity adds a way to describe where disagreement occurs. It does not resolve
+whether lower gain scores reflect fewer false positives or more missed true sites. Evaluating
+that distinction requires an independently measured splicing outcome, with a sampling scheme
+that includes both shared and predictor-specific calls.
+
+Threshold transfer should be guided by the application and independently validated. The
+rate-matched and MCC-optimal cutoffs here describe agreement with SpliceAI on this population;
+they are not calibrated clinical decision thresholds. Likewise, whether an OpenSpliceAI ensemble
+would reduce the observed method gap remains an experiment, not a result of this study.
+
+## 7. Limitations
+
+- **Concordance only.** No experimental or clinical truth labels enter the analysis. Neither
+  global agreement nor annotation proximity ranks biological accuracy.
+- **Provisional coverage.** The primary arm contains {{primary.chunks|,d}} of
+  {{study.source_chunks|,d}} source chunks. Incomplete outer groups are excluded. The matched
+  arms cover {{study.rs13_genomic_extent}}, with an additional common-gene restriction.
+- **Legacy provenance.** The scored files are structurally audited and hash-pinned but remain
+  `legacy_unprovenanced`. The audit does not cryptographically establish the checkpoint that
+  created them. Scoring settings and model labels are campaign records, not embedded proof.
+- **Ensemble and seed scope.** The published comparator is an ensemble; each OpenSpliceAI arm is
+  one checkpoint. Only two OpenSpliceAI seeds are compared. Architecture, training and ensemble
+  contributions are not separately identified.
+- **Annotation context.** The pooled internal-site index excludes transcript ends and differs
+  from the per-gene mask. It gives neither a transcript-specific intronic annotation nor an
+  experimental label. Variant distance and predicted-event distance are distinct quantities.
+- **Quantization and approximations.** Distribution summaries use
+  {{primary.histogram_binning.bins|d}} bins of width {{primary.histogram_binning.width|.3f}}.
+  Epsilon-corrected floor binning prevents binary-edge underflow; empty bins can naturally
+  reflect the comparator's decimal grid. Spearman and distribution distances are binned
+  approximations, difference tails are rounded to bin centres, and transferred cutoffs are
+  restricted to grid edges below one. Direct configured-threshold counts are exact; moment
+  arithmetic has floating-point summation error.
+- **Selection and dependence.** Top discrepancies are a selected extreme sample, signal subsets
+  are conditioned on the scores, and adjacent variants and overlapping genes are dependent.
+  Gene/block bootstrap intervals are resampling sensitivity summaries, not guarantees over
+  independent biological observations. Large sample size does not remove these limitations.
+- **Gene coverage.** Exact matching excludes unshared or conflicting gene annotations. The
+  collapsed view changes the unit and can join signals assigned to different genes. Its
+  agreement cannot be interpreted as recovering the missing exact-gene observations.
+
+## 8. Reproducibility
+
+The measured results in both reports are resolved from the same `study_facts.json` and
+reduced summaries. Unknown fact paths and unfinished interpretation markers fail the build.
+Configured cutoffs, schema constants and historical engineering settings are stated separately
+from measured results. All analysis is provisional.
+
+| Artifact | SHA-256 |
+|:---|:---|
+| Primary frozen pair list | `{{study.pair_lists.rs10_all}}` |
+| Matched three-way source pair list | `{{study.pair_lists.rs10_rs13_overlap}}` |
+| rs10 audit manifest | `{{study.rs10_manifest_sha256}}` |
+| rs13 audit manifest | `{{study.rs13_manifest_sha256}}` |
+| Internal-site source annotation | `{{study.sites_digest}}` |
+| Primary frozen execution manifest | `{{study.depth_primary_checks_sha256}}` |
+| Matched frozen execution manifest | `{{study.depth_matched_checks_sha256}}` |
+
+The archived initial pairwise analysis also used `rs10_on_overlap.tsv`
+(`{{study.pair_lists.rs10_on_overlap}}`) and `rs13_on_overlap.tsv`
+(`{{study.pair_lists.rs13_on_overlap}}`). The new C/D results are derived together with B
+from the three-way pass, rather than from those separate pairwise reductions.
+
+Production jobs: primary {{study.slurm_jobs.A_rs10_genomewide}};
+matched B/C/D {{study.slurm_jobs.matched}}. The execution manifests pin the frozen code,
+annotation and pair files checked by each worker. They do not supply the missing model
+receipts for legacy score files.
+
+The campaign scoring command was:
+
+```text
+{{study.scoring_command}}
+```
+
+Download the [study bundle](/downloads/full-snv-concordance-20260909.zip) for
+machine-readable facts, matched-stratum comparisons, verification evidence, frozen execution
+inputs, analysis source, and all figures in PNG and PDF. Complete per-arm CSV tables are
+provided separately: [A: primary](/downloads/full-snv-concordance-20260909-A_rs10_genomewide.zip),
+[B: seeds](/downloads/full-snv-concordance-20260909-B_seeds_rs10_rs13.zip),
+[C: rs10 matched](/downloads/full-snv-concordance-20260909-C_rs10_matched.zip), and
+[D: rs13 matched](/downloads/full-snv-concordance-20260909-D_rs13_matched.zip).
+[SHA-256 checksums](/downloads/full-snv-concordance-20260909-SHA256SUMS.txt) identify each download. The [browser reading copy](/downloads/full-snv-concordance-20260909.html) is available
+without access to the cluster filesystem. The study bundle also includes self-contained
+HTML with embedded figures for offline reading.

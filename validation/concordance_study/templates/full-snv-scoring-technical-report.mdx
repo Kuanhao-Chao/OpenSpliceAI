@@ -1,0 +1,86 @@
+---
+title: 'Genome-wide comparison of predicted splicing effects between OpenSpliceAI and SpliceAI'
+description: 'A comparison of acceptor and donor gains and losses across the published genic SNV collection, with two-seed inference progress and matched seed comparisons.'
+authors:
+  - Kuan-Hao Chao
+abstract: >-
+  OpenSpliceAI reproduces the SpliceAI architecture in PyTorch and supports retraining with different
+  annotations and species. Here, we compare their predicted variant effects across the published
+  collection of masked genic single-nucleotide variants. The frozen analysis contains
+  {{primary.coverage.paired_annotations|,d}} matched variant–gene annotations. Agreement differs by event:
+  acceptor and donor loss scores have Pearson correlations of {{primary.agreement.AL.pearson_r|.3f}} and
+  {{primary.agreement.DL.pearson_r|.3f}}, compared with {{primary.agreement.AG.pearson_r|.3f}} and
+  {{primary.agreement.DG.pearson_r|.3f}} for gains. At a cutoff of 0.5, OpenSpliceAI makes more loss calls
+  and fewer gain calls, with the largest reduction in donor gain. Among jointly called gains, the models
+  usually select the same position. On identical observations shared by two OpenSpliceAI training seeds
+  and SpliceAI, gain-score differences exceed the observed seed difference more strongly than loss-score
+  differences. These results describe agreement between a published ensemble and individual retrained
+  checkpoints; they do not establish relative biological accuracy. We report inference progress separately
+  from the frozen scientific results, which remain provisional because scoring is incomplete.
+date: {{study.date}}
+updated: {{revision.date}}
+venue: 'Technical Report'
+institution: 'Johns Hopkins University'
+tags:
+  - Splice prediction
+  - Variant effect prediction
+  - Genomics
+  - Reproducibility
+image: ../../assets/reports/full-snv-scoring-technical-report/main02_score_agreement.png
+imageAlt: 'Acceptor and donor loss scores agree more closely between the models than gain scores.'
+scholar: false
+unlisted: false
+listed: true
+references:
+  - text: 'Jaganathan K, Kyriazopoulou Panagiotopoulou S, McRae JF, et al. Predicting Splicing from Primary Sequence with Deep Learning. Cell, 2019.'
+    doi: https://doi.org/10.1016/j.cell.2018.12.015
+  - text: 'Chao K-H, Mao A, Liu A, Salzberg SL, Pertea M. OpenSpliceAI provides an efficient modular implementation of SpliceAI enabling easy retraining across nonhuman species. eLife 14:RP107454, 2025.'
+    doi: https://doi.org/10.7554/eLife.107454.3
+---
+
+*Center for Computational Biology, Johns Hopkins University, Baltimore, MD, USA. Correspondence: kh.chao@jhu.edu. Scientific snapshot: {{study.date}}. Progress snapshot completed: {{revision.observed_at}}. [Architecture and benchmarks](/reports/openspliceai-technical-report/).*
+
+## Introduction
+
+OpenSpliceAI implements the SpliceAI architecture in PyTorch and supports retraining with different
+annotations and species [2]. Similar splice-site prediction performance does not establish that two
+trained models assign the same effect to a sequence variant. Here, we compare OpenSpliceAI and
+SpliceAI across the published collection of masked genic single-nucleotide variants (SNVs), asking
+where their predicted effects agree and which types of effects differ most.
+
+We distinguish four events: **acceptor gain (AG), acceptor loss (AL), donor gain (DG), and donor loss
+(DL)**. Gains summarize increases in predicted splice-site scores after substitution; losses summarize
+decreases. Each event score records the largest change within the search window and has an associated
+selected position. A variant can receive multiple nonzero event scores. These events are therefore
+not mutually exclusive variant classes. MAX, the largest of the four scores, summarizes predicted
+effect strength without distinguishing gain from loss or acceptor from donor.
+
+Our comparisons address score magnitude, overlap of calls at a common cutoff, boundary proximity,
+and selected positions. We also compare two OpenSpliceAI training seeds on identical observations.
+SpliceAI is the comparator throughout. The collection contains no experimental splicing outcomes,
+so concordance identifies similarities and differences between predictions without determining which
+model is correct when they disagree.
+
+## Study design and inference progress
+
+<!-- figure:main01_progress -->
+
+## Loss scores agree more closely than gain scores
+
+<!-- figure:main02_score_agreement -->
+
+## Call overlap differs between the four events
+
+<!-- figure:main03_call_agreement -->
+
+## Boundary proximity distinguishes local patterns
+
+<!-- figure:main04_boundary_context -->
+
+## Jointly called gains usually select the same position
+
+<!-- figure:main05_positions -->
+
+## Gain disagreement exceeds the observed seed difference
+
+<!-- figure:main06_seed_comparison -->

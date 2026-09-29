@@ -1,0 +1,234 @@
+[
+  {
+    "id": "main01_progress",
+    "document": "main",
+    "number": 1,
+    "title": "Inference progress and analyzed coverage",
+    "alt": "Two OpenSpliceAI seeds remain incomplete; the scientific snapshot is frozen.",
+    "caption": "Current input/output size and modification-time checks are compared with the dated audit manifests. Unchanged metadata carries forward an audited state; it is not a new content audit. Missing, invalid and changed/unverified chunks remain separate. Job reasons are a dated scheduler observation, not a completion forecast. The lower panel shows the distinct primary and exact three-way analysis domains.",
+    "sources": [
+      "progress_snapshot.json",
+      "study_facts.json"
+    ],
+    "file": "main01_progress.png",
+    "pdf": "main01_progress.pdf"
+  },
+  {
+    "id": "main02_score_agreement",
+    "document": "main",
+    "number": 2,
+    "title": "Loss scores agree more closely than gain scores",
+    "alt": "Conditional score distributions for acceptor gain, acceptor loss, donor gain and donor loss.",
+    "caption": "OpenSpliceAI scores conditional on SpliceAI scores for the primary paired variant–gene annotations. Points are medians; dark and light intervals contain the central 50% and 90%. The dashed diagonal denotes equal scores. Quantiles use stored 200-bin histograms (width 0.005); empty comparator bins remain gaps. Pearson correlations use the original scores and include shared zeros. The panels describe score agreement, not calibration against experimental outcomes.",
+    "sources": [
+      "display_histograms.npz",
+      "tables/A_rs10_genomewide/agreement.csv"
+    ],
+    "file": "main02_score_agreement.png",
+    "pdf": "main02_score_agreement.pdf"
+  },
+  {
+    "id": "main03_call_agreement",
+    "document": "main",
+    "number": 3,
+    "title": "Gain calls overlap less, especially donor gain",
+    "alt": "Jaccard overlap and relative call count across common event-score cutoffs.",
+    "caption": "A, shared positive calls divided by their union. B, OpenSpliceAI calls divided by SpliceAI calls; the dashed line denotes equal counts and the vertical scale is logarithmic. Colors and marker shapes distinguish the four events. Curves use approximate histogram cutoffs; larger symbols at 0.5 show exact counters. Shared negatives do not enter Jaccard. Fewer calls do not establish higher specificity.",
+    "sources": [
+      "tables/A_rs10_genomewide/agreement_curves.csv",
+      "tables/A_rs10_genomewide/thresholds.csv"
+    ],
+    "file": "main03_call_agreement.png",
+    "pdf": "main03_call_agreement.pdf"
+  },
+  {
+    "id": "main04_boundary_context",
+    "document": "main",
+    "number": 4,
+    "title": "Annotation context distinguishes gain and loss differences",
+    "alt": "Call rates by variant distance and conditional gain-score medians near and far from internal boundaries.",
+    "caption": "A–D, event score ≥0.5 divided by all paired variant–gene annotations in each distance group. Counts are pooled across acceptor, donor and ambiguous boundary types before division. Both models use the same group denominator. The rate axis is logarithmic; printed zeros indicate measured zero calls. E–F, histogram-derived conditional gain-score medians at/within 2 bp versus more than 500 bp from a pooled internal boundary. The strand-aware index excludes transcript ends. Variant distance differs from selected-event distance and does not classify variants as intronic or exonic.",
+    "sources": [
+      "figure_data/boundary_call_rates.csv",
+      "display_histograms.npz",
+      "tables/A_rs10_genomewide/site_event.csv"
+    ],
+    "file": "main04_boundary_context.png",
+    "pdf": "main04_boundary_context.pdf"
+  },
+  {
+    "id": "main05_positions",
+    "document": "main",
+    "number": 5,
+    "title": "Jointly called gains usually select the same position",
+    "alt": "Exact predicted-position agreement among jointly called variant–gene annotations.",
+    "caption": "Both event scores must be ≥0.5. Labels give exact-position matches, eligible annotation counts and mismatches. AL has one mismatch and DL four; extra decimal places prevent rounding these results to perfect agreement. The axis spans 90–101%. Recorded masking restricts retained loss positions, but does not establish the cause of the exceptions. Calls unique to one model are excluded; shared positions do not validate splice-site use.",
+    "sources": [
+      "tables/A_rs10_genomewide/dp_agreement.csv"
+    ],
+    "file": "main05_positions.png",
+    "pdf": "main05_positions.pdf"
+  },
+  {
+    "id": "main06_seed_comparison",
+    "document": "main",
+    "number": 6,
+    "title": "Gain differences exceed the observed seed contrast",
+    "alt": "Mean absolute differences and method-to-seed ratios on the identical three-way intersection.",
+    "caption": "A, mean absolute differences for rs10–rs13 and for each checkpoint versus SpliceAI. B, each method difference divided by the rs10–rs13 difference; one denotes equal mean differences. All contrasts use exactly the same variant–gene annotations. Two seeds provide one observed contrast, not a population estimate of training variability. Single OpenSpliceAI checkpoints and the published SpliceAI ensemble remain different comparison units.",
+    "sources": [
+      "study_facts.json"
+    ],
+    "file": "main06_seed_comparison.png",
+    "pdf": "main06_seed_comparison.pdf"
+  },
+  {
+    "id": "supp01_coverage",
+    "document": "supplement",
+    "number": 1,
+    "title": "Counting units and pairing coverage",
+    "alt": "Source records, variant groups and paired gene annotations have different denominators.",
+    "caption": "Counts refer to the primary rs10 comparison. VCF rows, distinct variant groups and variant–gene annotations are different units; these rows are not successive stages of a decreasing funnel. Pairing excludes missing or conflicting predictions. Counts for each model use its name explicitly. Coverage remains provisional.",
+    "sources": [
+      "study_facts.json",
+      "figure_data/coverage_units.csv"
+    ],
+    "file": "supp01_coverage.png",
+    "pdf": "supp01_coverage.pdf"
+  },
+  {
+    "id": "supp02_tails",
+    "document": "supplement",
+    "number": 2,
+    "title": "The direction of large score differences",
+    "alt": "Signed score-difference tails by event.",
+    "caption": "Tail probabilities distinguish OpenSpliceAI exceeding SpliceAI from the reverse. The right panel compares these directions. Difference magnitudes use histogram centers and estimates are approximate. This supports, rather than replaces, the event-wise score and call comparisons.",
+    "sources": [
+      "study_facts.json"
+    ],
+    "file": "supp02_tails.png",
+    "pdf": "supp02_tails.pdf"
+  },
+  {
+    "id": "supp03_threshold_transfer",
+    "document": "supplement",
+    "number": 3,
+    "title": "Matching call volume does not ensure matching membership",
+    "alt": "Per-event cutoffs selected by call-volume matching or comparator MCC.",
+    "caption": "Every configured SpliceAI cutoff is shown. Candidate OpenSpliceAI cutoffs lie on the histogram grid and exclude the unresolved endpoint at one. MCC is agreement with SpliceAI; neither objective optimizes experimental accuracy.",
+    "sources": [
+      "tables/A_rs10_genomewide/operating_point_transfer.csv"
+    ],
+    "file": "supp03_threshold_transfer.png",
+    "pdf": "supp03_threshold_transfer.pdf"
+  },
+  {
+    "id": "supp04_precision",
+    "document": "supplement",
+    "number": 4,
+    "title": "Score agreement under a rounding allowance",
+    "alt": "Exact score agreement after matching output precision and differences beyond the rounding allowance.",
+    "caption": "SpliceAI reports two decimal places and OpenSpliceAI five. Left, exact matches before and after rounding OpenSpliceAI to two decimals. Right, mean(max(|OpenSpliceAI − SpliceAI| − 0.005, 0)) divided by the original mean absolute difference. This is a residual-error share, not a fraction of discordant variants or an estimate of error caused by rounding. The 0.005 allowance is an operational sensitivity analysis; it does not reconstruct either model’s unrounded scores. Shared zeros remain in the denominator.",
+    "sources": [
+      "tables/A_rs10_genomewide/quantization.csv"
+    ],
+    "file": "supp04_precision.png",
+    "pdf": "supp04_precision.pdf"
+  },
+  {
+    "id": "supp05_dominant_event",
+    "document": "supplement",
+    "number": 5,
+    "title": "Dominant-event labels and their denominators",
+    "alt": "Row-normalized dominant-event transitions, retaining ties and all-zero annotations.",
+    "caption": "Each row is normalized by its displayed SpliceAI-category count. TIE denotes a tied nonzero maximum and NONE all-zero scores. Unlabelled cells have proportions below 0.005, not necessarily zero; displayed rounding can prevent row labels summing to one. Exact counts and proportions are supplied in figure_data/dominant_row_proportions.csv. Dominant labels compress four nonexclusive scores.",
+    "sources": [
+      "tables/A_rs10_genomewide/dominant_event.csv",
+      "figure_data/dominant_row_proportions.csv"
+    ],
+    "file": "supp05_dominant_event.png",
+    "pdf": "supp05_dominant_event.pdf"
+  },
+  {
+    "id": "supp06_site_distributions",
+    "document": "supplement",
+    "number": 6,
+    "title": "Score distributions near and far from internal boundaries",
+    "alt": "Event-score survival distributions near and far from internal boundaries, including MAX.",
+    "caption": "Histogram survival curves show the fraction at or above each lower bin edge, using width 0.005. All panels share the same logarithmic rate scale and include MAX as a summary. The near population contains 5,431,412 annotations and the far population 2,805,642,585. Zero survival values cannot appear on the log axis; a point at cutoff zero alone does not establish a nonzero loss score. The far group is not a transcript-specific deep-intronic category.",
+    "sources": [
+      "display_histograms.npz",
+      "study_facts.json"
+    ],
+    "file": "supp06_site_distributions.png",
+    "pdf": "supp06_site_distributions.pdf"
+  },
+  {
+    "id": "supp07_site_score_agreement",
+    "document": "supplement",
+    "number": 7,
+    "title": "Conditional score distributions by boundary proximity",
+    "alt": "Near and distant score distributions for gains and losses.",
+    "caption": "Points are histogram-derived conditional medians and intervals the central 50% of OpenSpliceAI scores for each SpliceAI bin. Empty bins remain gaps. Near and far populations contain 5,431,412 and 2,805,642,585 annotations, respectively; the number in each conditioning bin varies. These are distribution intervals, not confidence intervals or calibration against experimental outcomes. MAX is a summary of the four events.",
+    "sources": [
+      "display_histograms.npz"
+    ],
+    "file": "supp07_site_score_agreement.png",
+    "pdf": "supp07_site_score_agreement.pdf"
+  },
+  {
+    "id": "supp08_site_positions",
+    "document": "supplement",
+    "number": 8,
+    "title": "Position agreement within jointly called distance groups",
+    "alt": "Exact and within-2-bp position agreement by event and annotation context at a score cutoff of 0.5.",
+    "caption": "Exact and within-2-bp agreement require both event scores ≥0.5. All panels retain the same six variant-distance groups. A group without jointly called events has undefined agreement and is labelled No joint calls. Vertical labels give eligible counts and exact-position mismatches (miss). The complete table includes other cutoffs and tolerances. Rare AL and DL mismatches are preserved rather than hidden by rounded percentages.",
+    "sources": [
+      "tables/A_rs10_genomewide/site_dp.csv",
+      "figure_data/position_context.csv"
+    ],
+    "file": "supp08_site_positions.png",
+    "pdf": "supp08_site_positions.pdf"
+  },
+  {
+    "id": "supp09_seed_by_gene",
+    "document": "supplement",
+    "number": 9,
+    "title": "Distribution of gene-level method-to-seed differences",
+    "alt": "Gene-level method-to-seed mean absolute difference ratios.",
+    "caption": "Empirical cumulative distributions use the exact three-way intersection, with at least 1,000 paired observations per gene and positive, defined MAE ratios. All panels share log-axis limits. Legends give plotted gene counts; figure_data/seed_gene_summary.csv records exclusions, medians and fractions above one. Genes contribute equal weight to each curve. A small seed MAE can produce a large ratio; zero-denominator ratios are undefined.",
+    "sources": [
+      "tables/seed_versus_method_strata.csv",
+      "figure_data/seed_gene_summary.csv"
+    ],
+    "file": "supp09_seed_by_gene.png",
+    "pdf": "supp09_seed_by_gene.pdf"
+  },
+  {
+    "id": "supp10_chromosome",
+    "document": "supplement",
+    "number": 10,
+    "title": "Regional variation in mean MAX differences",
+    "alt": "Mean signed MAX differences in all eligible 1-Mb blocks.",
+    "caption": "All 2,571 retained 1-Mb blocks with at least 10,000 paired annotations are shown across their full value range. Blocks are equally spaced within each chromosome; the horizontal scale is not proportional to genomic length. Point area increases with annotation count using an offset plus a scaled count. The dashed line is the primary annotation-weighted mean. MAX averages do not identify an event-specific regional mechanism.",
+    "sources": [
+      "tables/A_rs10_genomewide/stratum_block_1mb.csv"
+    ],
+    "file": "supp10_chromosome.png",
+    "pdf": "supp10_chromosome.pdf"
+  },
+  {
+    "id": "supp11_gene_divergence",
+    "document": "supplement",
+    "number": 11,
+    "title": "Distribution of gene-level mean MAX differences",
+    "alt": "Gene-level MAX disagreement and selected high-divergence genes.",
+    "caption": "Both panels contain 19,063 genes with at least 1,000 paired annotations. Point area increases linearly with annotation count after scaling. Up to twelve labels are selected in order of negative mean difference subject to spacing, so they are not strictly the twelve most negative genes. The scatter compares x=mean SpliceAI MAX with y=mean OpenSpliceAI MAX−x; the shared x term and bound y≥−x create mathematical coupling. The histogram shows the same gene differences and their median. Neither panel tests enrichment or establishes disease associations.",
+    "sources": [
+      "tables/A_rs10_genomewide/stratum_gene.csv",
+      "figure_data/gene_summary.csv"
+    ],
+    "file": "supp11_gene_divergence.png",
+    "pdf": "supp11_gene_divergence.pdf"
+  }
+]

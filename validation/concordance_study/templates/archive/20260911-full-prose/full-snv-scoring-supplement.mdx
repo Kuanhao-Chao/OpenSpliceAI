@@ -1,0 +1,283 @@
+---
+title: 'Supplement: genome-wide OpenSpliceAI and SpliceAI comparison'
+description: 'Methods and supporting event-level analyses for the genome-wide comparison of OpenSpliceAI and SpliceAI.'
+abstract: >-
+  We describe the scoring collection, annotation pairing, masking, and statistical summaries used
+  to compare OpenSpliceAI with SpliceAI. Supporting analyses examine score differences, threshold
+  transfer, output precision, annotation context, selected positions, and variation across genes
+  and genomic blocks. All results use the same dated scientific snapshot as the main report;
+  inference progress is documented separately.
+authors:
+  - Kuan-Hao Chao
+date: {{study.date}}
+updated: {{revision.date}}
+venue: 'Technical Report Supplement'
+institution: 'Johns Hopkins University'
+tags:
+  - Splice prediction
+  - Reproducibility
+image: ../../assets/reports/full-snv-scoring-technical-report/supp01_coverage.png
+imageAlt: 'Counts distinguishing source records, variants and paired gene annotations.'
+scholar: false
+unlisted: false
+listed: false
+---
+
+This supplement accompanies the [main report](/reports/full-snv-scoring-technical-report/).
+AG, AL, DG and DL denote acceptor gain, acceptor loss, donor gain and donor loss, respectively.
+MAX is the largest of those four scores. Scientific results use the September 9 snapshot;
+separately dated progress observations do not change the analyzed populations.
+
+## Detailed methods
+
+### Scoring collection and models
+
+We used the published masked genic SNV collection distributed with SpliceAI. The collection includes
+genic positions and flanking sequence and does not enumerate all possible substitutions at every
+reference base. The campaign divides the source into {{study.source_chunks|,d}} chunks. We scored
+MANE-trained OpenSpliceAI checkpoints from seeds rs10 and rs13, each using a single checkpoint.
+The published SpliceAI scores were produced by a five-model ensemble. The seed labels do not refer to
+cross-validation folds. The comparison therefore combines differences in training, checkpoints,
+implementation and ensembling.
+
+The recorded setup uses GRCh38.p14, the GENCODE v24 canonical gene table supplied with SpliceAI,
+a 10,000-nt model context, a ±{{study.distance|d}}-bp event-search window, and masked output.
+Training annotations and scoring annotations have different roles: MANE defines the retraining data,
+whereas the campaign's shared canonical gene table controls assignment and masking.
+For each event, the score is the largest predicted increase or decrease in the event-search window;
+its accompanying delta position records the selected location relative to the variant.
+
+### Audit, pairing and comparison domains
+
+Input and output VCFs were audited for completeness, parseability, source-record preservation and
+annotation structure. The analysis pins source artifacts and manifests by checksum and verifies
+selected chunk identities. A valid structural audit does not establish the checkpoint that produced
+a legacy file. We retain the classification `legacy_unprovenanced` and do not infer embedded provenance
+receipts from campaign settings alone.
+
+We pair by chromosome, position, reference allele, alternate allele and exact gene label. We collapse
+identical duplicate values and exclude conflicting duplicates. An absent model score is missing, not
+zero. Chunk-boundary joining resolves groups split by file partitioning. We retain separate counts
+for physical VCF records, distinct variant alleles, gene annotations and paired observations.
+
+<!-- figure:supp01_coverage -->
+
+{{table:runs_overview}}
+
+The primary comparison uses the available rs10 domain. The other three arms compare rs10 with rs13,
+SpliceAI with rs10, and SpliceAI with rs13 on one exact three-way intersection after duplicate
+resolution. Each has {{arms.B_seeds_rs10_rs13.coverage.paired_annotations|,d}} observations across
+{{arms.B_seeds_rs10_rs13.chunks|,d}} chunks. The matched region covers {{study.rs13_genomic_extent}};
+its genomic restriction prevents treating it as a random subset of the full collection.
+
+{{table:coverage}}
+
+### Streaming summaries and numerical verification
+
+The analysis reduces streams of paired annotations to additive counts, moments, fixed-bin
+histograms, and stratum tables. It does not materialize a multi-billion-row dataframe. Exact
+threshold counters use 0.05, 0.1, 0.2, 0.5 and 0.8, with positive calls defined by score ≥ cutoff.
+The 200-bin score histograms have width 0.005; conditional quantiles and threshold sweeps derived
+from them are approximate. Empty bins remain gaps. Undefined rates remain undefined rather than
+being replaced with zero.
+
+All event-level global score summaries use the full paired domain, including shared zeros. Pearson
+correlation describes association, mean absolute difference describes score magnitude, and signed
+bias is OpenSpliceAI minus SpliceAI. Jaccard is the intersection divided by the union of positive
+calls. The call-count ratio is OpenSpliceAI divided by SpliceAI. Comparator-based MCC and related
+agreement statistics are not experimental accuracy measures.
+
+The reducer checks missing and duplicate tasks, pair-domain completeness and source identity.
+Independent real-data-window implementations passed {{study.verification.primary.checks|,d}} primary
+and {{study.verification.matched.checks|,d}} matched numerical checks. These validate the implemented
+computations on the tested windows, not biological truth or completeness of unfinished inference.
+The archived September 9 bundle retains the original engineering narrative and verification evidence.
+
+### Annotation context and masking
+
+The proximity index contains {{study.sites_count|,d}} unique internal boundary coordinates from the
+scoring annotation. Donor and acceptor roles are assigned by strand. Internal boundaries are pooled
+across genes, and transcript ends are excluded. We group variants by the distance of the variant
+coordinate to the nearest indexed boundary: at-site, 1–2, 3–10, 11–50, 51–500 and >500 bp. The main
+figure pools acceptor, donor and ambiguous context by summing call numerators and denominators before computing rates.
+The original tables preserve the site-type strata.
+
+The scorer's mask uses a different boundary set: it selects the nearest exon boundary for the
+specific variant–gene annotation, including transcript ends and pooling donor/acceptor boundary
+types. Under the recorded implementation, a loss is retained only if its selected delta position equals
+that boundary, and a gain there is suppressed. This describes the intended masking rule; the rare
+loss-position discrepancies in legacy outputs are reported separately below. The mask acts on the selected event position, whereas proximity grouping
+uses the variant position. This distinction explains why pooled distance and retained loss location
+must not be interpreted as independent biological labels.
+
+A symmetric 1–2-bp distance group includes both sides of a boundary and is not synonymous with the
+essential splice dinucleotide. A distance >500 bp does not establish a deep-intronic variant: the
+index is pooled and no transcript-specific intronic/exonic classification was performed. Far-loss
+strata may be empty or very small under the mask; eligible counts are needed to interpret their rates.
+
+### Current inference progress
+
+The progress collector reads the dated campaign manifests and verifies their checksums, seed labels,
+complete unique chunk IDs, state totals and provenance totals against the audit metadata. It then
+compares current input and output file sizes and nanosecond modification times with those recorded
+in each manifest. Unchanged files retain their audited classification; changed or newly appearing
+files are unverified, and absent files are missing. An I/O failure cannot produce a valid count.
+This metadata comparison is deliberately separate from a new VCF content audit.
+
+The scheduler query records matching rs10 and rs13 scoring jobs with their states and reasons. A
+failed query is reported as unavailable, rather than as no jobs. The displayed observation time and
+original audit time remain separate. No inference jobs or campaign manifests are changed by this
+report revision, and no completion date is inferred from a pending job.
+
+## Secondary event comparisons
+
+### Signed differences and threshold transfer
+
+Signed-difference tails separate annotations where OpenSpliceAI exceeds SpliceAI from those with
+the reverse ordering. Gain differences favor higher SpliceAI scores over much of the displayed tail
+range. For losses, large differences more often have higher OpenSpliceAI scores. Tail probabilities
+use the full paired population and approximate histogram magnitudes. Neither the sign nor the size
+of a model difference determines whether the predicted effect occurs experimentally.
+
+<!-- figure:supp02_tails -->
+
+{{table:agreement}}
+
+*Spearman correlations are approximations calculated from the 200-bin joint score histograms, not exact ranks of the original scores.*
+
+Call-volume matching asks which OpenSpliceAI cutoff produces a similar number of calls to a given
+SpliceAI cutoff. MCC optimization asks which candidate cutoff maximizes agreement with SpliceAI.
+These objectives can select different cutoffs because equal volumes need not contain the same
+annotations. Neither supplies a biologically validated decision threshold.
+
+<!-- figure:supp03_threshold_transfer -->
+
+{{table:operating_points_by_event}}
+
+### Precision and dominant events
+
+SpliceAI reports two decimal places and OpenSpliceAI five. Rounding OpenSpliceAI to two decimals
+increases the exact-match rate from 89.55% to 96.58% for AG and from 90.75% to 96.78% for DG.
+The corresponding loss rates already exceed 99% before rounding because the full population contains
+many shared zeros. Exact equality therefore describes both score precision and score distribution.
+
+We also calculated the mean residual after subtracting 0.005 from each absolute score difference
+and setting negative residuals to zero. Dividing this mean by the original MAE gives 0.878 for AG,
+0.925 for AL, 0.885 for DG and 0.922 for DL. This is a share of absolute error, not a percentage of
+variants. The allowance is a sensitivity analysis for the reported-score grid; it does not recover
+unrounded scores or identify how much of the difference was caused by output rounding. In particular,
+a strict bound involving both output formats would also account for OpenSpliceAI's finer rounding.
+
+<!-- figure:supp04_precision -->
+
+{{table:quantization}}
+
+The dominant event is the largest of the four scores within one model. TIE records a tied nonzero
+maximum and NONE records all-zero scores. The heatmap normalizes each row by its SpliceAI-category
+count, which is printed beside the row. Cells below 0.005 have no numerical label but may contain
+observations. Exact counts accompany the figure. These dominant labels are exclusive by construction;
+the underlying predicted events are not. Quantization can change both ties and the selected label.
+
+<!-- figure:supp05_dominant_event -->
+
+## Context and selected positions
+
+Survival curves show the fraction of scores at or above each histogram edge. The near population
+contains 5,431,412 paired annotations at or within 2 bp of an internal boundary; the far population
+contains 2,805,642,585 more than 500 bp away. Each curve uses its own population as the denominator,
+and all panels share the same logarithmic rate scale. Zero survival values cannot be drawn on
+that scale. A far-loss curve visible only at cutoff zero does not demonstrate nonzero loss calls.
+The curves include MAX to show how combining events can obscure their different distributions.
+
+<!-- figure:supp06_site_distributions -->
+
+Conditional plots use the same near and far populations, separating the four events and MAX.
+Points are medians and intervals contain the central 50% of OpenSpliceAI scores within a SpliceAI
+histogram bin. Empty bins are gaps, and occupied-bin sample sizes vary. The intervals describe
+score distributions rather than uncertainty in a fitted mean. Near-boundary gain medians lie
+closer to equal scores across much of the comparator range. This observation neither establishes
+experimental calibration nor classifies the distant predictions as false.
+
+<!-- figure:supp07_site_score_agreement -->
+
+Position agreement requires both event scores to be at least 0.5. All panels retain the same six
+distance categories; groups with no jointly called events have undefined agreement. Eligible counts
+and exact-position mismatches are printed in each panel. The AL exception occurs in the 11–50-bp
+acceptor group. Three DL exceptions occur in the 11–50-bp donor group and one in the 3–10-bp donor
+group. These are variant-to-boundary distances, not distances between selected positions.
+
+The AL mismatch has a 2-bp position difference. The four DL differences exceed 2 bp and are at most
+5 bp. Thus, even the near-complete loss agreement should not be described as exact for every
+annotation. Checksummed source and output records identify all four DL exceptions in TVP23C-CDRT4 and the AL
+exception in XAGE3. The DL calls select chr17:15,440,211 in SpliceAI versus chr17:15,440,208 in
+OpenSpliceAI; the AL call selects chrX:52,866,536 versus chrX:52,866,538. In each case the OpenSpliceAI
+position matches the nearest boundary in the campaign annotation. The published SpliceAI position
+does not. This establishes a local discrepancy in retained positions, not its historical cause;
+we cannot infer whether it arose from annotation preparation, coordinate conversion or another
+legacy processing step. The audit contains exact variants, scores and file checksums. High agreement among shared calls cannot establish localization accuracy
+or describe predictions made by only one model.
+
+<!-- figure:supp08_site_positions -->
+
+{{table:dp_agreement_counts}}
+
+## Seed comparisons and genomic heterogeneity
+
+Gene-level method-to-seed ratios use the same three-way matched observations as Figure 6. Before
+filtering ratios, 7,493 genes have at least 1,000 paired annotations. All 7,493 contribute positive,
+defined AG and DG ratios for both checkpoints. The plotted AL populations contain 7,048 genes for
+rs10 and 7,052 for rs13; DL populations contain 7,069 and 7,071. The accompanying summary table
+records the excluded counts. Zero or undefined ratios are excluded from the logarithmic display,
+not interpreted as missing biological effects or infinite differences.
+
+Median AG ratios are approximately 3.59 for both checkpoints, and median DG ratios are 4.17 and
+4.16. Loss medians are closer to one: 1.18 and 1.14 for AL, and 1.21 and 1.13 for DL. Approximately
+66–78% of the retained loss ratios exceed one, compared with more than 99.8% for gains. Each gene
+has equal weight in these distributions, whereas global MAEs weight individual annotations.
+Very small seed MAEs can generate extreme ratios without a correspondingly large absolute error.
+
+<!-- figure:supp09_seed_by_gene -->
+
+{{table:seed_versus_model_events}}
+
+Regional MAX means summarize 2,571 blocks with at least 10,000 paired annotations. Mean signed
+differences span −0.02608 to +0.00182. Every retained block is shown across the full vertical range.
+Blocks are equally spaced within each chromosome, so horizontal distances are not proportional to
+genomic length. Point area increases with annotation count using an offset and scaled count. These
+regional averages combine event types and variant composition; they do not identify an event-specific
+mechanism or establish genomic enrichment.
+
+<!-- figure:supp10_chromosome -->
+
+The gene analysis retains 19,063 genes with at least 1,000 paired annotations. Of these, 18,881
+have a negative mean MAX difference, with a median across genes of −0.00302. The scatter and
+histogram display this same population. Labels are selected from negative differences subject to
+spacing, rather than marking a strict ranking of the twelve most negative genes.
+
+The scatter uses x=mean SpliceAI MAX and y=mean OpenSpliceAI MAX−x. These axes share a term, and
+nonnegative OpenSpliceAI scores impose y≥−x. The resulting mathematical coupling must not be
+interpreted as a biological relationship between signal strength and model divergence. Genes with
+large differences are descriptive follow-up candidates, not validated disease associations.
+
+<!-- figure:supp11_gene_divergence -->
+
+## Complete data and reproducibility
+
+The [study bundle](/downloads/{{revision.prefix}}.zip) contains both reading copies, the figure
+manifest, all seventeen PNG/PDF figure pairs, unchanged scientific facts, a separate progress JSON,
+display histograms and derived display tables, selected original CSV tables, and the report source. Figure
+captions and numbers are generated from one manifest for the website and standalone reading copies.
+The [scientific audit](/downloads/{{revision.prefix}}-figure-audit.md) documents the source evidence,
+figure decisions, numerical checks and remaining limitations.
+The [standalone supplement](/downloads/{{revision.prefix}}-supplement.html) and
+[checksums](/downloads/{{revision.prefix}}-SHA256SUMS.txt) can be read separately.
+
+Complete original CSV archives remain available for the
+[primary rs10 comparison](/downloads/full-snv-concordance-20260909-A_rs10_genomewide.zip),
+[rs10–rs13 seed comparison](/downloads/full-snv-concordance-20260909-B_seeds_rs10_rs13.zip),
+[matched SpliceAI–rs10 comparison](/downloads/full-snv-concordance-20260909-C_rs10_matched.zip), and
+[matched SpliceAI–rs13 comparison](/downloads/full-snv-concordance-20260909-D_rs13_matched.zip).
+These include chromosome, gene, substitution, genomic-block, event-context, collapsed-variant,
+discordance and threshold tables. The unchanged
+[September 9 release](/downloads/full-snv-concordance-20260909.zip) preserves the full original report,
+all original figures, engineering history and verification records.

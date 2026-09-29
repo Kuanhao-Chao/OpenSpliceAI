@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "purpose": "Experimentally supported splice-outcome datasets for a validation study that is separate from predictor concordance",
+  "rules": {
+    "target_build": "GRCh38",
+    "variant_scope": "biallelic SNVs",
+    "gene_matching": "exact",
+    "common_population_variants_as_experimental_negatives": false,
+    "retain_original_cohort_and_assay_labels": true
+  },
+  "acquisition_provenance": {
+    "smith_kitzman": {
+      "repository_commit_prefix": "5f9fbac",
+      "zenodo_archive_version": 2,
+      "zenodo_archive_md5": "e628ca3c894ac9cd5099923bfa83e5f9",
+      "files_sha256": {
+        "brca1_findlay_scored.txt": "45119da8de63e0b4775ffde5844e4e0fa81be47acf97d0fd31a980a86b140ac2",
+        "fas_ex6_snvs_scored.txt": "2854cc238a9ce19475ba793373882e0608be2333d6f5a8f1554da34ac041e9e2",
+        "mlh1_final_scored.txt": "d7ec77c18f333fe9055f61e63d8da74684f18d1b8384b49fab61615761177e68",
+        "pou1f1_snvs_scored.txt": "a37d02701774ef301e8f6b16dbd38de0d56b7f23fe1928575f143423aa06aaf5",
+        "ron_ex11_scored.txt": "20cc094d1135380bd3f5f52337a4d5b919b88cce9702fb64ee4d1729bf6177e7",
+        "wt1_ex9_scored.txt": "f2c1a6862cf2f36e72f02f04d426a2a942fff9312a3b101efcca00f66a9c524e"
+      }
+    },
+    "riepe": {
+      "repository_commit": "d0b50220091c031c46656c7feac120e3f972d890",
+      "files_sha256": {
+        "variant_scores.xlsx": "bbec1955d84886b23ea1a80868bc99120ee522d48e180e0ab4176c71587a6d9e",
+        "ABCA4_NCSS_variants.vcf": "a60339629e2a686da503fabd6a430d249018de39de0cf57adeb789bf93516f0d",
+        "ABCA4_DI_variants.vcf": "f1ce65e6c38679662e173085adfe536eb0cb564c53bb42e1dcd0485a08c42676",
+        "MYBPC3_NCSS_variants.vcf": "91dab3588713ff4ada7f1d3c3d73f5c093e77b3be8da1128590a0a214935a74f"
+      },
+      "liftover_chain": "/home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI_precompute_scores/results/full_snv_concordance/external_validation/sources/riepe/hg19ToHg38.over.chain.gz",
+      "liftover_chain_sha256": "5c0598e500ceb5a78c73086929e8ef993aec309bcafb595139b53d440b125a1d"
+    },
+    "spip": {
+      "repository_commit": "05c5a8a5d04af7f706759a2dc5da3911abb13cac",
+      "files_sha256": {
+        "HUMU-43-2308-s003.csv.tar.gz": "120b9c56b4e2687e58bcd2dc0d51e70c71bcb1351f4f0b433cfc68f0c310352e",
+        "HUMU-43-2308-s003-converted.vcf": "76d53e61df9bc957e69a39d8c3bf330f0432e2b4e071dfe65e0df1d5b3feab11",
+        "spip_benchmark_to_vcf.py": "457674a536b9980da22664bd2f12ff97eb63b699c34f3ecaa8c97babf7787610"
+      }
+    }
+  },
+  "datasets": [
+    {
+      "id": "smith_kitzman_multiplexed",
+      "title": "Smith/Kitzman multiplexed functional measurements of splice-altering variants",
+      "article_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10734170/",
+      "source_tables": ["publication supplementary variant-level measurement tables"],
+      "expected_scope": "3616 measured variants across five genes; optionally the broader MLH1 set when its variant-level outcomes are available",
+      "coordinate_build": "GRCh38",
+      "adapter": "splicebench_scored_directory",
+      "provenance_key": "smith_kitzman",
+      "repository_commit_prefix": "5f9fbac",
+      "zenodo_archive_version": 2,
+      "zenodo_archive_md5": "e628ca3c894ac9cd5099923bfa83e5f9",
+      "expected_input": "for_zenodo/scored_data directory containing six *_scored.txt tables",
+      "local_path": "/home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI_precompute_scores/results/full_snv_concordance/external_validation/sources/smith_kitzman",
+      "include_files": [
+        "brca1_findlay_scored.txt",
+        "fas_ex6_snvs_scored.txt",
+        "pou1f1_snvs_scored.txt",
+        "ron_ex11_scored.txt",
+        "wt1_ex9_scored.txt"
+      ],
+      "delimiter": "\\t",
+      "columns": {
+        "chrom": "chrom",
+        "pos": "pos",
+        "ref": "ref",
+        "alt": "alt",
+        "gene": "gene",
+        "transcript": "transcript",
+        "label": "functional_label",
+        "outcome": "measured_splicing_outcome",
+        "cohort": "assay_cohort"
+      },
+      "license": "Confirm from article and supplement before redistribution",
+      "sha256": "dbc4b52e738e2b47ccd4309c5f0483cf25fa7a88d5619bdd725503ad15dc5035",
+      "acquisition_status": "acquired_and_verified"
+    },
+    {
+      "id": "riepe_abca4_noncanonical",
+      "title": "Riepe ABCA4 noncanonical splice-site functional set",
+      "article_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8360004/",
+      "source_tables": ["ABCA4 noncanonical splice-site mini/midigene supplement"],
+      "expected_scope": "71 ABCA4 variants",
+      "coordinate_build": "GRCh37",
+      "adapter": "riepe_xlsx",
+      "provenance_key": "riepe",
+      "repository_commit": "d0b50220091c031c46656c7feac120e3f972d890",
+      "expected_input": "repository root or data/variant_scores.xlsx",
+      "label_definition": "splice_altering when percent mutant RNA is greater than 20",
+      "local_path": "/home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI_precompute_scores/results/full_snv_concordance/external_validation/sources/riepe",
+      "delimiter": "\\t",
+      "columns": {
+        "chrom": "chrom",
+        "pos": "pos",
+        "ref": "ref",
+        "alt": "alt",
+        "gene": "gene",
+        "transcript": "transcript",
+        "label": "functional_label",
+        "outcome": "measured_splicing_outcome",
+        "cohort": "assay_cohort"
+      },
+      "license": "Confirm from article and supplement before redistribution",
+      "sha256": "3634c306d3297e2b97a4c9f176f8b6dab80ee0349e4ec86973b57b35e8881880",
+      "acquisition_status": "acquired_and_verified"
+    },
+    {
+      "id": "riepe_abca4_deep_intronic",
+      "title": "Riepe ABCA4 deep-intronic functional set",
+      "article_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8360004/",
+      "source_tables": ["ABCA4 deep-intronic mini/midigene supplement"],
+      "expected_scope": "81 ABCA4 variants",
+      "coordinate_build": "GRCh37",
+      "adapter": "riepe_xlsx",
+      "provenance_key": "riepe",
+      "repository_commit": "d0b50220091c031c46656c7feac120e3f972d890",
+      "expected_input": "repository root or data/variant_scores.xlsx",
+      "label_definition": "splice_altering when percent mutant RNA is greater than 20",
+      "local_path": "/home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI_precompute_scores/results/full_snv_concordance/external_validation/sources/riepe",
+      "delimiter": "\\t",
+      "columns": {
+        "chrom": "chrom",
+        "pos": "pos",
+        "ref": "ref",
+        "alt": "alt",
+        "gene": "gene",
+        "transcript": "transcript",
+        "label": "functional_label",
+        "outcome": "measured_splicing_outcome",
+        "cohort": "assay_cohort"
+      },
+      "license": "Confirm from article and supplement before redistribution",
+      "sha256": "3634c306d3297e2b97a4c9f176f8b6dab80ee0349e4ec86973b57b35e8881880",
+      "acquisition_status": "acquired_and_verified"
+    },
+    {
+      "id": "riepe_mybpc3",
+      "title": "Riepe MYBPC3 mini/midigene functional set",
+      "article_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8360004/",
+      "source_tables": ["MYBPC3 mini/midigene supplement"],
+      "expected_scope": "61 MYBPC3 variants",
+      "coordinate_build": "GRCh37",
+      "adapter": "riepe_xlsx",
+      "provenance_key": "riepe",
+      "repository_commit": "d0b50220091c031c46656c7feac120e3f972d890",
+      "expected_input": "repository root or data/variant_scores.xlsx",
+      "label_definition": "splice_altering when percent mutant RNA is greater than 20; MYBPC3 workbook values are encoded as 0/100",
+      "known_source_issues": [
+        "The published workbook and supplied VCF contain the same 61 rows but disagree on several MYBPC3 genomic SNV keys; workbook coordinates retain the assay-label association and must be REF-validated after liftover."
+      ],
+      "local_path": "/home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI_precompute_scores/results/full_snv_concordance/external_validation/sources/riepe",
+      "delimiter": "\\t",
+      "columns": {
+        "chrom": "chrom",
+        "pos": "pos",
+        "ref": "ref",
+        "alt": "alt",
+        "gene": "gene",
+        "transcript": "transcript",
+        "label": "functional_label",
+        "outcome": "measured_splicing_outcome",
+        "cohort": "assay_cohort"
+      },
+      "license": "Confirm from article and supplement before redistribution",
+      "sha256": "3634c306d3297e2b97a4c9f176f8b6dab80ee0349e4ec86973b57b35e8881880",
+      "acquisition_status": "acquired_and_verified"
+    },
+    {
+      "id": "spip_rna_minigene",
+      "title": "SPiP variants with RNA or minigene evidence",
+      "article_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10946553/",
+      "source_tables": ["experimentally evidenced RNA/minigene variant table"],
+      "expected_scope": "4616 experimentally evidenced variants across 227 genes; exclude the approximately 95000 common variants from experimental-negative labels",
+      "coordinate_build": "GRCh38",
+      "adapter": "spip_functional_archive",
+      "provenance_key": "spip",
+      "repository_commit": "05c5a8a5d04af7f706759a2dc5da3911abb13cac",
+      "expected_input": "repository root containing HUMU-43-2308-s003.csv.tar.gz and HUMU-43-2308-s003-converted.vcf",
+      "local_path": "/home/kchao10/data_ssalzbe1/khchao/OpenSpliceAI_precompute_scores/results/full_snv_concordance/external_validation/sources/spip",
+      "delimiter": "\\t",
+      "columns": {
+        "chrom": "chrom",
+        "pos": "pos",
+        "ref": "ref",
+        "alt": "alt",
+        "gene": "gene",
+        "transcript": "transcript",
+        "label": "functional_label",
+        "outcome": "measured_splicing_outcome",
+        "cohort": "evidence_type"
+      },
+      "license": "Confirm from article and supplement before redistribution",
+      "sha256": "d700b0a857d310677d6b813061ab62c7c531280b3b7ae4eb6bc20ae64bc694f5",
+      "acquisition_status": "acquired_and_verified"
+    }
+  ]
+}

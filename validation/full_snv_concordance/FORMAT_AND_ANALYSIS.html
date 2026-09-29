@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Full-SNV format and concordance analysis specification</title><style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.5 system-ui,sans-serif;color:#202124}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #d0d7de;padding:.35rem .55rem;text-align:left;vertical-align:top}th{background:#f6f8fa}code,pre{background:#f6f8fa;border-radius:4px}code{padding:.1rem .25rem}pre{overflow:auto;padding:1rem}.meta{border-left:.4rem solid #0969da;background:#ddf4ff;padding:.75rem 1rem}</style></head><body><div class="meta">Static study specification; generated from FORMAT_AND_ANALYSIS.md. Renderer: Python-Markdown 3.5.2.</div><h1 id="full-snv-file-format-and-concordance-analysis-specification">Full-SNV file format and concordance analysis specification</h1>
+<h2 id="files-and-units">Files and units</h2>
+<p>The source directory contains 100,000 headered GRCh38 VCF chunks named
+<code>snv.hg38_&lt;chunk&gt;.vcf</code>; the OpenSpliceAI directories contain corresponding
+<code>snv.hg38_&lt;chunk&gt;_openspliceai.vcf</code> files. A source chunk is the atomic scoring
+and audit unit. The deep audit records the exact total row count rather than
+trusting a filename or directory count; as a concrete format check, source
+chunk 50 contains 34,334 records in the current tree.</p>
+<p>Each record has the eight VCF columns <code>CHROM</code>, <code>POS</code>, <code>ID</code>, <code>REF</code>, <code>ALT</code>,
+<code>QUAL</code>, <code>FILTER</code>, and <code>INFO</code>. The source INFO field is:</p>
+<pre><code class="language-text">SpliceAI=ALT|GENE|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL
+</code></pre>
+<p><code>DS_*</code> are the four delta scores and <code>DP_*</code> are the four predicted positions.
+The provided source scores are masked (<code>M=1</code>) and are displayed at two-decimal
+precision. OpenSpliceAI preserves the seven fixed VCF fields and the original
+SpliceAI value, then adds:</p>
+<pre><code class="language-text">OpenSpliceAI=ALT|GENE|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL
+</code></pre>
+<p>OpenSpliceAI uses five-decimal output, <code>D=50</code>, a 10,000-nt flank, and the same
+masked scoring intent. Unsupported annotation contigs must preserve the source
+record without inventing a prediction. The prediction annotation is not required
+to have the same gene symbol as the source row: the source can contain several
+SpliceAI rows for overlapping genes, while the MANE-trained OpenSpliceAI output
+can emit the selected MANE gene, or no <code>OpenSpliceAI</code> value for a row whose
+source gene is outside that scoring annotation. In other words, a preserved VCF
+row is a structural identity check, not a claim that both models scored the same
+gene. The analysis therefore reports exact-gene coverage and a separate
+annotation-agnostic per-allele sensitivity view rather than silently pairing
+different genes.</p>
+<p>The current chunk-50 spot check is useful for interpreting the eventual full
+audit: both rs10 and rs13 preserve all 34,334 source rows and their source
+fields, carry the two expected INFO declarations, and use DP values in
+<code>[-50,50]</code>. The source rows include <code>CDK11A</code>, <code>CDK11B</code>, and <code>MMP23B</code>; the
+OpenSpliceAI spot check emits the MANE <code>CDK11A</code> annotation where available and
+leaves 78 rows without an <code>OpenSpliceAI</code> value because those rows have no
+selected-MANE prediction. This is a sample-level observation, not a
+genome-wide estimate; the audit and concordance coverage tables are the
+authoritative counts.</p>
+<h3 id="current-preflight-snapshot-not-a-final-audit">Current preflight snapshot (not a final audit)</h3>
+<p>The read-only inventory on 2026-08-08 found 100,000 source filenames, 99,307
+rs10 output filenames, and 45,618 rs13 output filenames. These are filename
+counts only. The last rs10 deep-audit sidecar (created 2026-08-01 with an old
+campaign digest) recorded 99,283 structurally valid chunks, 693 missing outputs,
+13 empty outputs, and 11 truncated outputs; all of its rows predate the current
+campaign and are marked legacy/unprovenanced. There is no current rs13 manifest.
+Those observations are retained for diagnosis, but they are deliberately not
+used to build mapper inputs or submit a resume array: a fresh deep audit is
+required first.</p>
+<h2 id="analysis-identity">Analysis identity</h2>
+<p>The primary analysis unit is the exact tuple
+<code>(CHROM, POS, REF, ALT, gene)</code>. VCF rows are not assumed to be unique at that
+level: an allele may occur once per overlapping gene, and a prediction may
+repeat a complete list or may be absent for a source gene that is not in the
+OpenSpliceAI scoring annotation. Identical repeated annotations are
+deduplicated. Conflicting values for one exact key are counted and excluded
+from paired numerical metrics; missing/gene-mismatched annotations remain in
+the coverage denominators and are never treated as zero scores.</p>
+<p>The three prespecified comparisons are:</p>
+<ol>
+<li>SpliceAI versus OpenSpliceAI rs10.</li>
+<li>SpliceAI versus OpenSpliceAI rs13, provisional until rs13 is complete.</li>
+<li>OpenSpliceAI rs10 versus rs13, measuring seed reproducibility rather than
+   biological accuracy.</li>
+</ol>
+<p>SpliceAI is the comparator, not truth. Differences can reflect ensemble versus
+single-checkpoint behavior, training realization, implementation, annotation,
+masking, and two-decimal quantization. The GENCODE v24 GRCh38 scoring
+annotation and exact model/reference hashes are retained in every result.</p>
+<h2 id="statistics-and-figures">Statistics and figures</h2>
+<p>For AG, AL, DG, DL, and MAX, the reducer reports exact additive agreement
+statistics, two-decimal rounding sensitivity, union-signal subsets, threshold
+tables at 0.1/0.2/0.5/0.8, dominant events, DP tolerances, and descriptive
+chromosome/gene/block/substitution strata. Histogram-derived KS, Wasserstein,
+Jensen–Shannon, and rank statistics are explicitly marked approximate. Gene and
+1-Mb-block cluster bootstrap intervals are sensitivity intervals, not claims of
+independent biological sampling.</p>
+<p>The report includes score distributions, joint-score heatmaps, difference plots,
+threshold agreement, DP agreement, dominant-event agreement,
+chromosome/gene/block summaries, and quantization sensitivity. Every report is
+published as both Markdown and a self-contained HTML document plus machine-
+readable JSON/TSV outputs.</p>
+<h2 id="interpretation-boundaries">Interpretation boundaries</h2>
+<p>High correlation alone does not establish calibration or interchangeability.
+Practical equivalence requires small bias/error, strong Lin concordance, stable
+threshold calls, and no important event/gene/region failure mode. A provisional
+partial overlap is useful for debugging and exploratory analysis but cannot be
+labelled final. Concordance alone cannot establish biological accuracy, and no
+external database or functional-validation analysis is performed here.</p></body></html>
