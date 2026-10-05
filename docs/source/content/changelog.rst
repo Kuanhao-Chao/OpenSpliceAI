@@ -1,8 +1,14 @@
-
-|
-
 Changelog
-===========
+=========
+
+0.1.0.dev0 (unreleased)
+-----------------------
+
+Corrected training/transfer defaults, bounded portable calibration, prediction
+ownership/coordinates, advertised dataset modes, scoped inference and atomic
+compressed VCF publication. Added numerical regressions, generated CLI/API
+reference, runnable workflow and separate scientific/backend release gates.
+See :doc:`migration` for behavior changes and historical reproduction.
 
 v0.0.8.dev0 (unreleased)
 ------------------------
@@ -158,14 +164,6 @@ Initial release
   (https://doi.org/10.7554/eLife.107454).
 
 
-|
-|
-|
-|
-|
-
-
-
 .. image:: ../_images/jhu-logo-dark.png
    :alt: My Logo
    :class: logo, header-image only-light
@@ -175,4 +173,3 @@ Initial release
    :alt: My Logo
    :class: logo, header-image only-dark
    :align: center
-

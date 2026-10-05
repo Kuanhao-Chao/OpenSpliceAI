@@ -1,22 +1,16 @@
 {% set name = "openspliceai" %}
-{% set version = "0.0.7" %}
+{% set version = "0.1.0.dev0" %}
 
-# This mirrors the official Bioconda recipe
-# (https://github.com/bioconda/bioconda-recipes/tree/master/recipes/openspliceai).
-# Install the released package with:
-#   conda install -c conda-forge -c bioconda openspliceai
-#
-# RELEASE TODO: after uploading the {{ version }} sdist to PyPI, replace the
-# placeholder sha256 below with the real checksum, e.g.:
-#   curl -sL https://pypi.io/packages/source/o/openspliceai/openspliceai-{{ version }}.tar.gz | sha256sum
+# Local development recipe: build the current checkout with conda-build.
+# The published Bioconda recipe is maintained separately. For a release, replace
+# source.path with the uploaded sdist URL and its verified SHA-256.
 
 package:
   name: {{ name }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: d1a37dbdd91595b631e571ef6f611f763e5b598ceae506669174fc54a8e6b436
+  path: ../
 
 build:
   noarch: python
@@ -33,18 +27,19 @@ requirements:
     - wheel
   run:
     - python >=3.9
-    # numpy >=2.0 (with pytorch >=2.3, the first numpy-2-compatible torch):
+    # NumPy-2 ABI floors match setup.py. Wheel compatibility is platform-specific.
     # numpy removed `np.long` in 1.24 and re-added it in 2.0, so 1.24-1.26 is a
     # gap where a numpy-2-era dependency reading `np.long` crashes on import
     # (GitHub issue #19). Keep the whole stack on one side of that gap.
     - pytorch >=2.3.0
     - numpy >=2.0.0
     - pandas >=2.2.2
-    - h5py >=3.9.0
+    - h5py >=3.11.0
     - tqdm >=4.65.2
-    - scikit-learn >=1.4.1
+    - scikit-learn >=1.4.2
+    - scipy >=1.13.0
     - biopython >=1.83
-    - matplotlib-base >=3.8.3
+    - matplotlib-base >=3.8.4
     - psutil >=5.9.2
     - pysam >=0.22.0
     - pyfaidx >=0.8.1.1

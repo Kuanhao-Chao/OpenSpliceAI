@@ -12,7 +12,7 @@ CPU targets bound BLAS/TensorFlow threads and use the headless plotting backend.
 | `make test-keras` | Original SpliceAI comparison; requires TensorFlow, spliceai and weights |
 | `make test-gpu` | CUDA numerical comparison; does not clear visible devices |
 | `make coverage` | Full available suite, 95% line-coverage gate |
-| `make coverage-branch` | Branch report, measured separately from the line gate |
+| `make coverage-branch` | Full CPU coverage with separate 95% statement and 90% branch gates |
 | `make lint` | Ruff for package and tests |
 | `make package` | Build sdist and wheel |
 
@@ -36,12 +36,13 @@ The autouse fixture seeds Python, NumPy and Torch. This ensures controlled test
 inputs, not fully reproducible CLI training. Scientific defaults and known
 limitations are recorded in `KNOWN_ISSUES.md`.
 
-Software CI defines Python 3.9–3.12 jobs, full CPU coverage and wheel checks.
+Software CI defines Python 3.9–3.14, macOS, minimum-stack, full CPU, wheel/sdist and required Keras checks.
 Configured jobs are distinct from executed evidence. Optional backend tests must
 report skips precisely; initialization failures with an available backend fail.
 
 Coverage omits legacy `openspliceai/scripts`, the disabled `test` command and
 standalone alternatives listed in `.coveragerc`. Exclusions are not evidence those
-features work. Retain the 95% line gate; report branches separately and compare
-against the audit baseline. See `docs/development/repository-audit.md` for evidence
-and limits of the current audit.
+features work. Keep the separate 95% statement and 90% branch gates. Required
+backend runners fail on missing dependencies/devices/weights or skipped cases.
+See `docs/development/comprehensive-audit.md` and `verification/comprehensive/`
+for current evidence, per-function execution, feature contracts and pending gates.

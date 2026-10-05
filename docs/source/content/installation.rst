@@ -1,260 +1,64 @@
-|
-
-
 .. _installation:
 
 Installation
 ============
 
-Overview
---------
-There are three ways to install OpenSpliceAI: via pip, through conda, or from source. OpenSpliceAI requires Python 3.9 or higher and depends on several third‐party packages, including:
-
-- **PyTorch** – used for deep learning model training and inference. See the `PyTorch website <https://pytorch.org/>`_ for more details.
-- **mappy** – provides Python bindings for minimap2, enabling fast genomic alignments. Visit its page on `PyPI <https://pypi.org/project/mappy/>`__ for further information.
-
-|
-
-Prerequisites
--------------
-- **Python:** Version 3.9 or higher.
-- Ensure that your system has the necessary compilers.
-- For GPU acceleration (when using PyTorch), install the required NVIDIA drivers and CUDA toolkit:
-
-  - **NVIDIA GPU Drivers:**  
-    Visit the `official NVIDIA Driver Downloads page <https://www.nvidia.com/en-us/drivers/>`_:  
-    
-
-  - **CUDA Toolkit:**  
-    Download the latest CUDA Toolkit from the `official CUDA downloads page 
-    <https://developer.nvidia.com/cuda-downloads>`_.
-    For detailed installation instructions, please refer to the `CUDA Installation Guide <https://docs.nvidia.com/cuda/index.html>`_.
-
-
-|
-
-Installation Methods
---------------------
-
-|
-
-Install through pip
-~~~~~~~~~~~~~~~~~~~~~
-OpenSpliceAI is available on `PyPI <https://pypi.org/project/OpenSpliceAI/>`__. Pip automatically resolves and installs all required dependencies.
+Use a separate environment. The package requires Python 3.9 or newer and a
+scientific stack compatible with NumPy 2. Install a PyTorch wheel appropriate to
+your machine first; check its NumPy ABI and GPU runtime before long jobs.
 
 .. code-block:: bash
 
-   pip install openspliceai
+   python -m venv .venv
+   source .venv/bin/activate
+   python -m pip install --upgrade pip
+   python -m pip install openspliceai
+   python -m pip check
+   openspliceai --help
 
-This command installs third‐party libraries including:
-
-.. admonition:: Software dependency
-
-   * python >= 3.9.0
-   * h5py >= 3.9.0
-   * numpy >= 2.0.0
-   * gffutils >= 0.12
-   * pysam >= 0.22.0
-   * pandas >= 2.2.2
-   * pyfaidx >= 0.8.1.1
-   * tqdm >= 4.65.2
-   * torch >= 2.3.0
-   * scikit-learn >= 1.4.1.post1
-   * biopython >= 1.83
-   * matplotlib >= 3.8.3
-   * psutil >= 5.9.2
-   * mappy >= 2.28
-
-
-.. admonition:: Version Warning
-   :class: important
-
-   OpenSpliceAI requires **numpy >= 2.0** (paired with **torch >= 2.3**). numpy removed
-   ``np.long`` in 1.24 and re-added it in 2.0, so installing into an environment pinned to
-   numpy 1.24–1.26 can surface ``module 'numpy' has no attribute 'long'`` from a numpy-2-era
-   dependency that reads it; the ``>= 2.0`` floor keeps the whole stack on one side of that gap.
-   numpy 2.x requires Python >= 3.9 — for further guidance see the scientific python ecosystem
-   coordination guideline `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`_.
-
-|
-
-Install through conda
-~~~~~~~~~~~~~~~~~~~~~
-Installing via conda is the easiest way to set up a sandboxed environment with all dependencies.
-OpenSpliceAI is distributed on the `Bioconda <https://bioconda.github.io/>`_ channel, so make sure
-both the ``conda-forge`` and ``bioconda`` channels are enabled:
-
-.. code-block:: bash
-
-   conda install -c conda-forge -c bioconda openspliceai
-
-This command installs OpenSpliceAI and its dependencies, including PyTorch and mappy. To install or update these packages individually, you can use:
-
-**For PyTorch:**
-
-.. code-block:: bash
-
-   # CPU-only version (Conda packages are no longer available):
-   pip3 install torch --index-url https://download.pytorch.org/whl/cpu
-
-   # For GPU support (Conda packages are no longer available):
-   pip3 install torch --index-url https://download.pytorch.org/whl/cu126
-
-**For mappy:**
-
-.. code-block:: bash
-
-   conda install -c bioconda mappy
-
-|
-
-Install from source
-~~~~~~~~~~~~~~~~~~~~
-Alternatively, install OpenSpliceAI from source by cloning the GitHub repository:
+For development, clone the repository and install its current checkout:
 
 .. code-block:: bash
 
    git clone https://github.com/Kuanhao-Chao/OpenSpliceAI.git
    cd OpenSpliceAI
-   python setup.py install
+   python -m pip install -e '.[dev]'
+   python -m pip check
+   openspliceai variant --help
 
-|
+The development audit branch is ``audit/comprehensive-20261004``. PyPI and Bioconda
+releases may have different defaults; a development checkout does not change the
+published release. Bioconda users can install in a separate environment with
+``conda create -n openspliceai -c conda-forge -c bioconda openspliceai``.
 
-Install the development (devel) version
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ``devel`` branch tracks the latest integration work (currently ``0.0.8.dev0``) and may include
-features not yet in a tagged release. It is a **pre-release** build and can be less stable than PyPI/Bioconda.
+CPU and GPU selection
+---------------------
 
-Install it directly with pip:
-
-.. code-block:: bash
-
-   pip install "git+https://github.com/Kuanhao-Chao/OpenSpliceAI.git@devel"
-
-Or, for development, clone the ``devel`` branch and install it **editable** with the dev tooling
-(pytest, pytest-cov, ruff, pre-commit):
-
-.. code-block:: bash
-
-   git clone --branch devel https://github.com/Kuanhao-Chao/OpenSpliceAI.git
-   cd OpenSpliceAI
-   pip install -e '.[dev]'
-
-Verify the build — the startup banner prints the installed version:
+PyTorch commands select CUDA if available, then available macOS MPS, otherwise CPU.
+Set ``CUDA_VISIBLE_DEVICES=''`` before starting a command to force CPU on Linux.
+Bound thread counts with ``OMP_NUM_THREADS``, ``MKL_NUM_THREADS`` and
+``OPENBLAS_NUM_THREADS``. The historical ``N_GPUS`` configuration field is not a
+request for multiple GPUs and does not discard partial batches.
 
 .. code-block:: bash
 
-   openspliceai --help     # banner shows 0.0.8.dev0
+   python -c "import torch, numpy; x=torch.ones(3); print(torch.__version__, numpy.__version__, x.numpy(), torch.cuda.is_available())"
 
-|
+Optional original SpliceAI backend
+----------------------------------
 
-Detailed Installation for PyTorch and mappy
---------------------------------------------
+PyTorch workflows do not require TensorFlow. Original Keras ``.h5`` models require
+a compatible TensorFlow/legacy-Keras environment and weights installed separately.
+The reference profile uses Python 3.11, NumPy 2.0.2, TensorFlow 2.18.0,
+``tf-keras==2.18.0`` and ``spliceai==1.3.1``. Set
+``TF_USE_LEGACY_KERAS=1`` before importing TensorFlow. Keep this profile separate
+from a production environment. See :doc:`development` for executed and pending
+compatibility evidence, and :doc:`pretrained_models/index` for model downloads.
 
-**PyTorch:**
+Native dependencies
+-------------------
 
-- **Recommended Version:** 2.2.1 or later.
-- **Usage:** Essential for model training and inference in OpenSpliceAI.
-- **Installation Tips:**
-  
-  - For GPU acceleration, ensure your NVIDIA drivers and CUDA toolkit are installed.
-  - Visit the `PyTorch official site <https://pytorch.org/get-started/locally/>`_ to select the appropriate command for your operating system.
-
-**mappy:**
-
-- **Recommended Version:** 2.28.
-- **Usage:** Provides Python bindings for minimap2 for rapid genomic alignments.
-- **Installation Tips:**
-
-  - To install via pip:
-
-    .. code-block:: bash
-
-       pip install mappy
-
-  - Or via conda:
-
-    .. code-block:: bash
-
-       conda install -c bioconda mappy
-
-  - For advanced usage (e.g., multithreading), refer to the `mappy GitHub repository <https://github.com/lh3/minimap2/tree/master/python>`_ or the `Bioconda mappy recipe <https://anaconda.org/bioconda/mappy>`_.
-
-|
-
-Check OpenSpliceAI Installation
--------------------------------
-After installing, verify that OpenSpliceAI is properly set up by running:
-
-.. code-block:: bash
-
-   openspliceai -h
-
-You should see the usage information and version details printed in your terminal.
-
-|
-
-Terminal Output Example
--------------------------
-.. dropdown:: Terminal output
-   :animate: fade-in-slide-down
-   :title: bg-light font-weight-bolder
-   :body: bg-light text-left
-
-   .. code-block::
-
-
-      ============================================================
-      Deep learning framework that decodes splicing across species
-      ============================================================
-
-
-      ██████╗ ██████╗ ███████╗███╗   ██╗███████╗██████╗ ██╗     ██╗ ██████╗███████╗ █████╗ ██╗
-      ██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔════╝██╔══██╗██║     ██║██╔════╝██╔════╝██╔══██╗██║
-      ██║   ██║██████╔╝█████╗  ██╔██╗ ██║███████╗██████╔╝██║     ██║██║     █████╗  ███████║██║
-      ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║╚════██║██╔═══╝ ██║     ██║██║     ██╔══╝  ██╔══██║██║
-      ╚██████╔╝██║     ███████╗██║ ╚████║███████║██║     ███████╗██║╚██████╗███████╗██║  ██║██║
-      ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝     ╚══════╝╚═╝ ╚═════╝╚══════╝╚═╝  ╚═╝╚═╝
-
-      0.0.7
-
-      usage: openspliceai [-h] {create-data,train,calibrate,transfer,predict,variant} ...
-
-      OpenSpliceAI toolkit to help you retrain your own splice site predictor
-
-      positional arguments:
-      {create-data,train,calibrate,transfer,predict,variant}
-                              Subcommands: create-data, train, calibrate, predict, transfer, variant
-         create-data         Create dataset for your genome for SpliceAI model training
-         train               Train the SpliceAI model
-         calibrate           Calibrate the SpliceAI model
-         transfer            transfer a pre-trained SpliceAI model on new data.
-         predict             Predict splice sites in a given sequence using the SpliceAI model
-         variant             Label genetic variations with their predicted effects on splicing.
-
-      optional arguments:
-      -h, --help            show this help message and exit
-
-|
-
-Next Steps
------------------
-Once installation is complete, please proceed to the :ref:`quick-start_home` to begin working with OpenSpliceAI for data creation, model training, prediction, calibration, and variant analysis.
-
-
-|
-|
-|
-|
-|
-
-
-.. image:: ../_images/jhu-logo-dark.png
-   :alt: My Logo
-   :class: logo, header-image only-light
-   :align: center
-
-.. image:: ../_images/jhu-logo-white.png
-   :alt: My Logo
-   :class: logo, header-image only-dark
-   :align: center
+``mappy`` provides minimap2 for paralog removal; a C/C++ compiler may be needed if
+no wheel exists. h5py, pysam, SciPy, scikit-learn and Matplotlib need versions that
+support the installed NumPy ABI. Use ``python -m pip check`` and the import probe
+above to diagnose an environment before running scientific workflows.

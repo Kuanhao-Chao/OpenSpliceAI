@@ -26,6 +26,7 @@ coverage:
 	$(PYTEST) --cov=openspliceai --cov-report=term-missing --cov-report=html --cov-fail-under=$(COV_MIN) -q
 coverage-branch:
 	$(PYTEST) --cov=openspliceai --cov-branch --cov-report=term-missing --cov-report=json:coverage-branch.json -q
+	$(PYTHON) ci/check_coverage.py coverage-branch.json
 lint:
 	$(ENV) $(RUFF) check openspliceai tests
 package:

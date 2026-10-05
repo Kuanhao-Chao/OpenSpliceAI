@@ -1,5 +1,9 @@
 # Repository hardening audit — 29 September 2026
 
+This is the preserved pre-correction audit. Current scientific behavior and
+verification are in [the October comprehensive audit](comprehensive-audit.md).
+The defaults-preserved statements below describe that earlier branch only.
+
 ## Scope and provenance
 
 The approved baseline is development commit `87ede55bbd8960bd40307526f56e0669ea7d9a62`,
