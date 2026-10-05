@@ -1,0 +1,17 @@
+{
+  "backend": "keras",
+  "status": 0,
+  "counts": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "python": "3.11.9 (main, Apr 19 2024, 16:48:06) [GCC 11.2.0]",
+  "platform": "Linux-4.18.0-477.21.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "torch": "2.4.1+cpu",
+  "numpy": "2.0.2",
+  "job_id": "31606547",
+  "tensorflow": "2.18.0",
+  "tf_keras": "2.18.0",
+  "spliceai": "1.3.1"
+}

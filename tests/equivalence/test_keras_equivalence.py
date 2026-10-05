@@ -1,57 +1,59 @@
-"""Numerical-equivalence regression: OpenSpliceAI `variant --model-type keras` must reproduce the
-ORIGINAL Illumina ``spliceai`` tool exactly, since both run byte-identical Keras weights through the
-same delta-score algorithm.
+"""Original Keras weights give equal formatted DS/DP for shared supported alleles.
 
-This is the fast, in-process regression lock for the keystone validation result. The definitive
-study (real genes, high scores, mask x distance grid, all exact) is in validation/VALIDATION_REPORT.md;
-here we drive both tools' ``get_delta_scores`` over the synthetic SNV/deletion/insertion/multiallelic
-fixture and assert the formatted 10-field strings are identical.
-
-Equivalence holds ONLY at flanking_size=10000, because original SpliceAI hardcodes wid = 10000 + cov.
-
-Marked ``keras``+``slow``: auto-skips when TensorFlow is absent; also skips if the bundled weights or
-the original ``spliceai`` package are unavailable.
+OpenSpliceAI development additionally scores MNV/delins alleles for which original
+SpliceAI 1.3.1 returns placeholders, and rejects REF spans beyond its realignment
+boundary. These extensions are tested separately; they are not parity claims.
 """
 import pytest
 
 pytestmark = [pytest.mark.keras, pytest.mark.slow, pytest.mark.integration]
 
 
-def _orig_get_delta(rec, ann, dist, mask):
-    from spliceai.utils import get_delta_scores
-    return list(get_delta_scores(rec, ann, dist, mask))
-
-
-@pytest.mark.parametrize("dist,mask", [(50, 0), (50, 1), (500, 0)])
-def test_keras_matches_original_spliceai(variant_inputs, repo_root, dist, mask):
-    pytest.importorskip("spliceai")                     # original Illumina tool
+@pytest.fixture(scope="module")
+def keras_annotators(tmp_path_factory, repo_root):
+    pytest.importorskip("spliceai")
     pytest.importorskip("spliceai.utils")
-    import pysam
-
+    from spliceai.utils import Annotator as OrigAnnotator
+    from openspliceai.variant.utils import Annotator as OSAnnotator
+    from tests.fixtures.synthetic import write_variant_inputs
     model_dir = repo_root / "models" / "spliceai" / "SpliceAI_models_release"
     if not (model_dir / "spliceai1.h5").exists():
         pytest.skip("bundled SpliceAI Keras weights not found")
-
-    ref, ann, vcf = variant_inputs
-
-    # original spliceai annotator
+    reference, annotation, vcf = write_variant_inputs(tmp_path_factory.mktemp("keras_parity"))
+    # Available backends and weights must initialize successfully; errors fail.
+    original = OrigAnnotator(reference, annotation)
+    current = OSAnnotator(reference, annotation, model_path=str(model_dir), model_type="keras", CL=10000)
     try:
-        from spliceai.utils import Annotator as OrigAnnotator
-        orig_ann = OrigAnnotator(ref, ann)
-    except Exception as e:
-        pytest.skip(f"original spliceai Annotator unavailable: {e}")
+        yield original, current, vcf
+    finally:
+        original.ref_fasta.close()
+        current.ref_fasta.close()
 
-    # OpenSpliceAI keras annotator over the SAME 5 bundled weights + SAME annotation
-    from openspliceai.variant.utils import Annotator as OSAnnotator, get_delta_scores
-    os_ann = OSAnnotator(ref, ann, model_path=str(model_dir), model_type="keras", CL=10000)
 
+@pytest.mark.parametrize("dist,mask", [(50, 0), (50, 1), (500, 0)])
+def test_keras_matches_original_spliceai(keras_annotators, dist, mask):
+    import pysam
+    from spliceai.utils import get_delta_scores as original_scores
+    from openspliceai.variant.utils import get_delta_scores
+    original, current, vcf = keras_annotators
     n_compared = 0
-    for rec in pysam.VariantFile(vcf):
-        orig = _orig_get_delta(rec, orig_ann, dist, mask)
-        os_scores = list(get_delta_scores(rec, os_ann, dist, mask, flanking_size=10000, precision=2))
-        assert os_scores == orig, (
-            f"mismatch at {rec.chrom}:{rec.pos} {rec.ref}->{rec.alts}\n"
-            f"  original     : {orig}\n  openspliceai : {os_scores}"
-        )
-        n_compared += len(os_scores)
-    assert n_compared >= 1     # the fixture yields SNV/del/ins/multiallelic annotations
+    n_extensions = 0
+    with pysam.VariantFile(vcf) as variants:
+        for record in variants:
+            # Original SpliceAI does not provide numeric MNV/delins scores. Its
+            # larger REF acceptance boundary also permits unsupported realignment.
+            if len(record.ref) > dist + 1 or (
+                len(record.ref) > 1 and any(len(alt) > 1 for alt in record.alts)
+            ):
+                n_extensions += 1
+                continue
+            expected = list(original_scores(record, original, dist, mask))
+            actual = list(get_delta_scores(record, current, dist, mask,
+                                           flanking_size=10000, precision=2))
+            assert actual == expected, (
+                f"mismatch at {record.chrom}:{record.pos} {record.ref}->{record.alts}\n"
+                f"  original: {expected}\n  openspliceai: {actual}"
+            )
+            n_compared += len(actual)
+    assert n_compared >= 5  # SNV + deletion + insertion + two alternate alleles
+    assert n_extensions >= 3  # explicitly account for excluded extension fixtures

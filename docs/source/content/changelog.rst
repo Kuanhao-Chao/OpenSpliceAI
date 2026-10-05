@@ -1,8 +1,63 @@
-
-|
-
 Changelog
-===========
+=========
+
+0.1.0.dev0 (unreleased)
+-----------------------
+
+Corrected training/transfer defaults, bounded portable calibration, prediction
+ownership/coordinates, advertised dataset modes, scoped inference and atomic
+compressed VCF publication. Added numerical regressions, generated CLI/API
+reference, runnable workflow and separate scientific/backend release gates.
+See :doc:`migration` for behavior changes and historical reproduction.
+
+v0.0.8.dev0 (unreleased)
+------------------------
+
+**New features**
+
+- ``transfer``: added a suite of **catastrophic-forgetting mitigations** for fine-tuning on
+  narrow datasets (all optional, default-off, so existing runs are unchanged):
+
+  - ``--weight-decay`` exposes the AdamW weight decay (default ``0.01``); set ``0`` to stop
+    decaying pretrained weights toward zero. ``--l2sp`` instead regularizes the trainable
+    weights toward the **pretrained** weights (active with a distillation teacher).
+  - ``--rehearsal-dataset`` / ``--rehearsal-shards`` interleave real genomic shards
+    (experience replay) into training.
+  - ``--distill-weight`` / ``--distill-teacher`` / ``--distill-shards`` /
+    ``--distill-batch-size`` add a knowledge-distillation (Learning-without-Forgetting) loss
+    against a frozen teacher on genomic anchor windows — no genomic labels required.
+  - ``--genomic-eval-dataset`` logs a per-epoch **forgetting curve** (donor/acceptor AUPRC +
+    top-k) under ``LOG/GENOMIC/`` so you can pick the checkpoint on the gain-vs-retention front.
+
+  See the ``transfer`` docs ("Mitigating catastrophic forgetting") and
+  ``examples/transfer/transfer_forgetting_cmd.sh``.
+
+- ``variant``: **multi-nucleotide variants (MNVs / delins)** — records where REF and ALT are
+  both multiple bases — are now scored instead of emitting a ``.|.|.|.`` placeholder
+  (`#18 <https://github.com/Kuanhao-Chao/OpenSpliceAI/issues/18>`_, thanks to @bpow). Deletion,
+  insertion, and MNV score-reshaping are unified into one expression, and the "ref too long"
+  guard is tightened to ``len(REF) > dist_var + 1`` — the exact point beyond which the reshape
+  can no longer realign within the score window (this also fixes a latent bug where large
+  deletions previously produced silently misaligned scores). This enables scoring
+  reference-anchored multi-variant windows as a single MNV record; see "Scoring custom
+  sequences" in the ``variant`` docs (addresses
+  `#15 <https://github.com/Kuanhao-Chao/OpenSpliceAI/issues/15>`_).
+
+**Bug fixes**
+
+- CLI: ``openspliceai`` (and ``openspliceai --help``) no longer imports the full dependency
+  stack at startup. Each subcommand's heavy dependencies (torch, pandas, scikit-learn/scipy,
+  biopython, pysam, ...) are now imported lazily inside dispatch, so an import-time failure in
+  a single transitive dependency can no longer break the whole CLI
+  (`#19 <https://github.com/Kuanhao-Chao/OpenSpliceAI/issues/19>`_:
+  ``module 'numpy' has no attribute 'long'`` on a no-argument invocation).
+
+**Dependencies**
+
+- Floored ``numpy>=2.0`` (together with ``torch>=2.3`` and ``pandas>=2.2.2``). numpy removed
+  ``np.long`` in 1.24 and re-added it in 2.0, so 1.24–1.26 is a gap where a numpy-2-era
+  dependency reading ``np.long`` fails to import. OpenSpliceAI's own code is numpy-2.0 clean,
+  so keeping the whole stack on the numpy-2 side of that gap avoids the failure (issue #19).
 
 v0.0.7 (2026-06-23)
 -------------------
@@ -109,14 +164,6 @@ Initial release
   (https://doi.org/10.7554/eLife.107454).
 
 
-|
-|
-|
-|
-|
-
-
-
 .. image:: ../_images/jhu-logo-dark.png
    :alt: My Logo
    :class: logo, header-image only-light
@@ -126,4 +173,3 @@ Initial release
    :alt: My Logo
    :class: logo, header-image only-dark
    :align: center
-

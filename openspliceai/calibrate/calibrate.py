@@ -1,183 +1,104 @@
-"""
-Filename: calibrate.py
-Author: Kuan-Hao Chao
-Date: 2025-03-20
-Description: Calibrate the OpenSpliceAI model.
-"""
+"""Fit class temperatures on validation data and report complete-split calibration."""
+import json
+from pathlib import Path
+from contextlib import ExitStack, nullcontext
 
-import os
-import time
-import torch
-from torch.nn import functional as F
-from openspliceai.train_base.utils import *
-from openspliceai.calibrate.calibrate_utils import *
-from openspliceai.calibrate.visualization import *
-from openspliceai.calibrate.temperature_scaling import *
+import h5py
+
+from openspliceai.checkpoints import calibrated_checkpoint, atomic_torch_save
+from openspliceai.data_schema import shard_indices
+from openspliceai.train_base.utils import setup_environment, resolve_validation_dataset
+from openspliceai.calibrate.temperature_scaling import ModelWithTemperature, get_validation_loader
+from openspliceai.calibrate.streaming import LogitCache, evaluate_cache
 from openspliceai.calibrate.model_utils import initialize_model_and_optim
-
-def get_logits_labels(model, loader, device, params):
-    """
-    Same as before.
-    """
-    model.eval()
-    logits_list, labels_list = [], []
-    with torch.no_grad():
-        for inputs, labels in tqdm(loader, desc='Collecting logits and labels'):
-            inputs, labels = inputs.to(device), labels.to(device)
-            inputs, labels = clip_datapoints(inputs, labels, params["CL"], CL_max, params["N_GPUS"])
-            logits = model(inputs)
-            logits_list.append(logits)
-            labels_list.append(labels)
-
-    logits = torch.cat(logits_list).permute(0, 2, 1).contiguous()
-    labels = torch.cat(labels_list).permute(0, 2, 1).contiguous().argmax(dim=-1)
-
-    # Flatten logits and labels
-    N, L, C = logits.shape
-    logits = logits.view(-1, C)
-    labels = labels.view(-1).long()
-    return logits, labels
+from openspliceai.calibrate.calibrate_utils import save_calibration_data
+from openspliceai.calibrate.visualization import (plot_score_distribution, plot_calibration_curves,
+                                                plot_brier_scores, plot_calibration_map)
 
 
-def evaluate_and_visualize(calibrated_model, data_loader, device, output_base_dir, dataset_name, params, flanking_size):
-    print(f"\n--- Evaluating on {dataset_name} set ---")
-    
-    results_dir = os.path.join(output_base_dir, "results", dataset_name)
-    os.makedirs(results_dir, exist_ok=True)
-    calib_data_dir = os.path.join(results_dir, "calibration_data")
-    os.makedirs(calib_data_dir, exist_ok=True)
-    plots_dir = os.path.join(results_dir, "plots")
-    os.makedirs(plots_dir, exist_ok=True)
-    
-    # Compute logits and labels using the base model
-    base_model = calibrated_model.model
-    logits, labels = get_logits_labels(base_model, data_loader, device, params)
+def get_logits_labels(model, loader, device, params, maximum_observations=100000):
+    """Return small explicit logits/labels tensors; use LogitCache for larger splits."""
+    with LogitCache(model, loader, device, params) as cache:
+        if len(cache) > maximum_observations:
+            raise ValueError('Explicit logits exceed the memory bound; use the streaming LogitCache interface')
+        logits, labels = cache.preview(maximum_observations)
+        return logits.to(device), labels.to(device)
 
-    # Apply temperature scaling
-    logits_scaled = calibrated_model.temperature_scale(logits)
 
-    # Compute metrics
-    metric_original_file = os.path.join(results_dir, "metrics_original.txt")
-    metric_calibrated_file = os.path.join(results_dir, "metrics_calibrated.txt")
-    
-    original_nll, original_ece = calibrated_model.compute_ece_nll(logits, labels)
-    with open(metric_original_file, 'w') as f:
-        f.write("Original_NLL\tOriginal_ECE\n")
-        f.write(f"{original_nll:.8f}\t{original_ece:.8f}\n")
-    print(f"Original NLL: {original_nll:.8f}")
-    print(f"Original ECE: {original_ece:.8f}")
-
-    calibrated_nll, calibrated_ece = calibrated_model.compute_ece_nll(logits_scaled, labels)
-    with open(metric_calibrated_file, 'w') as f:
-        f.write("Calibrated_NLL\tCalibrated_ECE\n")
-        f.write(f"{calibrated_nll:.8f}\t{calibrated_ece:.8f}\n")
-    print(f"Calibrated NLL: {calibrated_nll:.8f}")
-    print(f"Calibrated ECE: {calibrated_ece:.8f}")
-
-    # Convert logits to probabilities
-    probs = F.softmax(logits, dim=1).detach().cpu().numpy()
-    probs_scaled = F.softmax(logits_scaled, dim=1).detach().cpu().numpy()
-    labels = labels.cpu().numpy()
-
-    # Plotting, calibration curve computations, etc. remain the same
-    for idx in [0, 1, 2]:
-        plot_score_distribution(probs, probs_scaled, labels, plots_dir, idx)
-    
-    classes = ["Non-splice site", "Acceptor site", "Donor site"]
-    calibration_data = []
-    calibration_data_scaled = []
-    for i in range(3):
-        class_labels = (labels == i).astype(int)
-        class_probs = probs[:, i]
-        class_probs_scaled = probs_scaled[:, i]
-        
-        prob_true, prob_pred, bin_counts = compute_calibration_curve(
-            class_labels, class_probs, n_bins=30, strategy='uniform')
-        prob_true_scaled, prob_pred_scaled, _ = compute_calibration_curve(
-            class_labels, class_probs_scaled, n_bins=30, strategy='uniform')
-        
-        calibration_data.append((prob_true, prob_pred, bin_counts))
-        calibration_data_scaled.append((prob_true_scaled, prob_pred_scaled, bin_counts))
-        save_calibration_data(calib_data_dir, classes[i], flanking_size, prob_true, prob_pred, bin_counts, 'original')
-        save_calibration_data(calib_data_dir, classes[i], flanking_size, prob_true_scaled, prob_pred_scaled, bin_counts, 'calibrated')
-
-    plot_calibration_curves(calibration_data, calibration_data_scaled, classes, plots_dir)
-    brier_uncal, brier_cal = calculate_brier_scores(labels, probs, probs_scaled)
-    plot_brier_scores(brier_uncal, brier_cal, classes, plots_dir)
-    plot_calibration_map(calibrated_model, device, plots_dir)
-    print(f"Results for {dataset_name} set saved to: {results_dir}")
-    print("===============================================")
+def evaluate_and_visualize(calibrated_model, data_loader, device, output_base_dir,
+                           dataset_name, params, flanking_size, cache=None):
+    """Report exact full-split metrics/curves and bounded sampled score histograms."""
+    results = Path(output_base_dir)/'results'/dataset_name
+    curves_dir, plots_dir = results/'calibration_data', results/'plots'
+    curves_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    context = nullcontext(cache) if cache is not None else LogitCache(
+        calibrated_model.model, data_loader, device, params)
+    with context as cached:
+        original, scaled, probs, probs_scaled, labels = evaluate_cache(
+            cached, calibrated_model.temperature_scale, device, seed=params.get('RANDOM_SEED', 42))
+        for name, stats in (('original', original), ('calibrated', scaled)):
+            prefix = name.capitalize()
+            (results/f'metrics_{name}.txt').write_text(
+                f'{prefix}_NLL\t{prefix}_ECE\n{stats.nll:.8f}\t{stats.ece:.8f}\n')
+        classes = ['Non-splice site', 'Acceptor site', 'Donor site']
+        before_curves, after_curves = [], []
+        for index, name in enumerate(classes):
+            before_curves.append(original.curve(index))
+            after_curves.append(scaled.curve(index))
+            save_calibration_data(str(curves_dir), name, flanking_size, *before_curves[-1], 'original')
+            save_calibration_data(str(curves_dir), name, flanking_size, *after_curves[-1], 'calibrated')
+            plot_score_distribution(probs, probs_scaled, labels, str(plots_dir), index)
+        plot_calibration_curves(before_curves, after_curves, classes, str(plots_dir))
+        plot_brier_scores(original.brier, scaled.brier, classes, str(plots_dir))
+        plot_calibration_map(calibrated_model, device, str(plots_dir))
+        (results/'summary.json').write_text(json.dumps({
+            'observations': original.count, 'plot_sample_count': len(labels),
+            'plot_sample_limit': 100000, 'plot_sample_seed': params.get('RANDOM_SEED', 42),
+            'metrics_scope': 'complete_selected_split', 'histogram_scope': 'bounded_random_sample',
+            'original': {'nll': original.nll, 'ece': original.ece, 'brier': original.brier.tolist()},
+            'calibrated': {'nll': scaled.nll, 'ece': scaled.ece, 'brier': scaled.brier.tolist()},
+        }, indent=2)+'\n')
 
 
 def calibrate(args):
-    """Temperature-scale a trained SpliceAI model (entry point for the ``calibrate`` subcommand).
+    """Fit on validation only, evaluate test afterward, and publish portable checkpoints.
 
-    Loads ``args.pretrained_model``, wraps it in a ``ModelWithTemperature``, and
-    fits a single temperature parameter on the validation set. Reports
-    calibration metrics (ECE/NLL/Brier) and writes calibration-curve plots and
-    per-dataset metric files, plus ``temperature.pt``/``.txt`` and a full
-    ``calibrated_model.pt`` under ``{output_dir}/calibration``. Returns nothing.
+    Side effects: temperature.pt/.txt, calibrated_model.pt, optimization.json,
+    and exact metrics/curves plus sampled histograms under calibration/results/.
+    Temporary logits are removed on successful and failed exits.
     """
-    print("Running OpenSpliceAI with 'calibrate' mode")
-    start_time = time.time()
-    
-    # Create the main output directory structure
-    base_output_dir = args.output_dir
-    os.makedirs(base_output_dir, exist_ok=True)
-    calibration_output_dir = os.path.join(base_output_dir, "calibration")
-    os.makedirs(calibration_output_dir, exist_ok=True)
-    
-    # Set up the device, datasets, and indices
+    if getattr(args, 'loss', 'cross_entropy_loss') != 'cross_entropy_loss':
+        raise ValueError('Calibration uses negative log likelihood, not focal loss')
     device = setup_environment(args)
-    train_h5f, valid_h5f, test_h5f, batch_num = load_datasets(args)
-    train_idxs, val_idxs, test_idxs = generate_indices(train_h5f, valid_h5f, test_h5f)
-    
-    # Initialize the model
-    model, model_params = initialize_model_and_optim(device, args.flanking_size, args.pretrained_model)
-
-    # -----------------------------
-    # NEW: Provide num_classes here
-    # (for example 3, if you know you have 3 classes)
-    # If it's variable, you can determine dynamically from the model output dimension.
-    num_classes = 3
-
-    calibrated_model = ModelWithTemperature(model, num_classes=num_classes)
-    print("Initialized calibrated model:", calibrated_model)    
-    print("Validation indices count:", len(val_idxs))
-    print("Test indices count:", len(test_idxs))
-    
-    # Create data loaders for the validation (calibration) and test sets.
-    # val_idxs index the validation file, so the loader must read from valid_h5f.
-    validation_loader = get_validation_loader(valid_h5f, val_idxs, model_params["BATCH_SIZE"])
-    test_loader = get_validation_loader(test_h5f, test_idxs, model_params["BATCH_SIZE"])
-    
-    # Load or determine the temperature vector
-    if args.temperature_file:
-        calibrated_model.load_temperature(args.temperature_file, validation_loader, model_params)
-        # Because we have a vector, show the full array
-        print(f"Loaded temperature from {args.temperature_file}: {calibrated_model.temperature.data.cpu().numpy()}")
-    else:
-        # Calibrate
-        calibrated_model.set_temperature(validation_loader, model_params)
-        temperature_save_path = os.path.join(base_output_dir, "temperature.pt")
-        calibrated_model.save_temperature(temperature_save_path)
-        print(f"Saved calibrated temperature to {temperature_save_path}")
-    
-    # Save the temperature vector in text form
-    temperature_txt_save_path = os.path.join(base_output_dir, "temperature.txt")
-    with open(temperature_txt_save_path, 'w') as f:
-        f.write(str(calibrated_model.temperature.data.cpu().numpy()))
-    
-    # Save the full calibrated model (including the temperature vector)
-    model_save_path = os.path.join(base_output_dir, "calibrated_model.pt")
-    torch.save(calibrated_model, model_save_path)
-    print(f"Calibrated model saved to: {model_save_path}")
-    
-    # Evaluate and visualize on the validation set
-    evaluate_and_visualize(calibrated_model, validation_loader, device, calibration_output_dir, "validation", model_params, args.flanking_size)
-    
-    # Evaluate and visualize on the test set
-    evaluate_and_visualize(calibrated_model, test_loader, device, calibration_output_dir, "test", model_params, args.flanking_size)
-    
-    end_time = time.time()
-    print(f"\nTotal calibration and evaluation time: {end_time - start_time:.2f} seconds")
+    output = Path(args.output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    with ExitStack() as stack:
+        validation = stack.enter_context(h5py.File(resolve_validation_dataset(args), 'r'))
+        test = stack.enter_context(h5py.File(args.test_dataset, 'r'))
+        model, params = initialize_model_and_optim(device, args.flanking_size, args.pretrained_model)
+        params['RANDOM_SEED'] = getattr(args, 'random_seed', 42)
+        wrapped = ModelWithTemperature(model, 3).to(device)
+        valid_loader = get_validation_loader(validation, shard_indices(validation), params['BATCH_SIZE'])
+        test_loader = get_validation_loader(test, shard_indices(test), params['BATCH_SIZE'])
+        with LogitCache(model, valid_loader, device, params, directory=output) as cache:
+            if args.temperature_file:
+                wrapped.load_temperature(args.temperature_file)
+            else:
+                wrapped.fit_cache(cache, getattr(args, 'epochs', 10),
+                                  getattr(args, 'early_stopping', False), getattr(args, 'patience', 2))
+            atomic_torch_save(wrapped.temperature.detach().cpu(), output/'temperature.pt')
+            (output/'temperature.txt').write_text(str(wrapped.temperature.detach().cpu().tolist())+'\n')
+            atomic_torch_save(calibrated_checkpoint(model, wrapped.temperature, args.flanking_size),
+                              output/'calibrated_model.pt')
+            (output/'optimization.json').write_text(json.dumps({
+                'objective': 'validation_negative_log_likelihood', 'observations': len(cache),
+                'epochs_requested': getattr(args, 'epochs', 10), 'epochs_completed': max(0, len(wrapped.history)-1),
+                'early_stopping': getattr(args, 'early_stopping', False), 'patience': getattr(args, 'patience', 2),
+                'temperature_restored': bool(args.temperature_file),
+                'project_name': getattr(args, 'project_name', None), 'exp_num': getattr(args, 'exp_num', None),
+                'history': wrapped.history,
+            }, indent=2)+'\n')
+            evaluate_and_visualize(wrapped, valid_loader, device, output/'calibration', 'validation',
+                                   params, args.flanking_size, cache=cache)
+        evaluate_and_visualize(wrapped, test_loader, device, output/'calibration', 'test', params, args.flanking_size)

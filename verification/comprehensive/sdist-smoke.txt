@@ -1,0 +1,9 @@
+	[INFO] Context nucleotides 80
+	[INFO] Sequence length (output): 21
+	[INFO] Context nucleotides 80
+	[INFO] Sequence length (output): 5000
+	[INFO] Context nucleotides 80
+	[INFO] Sequence length (output): 21
+	[INFO] Context nucleotides 80
+	[INFO] Sequence length (output): 5000
+Installed 0.1.0.dev0: CLI, annotations, raw/calibrated prediction and scoring passed (/tmp/osai-final-sdist)

@@ -17,7 +17,7 @@ pip install .                 # editable dev install: pip install -e .
 openspliceai <subcommand> ...  # console entry point -> openspliceai/openspliceai.py:main
 ```
 
-Requires Python ≥3.9 and PyTorch ≥2.2.1. `mappy` (minimap2) is only used for `--remove-paralogs` in create-data;
+Requires Python ≥3.9; current development dependency floors are in `setup.py`. `mappy` (minimap2) is only used for `--remove-paralogs` in create-data;
 `tensorflow`/`keras` is only needed when scoring with original Keras SpliceAI models in the `variant` subcommand
 (`--model-type keras`). The `test` subcommand and `openspliceai/test/test.py` are commented out / disabled.
 
@@ -40,7 +40,7 @@ CUDA_VISIBLE_DEVICES="" $ENV/python -m pytest --cov=openspliceai --cov-report=te
 $ENV/ruff check openspliceai tests          # lint (clean)
 ```
 `KNOWN_ISSUES.md` documents deferred behavior-changing issues and two audit *false positives* locked by regression
-tests. There is no CI workflow (lint/tests run locally / via pre-commit).
+tests. Software CI is in `.github/workflows/tests.yml`; documentation CI is in `docs.yml`.
 
 ## Architecture
 
@@ -59,8 +59,7 @@ donor) with softmax. Input is **4-channel one-hot DNA** (A,C,G,T). `train`, `tra
 **Flanking size is the central parameter and must match between the dataset, the model, and the checkpoint.** Only
 `{80, 400, 2000, 10000}` are valid. Each maps to a fixed `(W=conv-window, AR=atrous/dilation-rate)` schedule of
 4/8/12/16 residual units, and the resulting context length `CL = 2·Σ(AR·(W−1))` equals the flanking size exactly
-(e.g. 10000 flank → 16 units → CL=10000). This `(L=32, W, AR, BATCH_SIZE)` table is **duplicated** in
-`train/train.py`, `transfer/transfer.py`, `predict/predict.py`, and `variant/utils.py` — keep them in sync when changing.
+(e.g. 10000 flank → 16 units → CL=10000). The published `(L=32, W, AR, BATCH_SIZE)` schedules live in `openspliceai/model_config.py` and are shared by all five model builders.
 
 Global constants live in `openspliceai/constants.py`: `CL_max=10000` (max total context, padded onto both ends),
 `SL=5000` (model output/prediction window length). Inputs to the model are windows of length `SL + CL_max`.
@@ -89,8 +88,10 @@ schedulers are `MultiStepLR` or `CosineAnnealingWarmRestarts`. Checkpoints are s
 (`model_{epoch}.pt`, `model_best.pt`). Metrics (top-k accuracy + AUPRC for donor & acceptor, per-class
 precision/recall/F1) are appended to per-metric `.txt` files. Output layout:
 `{output_dir}/SpliceAI_{project}_{flank}_{exp}_rs{seed}/{exp}/{models,LOG/{TRAIN,VAL,TEST}}/`.
-`transfer` additionally loads a pretrained checkpoint (filtering size-mismatched keys) and can freeze all but the last
-`--unfreeze` residual units (`--unfreeze-all` is the default).
+`transfer` loads students strictly by default; `--allow-partial-checkpoint` explicitly permits partial initialization.
+Teachers always load strictly. `--unfreeze N` trains the output head plus the last N residual units and keeps frozen
+BatchNorm buffers in evaluation mode (`--unfreeze-all` is the default). Padding is excluded from losses and metrics.
+Focal alpha/gamma are honored; MultiStepLR advances per epoch and cosine restarts use fractional epoch progress.
 
 ### Predict (`predict/predict.py`)
 Multi-stage, designed to scale to whole genomes: extract sequences (optionally just gene regions when `-a/--annotation`
@@ -98,8 +99,8 @@ GFF is given) → split FASTA entries longer than `--split-threshold` (default 1
 predictions are seamless** → one-hot encode to `dataset.h5`/`.pt` → load model(s) → infer → write `donor_predictions.bed`
 and `acceptor_predictions.bed`. Two modes: default **turbo** (`predict_and_write`, streamed, no intermediate file) vs
 `--predict-all` (writes `predict.h5` then `generate_bed`). **If `--model` is a directory, all checkpoints in it are
-ensembled by averaging predictions.** Checkpoint `.pt` files are state_dicts loaded into a freshly-built `SpliceAI`;
-a flanking-size mismatch surfaces as a size-mismatch warning.
+ensembled by averaging predictions.** Raw state_dicts and versioned calibrated artifacts are loaded strictly;
+a flanking-size mismatch aborts loading with a nonzero exit status. Every ensemble member must load.
 
 ### Variant (`variant/variant.py`, `variant/utils.py`)
 Annotates a VCF with splicing delta scores. The `Annotator` loads the reference genome (pyfaidx), a gene-annotation
@@ -109,9 +110,9 @@ donor gain/loss, written to the `OpenSpliceAI` INFO field with format
 `ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL`. Reads stdin / writes stdout by default.
 
 ### Calibrate (`calibrate/`)
-Post-hoc **temperature scaling** (`ModelWithTemperature`) of a trained model. Fits a temperature on the validation
-set, reports ECE/NLL and Brier scores, writes calibration-curve plots, and saves `temperature.pt`/`.txt` and a full
-`calibrated_model.pt`.
+Post-hoc **temperature scaling** (`ModelWithTemperature`) fits full observed validation NLL using a bounded
+disk-backed logits cache. Exact ECE/NLL/Brier statistics are distinct from bounded plotting samples.
+It saves `temperature.pt`/`.txt` and a versioned CPU-portable `calibrated_model.pt`, directly usable by inference.
 
 ## Pretrained models (`models/`)
 `models/openspliceai-{mane,mouse,zebrafish,arabidopsis,honeybee}/{80,400,2000,10000}nt/model_*nt_rs{10..14}.pt` — five
@@ -125,6 +126,7 @@ directory). `mane` is the human GRCh38/MANE model. `models/spliceai/` holds the 
   gitignored) and is not part of the packaged flow — don't treat it as the source of truth.
 - `*.h5`, `*.bed`, `*.fa`, `*.db`, `*.log`, `*.txt`, `results/`, and `/data/` are gitignored; generated `gff_to_tsv`
   databases (`*.gff_db`) and `examples/data/*` genomes are large local artifacts, not committed.
-- The hyperparameter table duplication (see Architecture) is the most common source of subtle bugs — a change in one
-  subcommand's `(W, AR, BATCH_SIZE)` must be mirrored in the others.
+- Architecture schedules are centralized in `model_config.py`; preserve the published schedules and batch conventions when changing them.
 - Full user docs (Sphinx) are in `docs/source/` and hosted at https://khchao.com/OpenSpliceAI/.
+- The 0.1.0.dev0 audit, migration and pending backend gates are in `docs/development/comprehensive-audit.md`
+  and `verification/comprehensive/`. Production r13 remains on its separately frozen source.

@@ -1,4 +1,5 @@
 """Unit tests for pure functions in openspliceai/train_base/utils.py."""
+import pytest
 import numpy as np
 import torch
 
@@ -19,18 +20,11 @@ def test_categorical_crossentropy_perfect_prediction_near_zero():
     assert loss.item() < 1e-3
 
 
-def test_focal_loss_known_issue_gamma_ignored():
-    """KNOWN ISSUE (documented, not fixed): focal_loss hardcodes gamma=2 and ignores the
-    gamma argument. This characterization test pins the current behavior; flip it once the
-    behavior-changing fix is applied."""
-    torch.manual_seed(0)
-    y_true = torch.zeros(2, 3, 5)
-    y_true[:, 0, :] = 1.0
-    y_pred = torch.softmax(torch.randn(2, 3, 5), dim=1)
-    assert torch.isclose(
-        tbu.focal_loss(y_true, y_pred, gamma=0.0),
-        tbu.focal_loss(y_true, y_pred, gamma=2.0),
-    )
+def test_focal_gamma_changes_focus():
+    labels = torch.tensor([[[1.], [0.], [0.]]])
+    probabilities = torch.tensor([[[.5], [.3], [.2]]])
+    assert tbu.focal_loss(labels, probabilities, gamma=0).item() == pytest.approx(.25*np.log(2))
+    assert tbu.focal_loss(labels, probabilities, gamma=2).item() == pytest.approx(.0625*np.log(2))
 
 
 def test_classwise_accuracy():
@@ -60,10 +54,10 @@ def test_clip_datapoints_even_batch():
     assert Yc.shape == (4, 3, 5000)
 
 
-def test_clip_datapoints_drops_remainder_for_gpu_alignment():
+def test_clip_datapoints_retains_odd_batch():
     X = torch.zeros(5, 4, 15000)
     Y = torch.zeros(5, 3, 5000)
     Xc, Yc = tbu.clip_datapoints(X, Y, CL=80, CL_max=10000, N_GPUS=2)
-    # 5 % 2 == 1 -> drop one sample from the batch dim
-    assert Xc.shape == (4, 4, 5080)
-    assert Yc.shape == (4, 3, 5000)
+    # Device-count compatibility arguments never discard samples
+    assert Xc.shape == (5, 4, 5080)
+    assert Yc.shape == (5, 3, 5000)

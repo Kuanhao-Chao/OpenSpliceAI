@@ -1,0 +1,107 @@
+{
+  "index.rst": [
+    "main"
+  ],
+  "content/openspliceai_variant.rst": [
+    "variant_subcommand"
+  ],
+  "content/license.rst": [],
+  "content/openspliceai_calibrate.rst": [
+    "calibrate_subcommand"
+  ],
+  "content/openspliceai_create-data.rst": [
+    "create-data_subcommand"
+  ],
+  "content/openspliceai_train.rst": [
+    "train_subcommand"
+  ],
+  "content/openspliceai_transfer.rst": [
+    "transfer_subcommand"
+  ],
+  "content/openspliceai_vs_spliceai.rst": [
+    "openspliceai-vs-spliceai"
+  ],
+  "content/installation.rst": [
+    "installation"
+  ],
+  "content/behind_scenes.rst": [
+    "behind-the-scenes-splam"
+  ],
+  "content/openspliceai_predict.rst": [
+    "predict_subcommand"
+  ],
+  "content/changelog.rst": [],
+  "content/function_manual.rst": [],
+  "content/output_explanation.rst": [
+    "output_files"
+  ],
+  "content/contact.rst": [
+    "contact_us"
+  ],
+  "content/development.rst": [
+    "development_and_testing"
+  ],
+  "content/how_to_page.rst": [
+    "Q&A"
+  ],
+  "content/pretrained_models/index.rst": [
+    "pretrained_models_home"
+  ],
+  "content/pretrained_models/arabidopsis_plant.rst": [
+    "thale_cress_plant_spliceai",
+    "alignment-whats-next"
+  ],
+  "content/pretrained_models/zebrafish.rst": [
+    "zebrafish_spliceai",
+    "alignment-whats-next"
+  ],
+  "content/pretrained_models/bee_insect.rst": [
+    "bee_insect_spliceai",
+    "alignment-whats-next"
+  ],
+  "content/pretrained_models/GRCh38_MANE.rst": [
+    "human_mane_spliceai",
+    "alignment-whats-next"
+  ],
+  "content/pretrained_models/mouse.rst": [
+    "mouse_spliceai",
+    "alignment-whats-next"
+  ],
+  "content/pretrained_models/GRCh38_RefSeq.rst": [
+    "human_refseq_spliceai",
+    "alignment-whats-next"
+  ],
+  "content/usage/index.rst": [
+    "same_species-section"
+  ],
+  "content/train_your_own_model/index.rst": [
+    "train_your_own_model"
+  ],
+  "content/train_your_own_model/train_mouse.rst": [
+    "train_your_own_model_mouse"
+  ],
+  "content/train_your_own_model/train_human_mane.rst": [
+    "train_your_own_model_mane"
+  ],
+  "content/quick_start_guide/index.rst": [
+    "quick-start_home"
+  ],
+  "content/quick_start_guide/quickstart_create-data.rst": [
+    "quick-start_create_data"
+  ],
+  "content/quick_start_guide/quickstart_variant.rst": [
+    "quick-start_variant"
+  ],
+  "content/quick_start_guide/quickstart_calibrate.rst": [
+    "quick-start_calibrate"
+  ],
+  "content/quick_start_guide/quickstart_train.rst": [
+    "quick-start_train"
+  ],
+  "content/quick_start_guide/quickstart_predict.rst": [
+    "quick-start_predict"
+  ],
+  "content/quick_start_guide/quickstart_transfer.rst": [
+    "quick-start_transfer"
+  ]
+}

@@ -23,11 +23,13 @@ import os
 import sys
 import psutil
 def log_memory_usage():
+    """Write the current process resident memory to stderr."""
     process = psutil.Process(os.getpid())
     print(f"Memory usage: {process.memory_info().rss / (1024 * 1024)} MB", file=sys.stderr)
 
 # SETUP INITIALIZATION   
 def initialize_constants(flanking_size, hdf_threshold_len=0, flush_predict_threshold=500, chunk_size=100, split_fasta_threshold=1500000):
+    """Resolve prediction context, window, buffering and FASTA split sizes."""
     from openspliceai.constants import SL
     
     assert int(flanking_size) in [80, 400, 2000, 10000]

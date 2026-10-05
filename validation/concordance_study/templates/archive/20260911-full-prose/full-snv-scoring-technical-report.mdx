@@ -1,0 +1,292 @@
+---
+title: 'Genome-wide comparison of predicted splicing effects between OpenSpliceAI and SpliceAI'
+description: 'A comparison of acceptor and donor gains and losses across the published genic SNV collection, with two-seed inference progress and matched seed comparisons.'
+authors:
+  - Kuan-Hao Chao
+abstract: >-
+  OpenSpliceAI reproduces the SpliceAI architecture in PyTorch and supports retraining with different
+  annotations and species. Here, we compare their predicted variant effects across the published
+  collection of masked genic single-nucleotide variants. The frozen analysis contains
+  {{primary.coverage.paired_annotations|,d}} matched variant–gene annotations. Agreement differs by event:
+  acceptor and donor loss scores have Pearson correlations of {{primary.agreement.AL.pearson_r|.3f}} and
+  {{primary.agreement.DL.pearson_r|.3f}}, compared with {{primary.agreement.AG.pearson_r|.3f}} and
+  {{primary.agreement.DG.pearson_r|.3f}} for gains. At a cutoff of 0.5, OpenSpliceAI makes more loss calls
+  and fewer gain calls, with the largest reduction in donor gain. Among jointly called gains, the models
+  usually select the same position. On identical observations shared by two OpenSpliceAI training seeds
+  and SpliceAI, gain-score differences exceed the observed seed difference more strongly than loss-score
+  differences. These results describe agreement between a published ensemble and individual retrained
+  checkpoints; they do not establish relative biological accuracy. We report inference progress separately
+  from the frozen scientific results, which remain provisional because scoring is incomplete.
+date: {{study.date}}
+updated: {{revision.date}}
+venue: 'Technical Report'
+institution: 'Johns Hopkins University'
+tags:
+  - Splice prediction
+  - Variant effect prediction
+  - Genomics
+  - Reproducibility
+image: ../../assets/reports/full-snv-scoring-technical-report/main02_score_agreement.png
+imageAlt: 'Acceptor and donor loss scores agree more closely between the models than gain scores.'
+scholar: false
+unlisted: false
+references:
+  - text: 'Jaganathan K, Kyriazopoulou Panagiotopoulou S, McRae JF, et al. Predicting Splicing from Primary Sequence with Deep Learning. Cell, 2019.'
+    doi: https://doi.org/10.1016/j.cell.2018.12.015
+  - text: 'Chao K-H, Mao A, Liu A, Salzberg SL, Pertea M. OpenSpliceAI provides an efficient modular implementation of SpliceAI enabling easy retraining across nonhuman species. eLife 14:RP107454, 2025.'
+    doi: https://doi.org/10.7554/eLife.107454.3
+---
+
+*Center for Computational Biology, Johns Hopkins University, Baltimore, MD, USA. Correspondence: kh.chao@jhu.edu. Scientific snapshot: {{study.date}}. Progress snapshot completed: {{revision.observed_at}}. [Supplement and detailed methods](/reports/full-snv-scoring-supplement/) · [Architecture and benchmarks](/reports/openspliceai-technical-report/).*
+
+## Introduction
+
+OpenSpliceAI implements the SpliceAI architecture in PyTorch and supports retraining with different
+annotations and species [2]. Similar splice-site prediction performance does not establish that two
+trained models assign the same effect to a sequence variant. Here, we compare OpenSpliceAI and
+SpliceAI across the published collection of masked genic single-nucleotide variants (SNVs), asking
+where their predicted effects agree and which types of effects differ most.
+
+We distinguish four events: **acceptor gain (AG), acceptor loss (AL), donor gain (DG), and donor loss
+(DL)**. Gains summarize increases in predicted splice-site scores after substitution; losses summarize
+decreases. Each event score records the largest change within the search window and has an associated
+selected position. A variant can receive multiple nonzero event scores. These events are therefore
+not mutually exclusive variant classes. MAX, the largest of the four scores, summarizes predicted
+effect strength without distinguishing gain from loss or acceptor from donor.
+
+Our comparisons address score magnitude, overlap of calls at a common cutoff, boundary proximity,
+and selected positions. We also compare two OpenSpliceAI training seeds on identical observations.
+SpliceAI is the comparator throughout. The collection contains no experimental splicing outcomes,
+so concordance identifies similarities and differences between predictions without determining which
+model is correct when they disagree.
+
+## Study design and inference progress
+
+The campaign divides the published SpliceAI masked genic SNV collection into {{study.source_chunks|,d}}
+chunks. Here, genome-wide describes the collection's genomic extent; the collection does not contain
+every possible substitution at every GRCh38 base. OpenSpliceAI scoring uses two MANE-trained
+checkpoints, rs10 and rs13, with a 10,000-nt context. These are training seeds, not cross-validation
+folds. Each comparison uses one OpenSpliceAI checkpoint against the published five-model SpliceAI
+ensemble.
+
+Campaign records specify GRCh38.p14, the GENCODE v24 canonical gene table supplied with SpliceAI,
+a ±{{study.distance|d}}-bp event-search window, and masked output. The scoring annotation controls
+gene assignment and masking; MANE supplied the OpenSpliceAI training annotation. Matching the former
+does not match the training data. The legacy outputs passed structural audits but lack embedded
+checkpoint receipts. We therefore retain their recorded model labels and provisional provenance,
+without treating file validity as independent proof of checkpoint identity.
+
+We pair annotations by chromosome, position, reference allele, alternate allele, and gene. Identical
+repeats are collapsed; conflicting duplicates are excluded. Missing scores remain missing. This gives
+{{primary.coverage.paired_annotations|,d}} paired variant–gene annotations from {{primary.chunks|,d}}
+rs10 chunks for the primary comparison. A physical VCF row, a distinct variant allele, and a
+variant–gene annotation are different counting units. All main event statistics use paired
+annotations unless stated otherwise.
+
+The seed analysis uses {{arms.B_seeds_rs10_rs13.coverage.paired_annotations|,d}} observations shared by
+SpliceAI, rs10 and rs13 after duplicate resolution and joining groups split across chunk boundaries.
+The rs10–rs13 and both SpliceAI–OpenSpliceAI contrasts use this identical intersection. It covers
+{{study.rs13_genomic_extent}} and is not a random sample of the genome.
+
+{{revision.progress_summary}}
+
+<!-- figure:main01_progress -->
+
+Figure 1 separates inference progress from analyzed coverage. A progress update does not add newly
+available predictions to the September 9 scientific snapshot. The original content-audit date,
+filesystem checks, and scheduler observation are recorded separately. Pending-job reasons describe
+the observed scheduler state and do not provide a completion forecast.
+
+## Loss scores agree more closely than gain scores
+
+Both acceptors and donors show greater score agreement for losses than gains (Figure 2). Pearson
+correlations are {{primary.agreement.AL.pearson_r|.3f}} for AL and
+{{primary.agreement.DL.pearson_r|.3f}} for DL, compared with {{primary.agreement.AG.pearson_r|.3f}}
+for AG and {{primary.agreement.DG.pearson_r|.3f}} for DG. Donor gain has the lowest correlation,
+whereas the two loss correlations are similar. This gain–loss distinction is more informative than
+the single MAX correlation of {{primary.agreement.MAX.pearson_r|.3f}}.
+
+<!-- figure:main02_score_agreement -->
+
+The conditional distributions show how this difference depends on score magnitude. For losses,
+the median OpenSpliceAI score follows the equal-score line more closely. For gains, it lies below
+that line across much of the SpliceAI range, especially for donor gain. The intervals contain the
+central 50% and 90% of scores within each comparator bin. Their width shows that the median is not
+a prediction for every annotation; OpenSpliceAI does not always assign the lower gain score.
+
+Across the full paired population, mean signed differences, defined as OpenSpliceAI minus SpliceAI,
+are negative for both gains and slightly positive for both losses. Mean absolute differences are
+{{primary.agreement.AG.mae|.5f}} for AG, {{primary.agreement.AL.mae|.5f}} for AL,
+{{primary.agreement.DG.mae|.5f}} for DG and {{primary.agreement.DL.mae|.5f}} for DL. These averages
+include the large population of low and zero scores. Small global mean differences can therefore
+coexist with substantial differences among annotations assigned a high score by either model.
+
+Output precision affects exact equality. SpliceAI reports two decimals and OpenSpliceAI five.
+Rounding OpenSpliceAI to two decimals increases exact matches, while a sensitivity analysis that
+subtracts a 0.005 allowance from each absolute difference retains substantial residual error
+(Figure S4). This calculation does not estimate how much disagreement was caused by rounding.
+We interpret the conditional distributions together with positive-call overlap, rather than using
+exact equality alone to assess whether the score collections can be substituted for one another.
+
+## Call overlap differs between the four events
+
+We define a call as an event score at or above a specified cutoff. Jaccard overlap is the number of
+annotations called by both models divided by the number called by either model. It excludes shared
+negative calls. The call-count ratio divides OpenSpliceAI calls by SpliceAI calls and measures their
+relative number, independently of whether those calls identify the same annotations (Figure 3).
+
+<!-- figure:main03_call_agreement -->
+
+{{revision.event_table}}
+
+*Table 1. Agreement across {{primary.coverage.paired_annotations|,d}} paired variant–gene annotations.
+Jaccard and call-count ratios use a cutoff of 0.5 in both models. Pearson correlation uses all paired
+scores, including shared zeros. An annotation may be called for more than one event.*
+
+At 0.5, loss-call overlap is higher than gain-call overlap for both acceptors and donors. OpenSpliceAI
+makes {{revision.call_changes.AL|.1%}} more AL calls and {{revision.call_changes.DL|.1%}} more DL calls than SpliceAI. In contrast, it makes {{revision.call_changes.AG|.1%}} fewer AG
+calls and {{revision.call_changes.DG|.1%}} fewer DG calls. Donor gain has both the lowest Jaccard overlap and the smallest
+relative call count. The gain–loss distinction is thus shared by the two splice-site types, while
+the magnitude of gain disagreement is greater for donors.
+
+Call overlap and relative call count answer different questions. Equal counts can still describe disjoint sets, while unequal counts can coexist with a large shared subset. Reporting both quantities makes this distinction visible for each event.
+
+These percentages describe the chosen cutoff. They do not establish that one model always makes
+more or fewer calls. For example, the MAX call-count ratio changes from
+{{primary.thresholds.MAX[0.2].call_rate_ratio_right_over_left|.3f}} at 0.2 to
+{{primary.thresholds.MAX[0.8].call_rate_ratio_right_over_left|.3f}} at 0.8. The curves show approximate
+histogram-based cutoffs; the emphasized 0.5 points use exact counters. The supplementary threshold
+analysis separately selects cutoffs by call-volume matching and by agreement with SpliceAI, because
+similar call counts do not ensure similar membership.
+
+A smaller call count does not establish higher specificity, and a larger count does not establish
+higher sensitivity. Either conclusion would require experimental outcomes. Likewise, the dominant
+event—the largest score within a model—is a useful descriptive label but discards the other three
+scores. Figure S5 retains ties and all-zero annotations to show that compression explicitly.
+
+## Boundary proximity distinguishes local patterns
+
+We grouped variants by distance to the nearest annotated internal splice boundary. The index contains
+{{study.sites_count|,d}} unique coordinates, assigns acceptor and donor roles by strand, pools across
+genes, and excludes transcript ends. Coordinates assigned both roles are classified as ambiguous.
+Figure 4 pools counts across all three boundary types before dividing by the number of paired
+annotations in each distance group.
+
+<!-- figure:main04_boundary_context -->
+
+At a cutoff of 0.5, loss-call volumes are similar within 1–2 bp of a boundary: OpenSpliceAI/SpliceAI
+ratios are {{revision.boundary_ratios.AL[1-2]|.3f}} for AL and {{revision.boundary_ratios.DL[1-2]|.3f}} for DL. The models differ more in the 11–50-bp group, where the
+ratios are {{revision.boundary_ratios.AL[11-50]|.2f}} for AL and {{revision.boundary_ratios.DL[11-50]|.2f}} for DL. Thus, the higher overall number of OpenSpliceAI loss calls
+does not correspond to a uniform increase at every distance. The donor-loss increase is particularly
+pronounced in the 11–50-bp group, even though global AL call counts increase more than DL counts.
+
+For gains, OpenSpliceAI makes fewer calls at 0.5 in every displayed distance group. Beyond 500 bp,
+the ratio is {{revision.boundary_ratios.AG.far|.3f}} for AG and {{revision.boundary_ratios.DG.far|.3f}} for DG. Donor gain therefore shows the larger relative reduction
+in this distant group. The plotted rates use within-group denominators; the much larger number of
+distant annotations affects total call counts but does not automatically increase a within-group
+rate. Conditional gain-score medians also lie closer to equal scores near boundaries than in the
+distant group across much of the comparator range (Figure 4E–F).
+
+Boundary distance and masking describe different quantities. The recorded masking procedure selects
+the nearest exon boundary for a particular variant–gene annotation, including transcript ends and
+pooling boundary types. It retains a loss only at that selected boundary and suppresses a gain there.
+Masking acts on the selected event position, whereas our distance groups use the variant position
+and a pooled internal-boundary index. Their boundary sets are not identical. Sparse distant loss
+calls therefore cannot be interpreted as an independent measurement of absent biological losses.
+
+The symmetric 1–2-bp group includes both sides of a boundary and is not equivalent to the essential
+splice dinucleotides. A distance greater than 500 bp also does not establish a deep-intronic location;
+we did not assign transcript-specific intronic or exonic status. These groups locate differences in
+predictions without identifying their biological cause. Figures S6–S8 provide the full distributions,
+conditional intervals, and eligible position-comparison counts.
+
+## Jointly called gains usually select the same position
+
+Among annotations with both event scores at least 0.5, exact selected-position agreement is
+{{revision.dp.AG.exact|pct2}} for AG and {{revision.dp.DG.exact|pct2}} for DG (Figure 5). Many gain
+calls are unique to one model, but the shared subset usually selects the same position. Score
+magnitude and selected location therefore provide distinct descriptions of model disagreement.
+
+<!-- figure:main05_positions -->
+
+For losses, exact agreement is 1,441,729 of 1,441,730 AL annotations and 1,630,983 of 1,630,987 DL
+annotations. These correspond to one AL mismatch and four DL mismatches, which would be hidden by
+rounding to two percentage decimals. The AL mismatch is within 2 bp; all four DL mismatches are
+within 5 bp. We report the exceptions explicitly instead of describing loss-position agreement as
+perfect. All four DL exceptions map to TVP23C-CDRT4 and the AL exception to XAGE3. Source-record checks confirm that OpenSpliceAI selects the current annotation boundary in both genes, whereas the published SpliceAI position differs by 3 bp and 2 bp, respectively.
+
+The recorded mask restricts retained loss positions, so near-complete loss agreement is not an
+independent test of loss localization. The two legacy score collections do not report identical loss positions in every case; the origin of these local discrepancies remains unresolved. More generally, selecting the same position does not establish splice-site use in
+vivo. Position agreement is conditional on shared calls and excludes predictions unique to either
+model. It must be considered alongside call overlap and score magnitude, with undefined agreement
+retained for distance groups lacking jointly called events.
+
+## Gain disagreement exceeds the observed seed difference
+
+We compared the mean absolute difference between rs10 and rs13 with the difference between each
+checkpoint and SpliceAI on the identical three-way intersection (Figure 6). This controls the
+comparison domain: differences between these contrasts cannot arise simply because they contain
+different variant–gene observations. It does not match the training data or ensemble size.
+
+<!-- figure:main06_seed_comparison -->
+
+For rs10, the SpliceAI–OpenSpliceAI difference divided by the seed difference is
+{{seed_versus_model.events.AG.ratios.C_rs10_matched.mae|.2f}} for AG and
+{{seed_versus_model.events.DG.ratios.C_rs10_matched.mae|.2f}} for DG, compared with
+{{seed_versus_model.events.AL.ratios.C_rs10_matched.mae|.2f}} for AL and
+{{seed_versus_model.events.DL.ratios.C_rs10_matched.mae|.2f}} for DL. The rs13 contrasts show the same
+pattern. Gain differences between the model collections are therefore larger relative to this
+observed seed contrast, particularly for donor gain. Loss differences are closer in magnitude to
+the difference between the two OpenSpliceAI checkpoints.
+
+Gene-level ratios provide a complementary description. Among genes with at least 1,000 matched
+annotations and positive, defined ratios, more than 99.8% of AG ratios and 99.9% of DG ratios exceed
+one for both checkpoints (Figure S9). Loss ratios are more mixed. These curves weight genes equally,
+whereas the global mean differences weight annotations. A very small seed difference can also
+produce a large ratio, so extreme ratios should not be interpreted as evidence of a large absolute
+effect or a particular mechanism.
+
+Two seeds provide one observed training contrast, not a population estimate of training variability.
+A ratio near one does not establish interchangeability or show that seed variation explains the
+model difference. Training annotations, checkpoints, implementation, and ensembling remain combined
+in the comparison. The matched domain is also restricted to part of the genome, limiting
+extrapolation to unscored regions. Regional and gene-level MAX summaries remain descriptive
+supporting analyses (Figures S10–S11).
+
+## Discussion
+
+The comparison identifies a consistent gain–loss distinction for both acceptors and donors. Loss
+scores and calls agree more closely between the models. Gain scores show larger differences, with
+donor gain showing the lowest correlation and call overlap. Among shared gain calls, selected
+positions usually agree. Boundary context further distinguishes similar loss-call volumes close to
+splice boundaries from larger differences farther away. These results explain why overall MAX
+correlation alone cannot describe agreement across the four predicted events.
+
+Our eLife paper [2] evaluated splice-site prediction, mutagenesis around selected sites, and
+cryptic-splicing examples. Its mutagenesis comparisons used five-model ensembles. The present study
+instead compares individual OpenSpliceAI checkpoints with the published SpliceAI ensemble across
+masked genic variants. The sampling, averaging, and predicted quantities differ. Correlations from
+those experiments should therefore not be treated as interchangeable performance measures.
+
+Determining which discordant predictions correspond to observed splicing changes requires independent
+outcomes covering shared calls and calls unique to each model. A comparison with matched ensemble
+sizes would help separate ensemble effects from the remaining model differences. The current
+analysis identifies where those evaluations would be informative; it does not rank biological
+accuracy or establish a causal explanation for the observed gain–loss pattern.
+
+## Methods and data availability
+
+We summarized paired annotations with additive counters, moments, fixed-width histograms, and
+stratum tables. Configured cutoffs of 0.05, 0.1, 0.2, 0.5 and 0.8 use exact counters; 200-bin
+histograms of width 0.005 provide approximate curves and conditional quantiles. Independent
+implementations passed {{study.verification.primary.checks|,d}} primary and
+{{study.verification.matched.checks|,d}} matched numerical checks on selected real-data windows.
+Those windows verify implementation behavior on their inputs, rather than every genomic record.
+
+The [supplement](/reports/full-snv-scoring-supplement/) provides detailed methods and supporting
+results. The [study bundle](/downloads/{{revision.prefix}}.zip) contains both reading copies,
+seventeen PNG/PDF figure pairs, plotting inputs, unchanged scientific facts, the dated progress
+snapshot, and source code. The [scientific audit](/downloads/{{revision.prefix}}-figure-audit.md)
+records figure decisions and claim qualifications. A [browser reading copy](/downloads/{{revision.prefix}}.html),
+[checksums](/downloads/{{revision.prefix}}-SHA256SUMS.txt), and the unchanged
+[September 9 bundle](/downloads/full-snv-concordance-20260909.zip) are also available.

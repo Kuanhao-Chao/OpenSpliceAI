@@ -20,26 +20,26 @@ from tests.fixtures.synthetic import write_calibrate_datasets, write_dataset_h5
 # --- clip_datapoints: the two clip==0 branches (CL == CL_max) ------------------------
 
 def test_clip_datapoints_no_clip_even_batch():
-    X = torch.zeros(4, 4, 5000)
+    X = torch.zeros(4, 4, 15000)
     Y = torch.zeros(4, 3, 5000)
     Xc, Yc = tbu.clip_datapoints(X, Y, CL=10000, CL_max=10000, N_GPUS=2)  # clip=0, rem=0
-    assert Xc.shape == (4, 4, 5000) and Yc.shape == (4, 3, 5000)
+    assert Xc.shape == (4, 4, 15000) and Yc.shape == (4, 3, 5000)
 
 
-def test_clip_datapoints_no_clip_drops_remainder():
-    X = torch.zeros(5, 4, 5000)
+def test_clip_datapoints_no_clip_keeps_remainder():
+    X = torch.zeros(5, 4, 15000)
     Y = torch.zeros(5, 3, 5000)
     Xc, Yc = tbu.clip_datapoints(X, Y, CL=10000, CL_max=10000, N_GPUS=2)  # clip=0, rem=1
-    assert Xc.shape == (4, 4, 5000) and Yc.shape == (4, 3, 5000)
+    assert Xc.shape == (5, 4, 15000) and Yc.shape == (5, 3, 5000)
 
 
 # --- clip_datapoints_spliceai27 (Keras-shaped: X is (N, L), Y is a 1-list) -----------
 
 @pytest.mark.parametrize("n,cl,exp_n,exp_l", [
     (4, 80, 4, 5080),     # rem==0, clip!=0
-    (5, 80, 4, 5080),     # rem!=0, clip!=0
+    (5, 80, 5, 5080),     # partial batch retained
     (4, 10000, 4, 15000),  # rem==0, clip==0
-    (5, 10000, 4, 15000),  # rem!=0, clip==0
+    (5, 10000, 5, 15000),  # partial batch retained
 ])
 def test_clip_datapoints_spliceai27_branches(n, cl, exp_n, exp_l):
     X = np.zeros((n, 15000))
@@ -117,7 +117,7 @@ def test_model_evaluation_returns_loss_and_writes(tmp_path, criterion):
     assert os.path.getsize(files["loss_batch"]) > 0
 
 
-def test_model_evaluation_subsamples_above_1000_windows(tmp_path):
+def test_model_evaluation_keeps_above_1000_windows(tmp_path):
     files = tbu.create_metric_files(str(tmp_path))
     rng = np.random.default_rng(1)
     yl, yp = _expressed_label_pred(1100, 4, rng)   # > 1000 expressed -> hits the subset cap
@@ -133,7 +133,8 @@ def test_print_topl_statistics_warns_when_requested_exceeds_size(tmp_path, capsy
     y_pred = np.array([0.9, 0.8, 0.1, 0.2])
     topk, auprc = tbu.print_topl_statistics(y_true, y_pred, str(out), ss_type="donor", print_top_k=True)
     assert 0.0 <= topk <= 1.0 and 0.0 <= auprc <= 1.0
-    assert "exceeds y_pred size" in capsys.readouterr().out
+    assert topk == pytest.approx(2/3)
+    assert "support" in capsys.readouterr().out
     assert out.exists()
 
 
@@ -146,7 +147,7 @@ def test_setup_device_returns_torch_device():
 
 def test_setup_environment_accepts_valid_flank_and_rejects_invalid():
     assert tbu.setup_environment(types.SimpleNamespace(flanking_size=80)).type in ("cpu", "cuda", "mps")
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         tbu.setup_environment(types.SimpleNamespace(flanking_size=123))
 
 

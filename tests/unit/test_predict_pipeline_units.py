@@ -58,6 +58,20 @@ def test_convert_sequences_pt_backend(tmp_path):
 
 # --- get_prediction: flush branch + ensemble averaging -------------------------------
 
+def test_flush_predictions_preserves_values_across_unequal_batches(tmp_path):
+    """HDF5 keeps one unlimited batch axis and appends every prediction exactly."""
+    path = tmp_path / "predictions.h5"
+    first = torch.arange(42, dtype=torch.float32).reshape(2, 3, 7)
+    second = -torch.arange(21, dtype=torch.float32).reshape(1, 3, 7)
+    pr.flush_predictions(first, path)
+    pr.flush_predictions(second, path)
+    with h5py.File(path, "r") as handle:
+        assert handle["predictions"].maxshape == (None, 3, 7)
+        np.testing.assert_array_equal(
+            handle["predictions"][:], torch.cat((first, second)).numpy()
+        )
+
+
 def _write_predict_dataset(path, n=4, seed=0):
     """dataset.h5 with one shard X0 = (n, SL+CL=5080, 4) int8 (load_shard transposes it)."""
     rng = np.random.default_rng(seed)
@@ -151,9 +165,9 @@ def test_write_batch_to_bed_minus_strand_genomic_coords():
 
 def test_write_batch_to_bed_absolute_fallback_when_name_has_no_coords():
     ab, db = io.StringIO(), io.StringIO()
-    pr.write_batch_to_bed("myseq+", _preds(donor=0.9, acceptor=0.0), ab, db)
+    pr.write_batch_to_bed("myseq:+", _preds(donor=0.9, acceptor=0.0), ab, db)
     out = db.getvalue()
-    assert "absolute_coordinates" in out and out.splitlines()[0].startswith("myseq+")
+    assert out.splitlines()[0].split('\t') == ['myseq', '0', '1', 'myseq_Donor', '0.900000', '+']
 
 
 def test_write_batch_to_bed_threshold_is_strict():
@@ -166,7 +180,7 @@ def test_write_batch_to_bed_skips_undefined_strand(capsys):
     ab, db = io.StringIO(), io.StringIO()
     pr.write_batch_to_bed("g chr1:1-10(.)", _preds(acceptor=0.9), ab, db)
     assert ab.getvalue() == "" and db.getvalue() == ""
-    assert "Undefined strand" in capsys.readouterr().out
+    assert "Undefined strand" in capsys.readouterr().err
 
 
 # --- generate_bed end-to-end (predict.h5 -> BED) -------------------------------------

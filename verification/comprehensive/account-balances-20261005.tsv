@@ -1,0 +1,9 @@
+Account|User|RawUsage|GrpTRESMins|TRESRunMins
+ssalzbe1||167013534|cpu=6000000,billing=6000000,gres/gpu=500000|cpu=849927,mem=2320868420,energy=0,node=70827,billing=849927,fs/disk=0,vmem=0,pages=0,gres/gpu=0,gres/gpu:2g.20gb=0,gres/gpu:a100=0,gres/gpu:l40s=0,gres/gpumem=0,gres/gpuutil=0
+ ssalzbe1|kchao10|166495068||cpu=849927,mem=2320868420,energy=0,node=70827,billing=849927,fs/disk=0,vmem=0,pages=0,gres/gpu=0,gres/gpu:2g.20gb=0,gres/gpu:a100=0,gres/gpu:l40s=0,gres/gpumem=0,gres/gpuutil=0
+ssalzbe1-chess||77679076|cpu=3000000,billing=3000000,gres/gpu=250000|cpu=423174,mem=1155548774,energy=0,node=35264,billing=423174,fs/disk=0,vmem=0,pages=0,gres/gpu=0,gres/gpu:2g.20gb=0,gres/gpu:a100=0,gres/gpu:l40s=0,gres/gpumem=0,gres/gpuutil=0
+ ssalzbe1-chess|kchao10|77671188||cpu=423174,mem=1155548774,energy=0,node=35264,billing=423174,fs/disk=0,vmem=0,pages=0,gres/gpu=0,gres/gpu:2g.20gb=0,gres/gpu:a100=0,gres/gpu:l40s=0,gres/gpumem=0,gres/gpuutil=0
+ssalzbe1_bigmem||43681316|cpu=5100000,billing=5100000,gres/gpu=425000|cpu=223426,mem=610102476,energy=0,node=18618,billing=223426,fs/disk=0,vmem=0,pages=0,gres/gpu=0,gres/gpu:2g.20gb=0,gres/gpu:a100=0,gres/gpu:l40s=0,gres/gpumem=0,gres/gpuutil=0
+ ssalzbe1_bigmem|kchao10|43681316||cpu=223426,mem=610102476,energy=0,node=18618,billing=223426,fs/disk=0,vmem=0,pages=0,gres/gpu=0,gres/gpu:2g.20gb=0,gres/gpu:a100=0,gres/gpu:l40s=0,gres/gpumem=0,gres/gpuutil=0
+ssalzbe1_gpu||19595440|cpu=3000000,billing=3000000,gres/gpu=250000|cpu=23888,mem=65231803,energy=0,node=1990,billing=23888,fs/disk=0,vmem=0,pages=0,gres/gpu=1990,gres/gpu:2g.20gb=0,gres/gpu:a100=1990,gres/gpu:l40s=0,gres/gpumem=0,gres/gpuutil=0
+ ssalzbe1_gpu|kchao10|19574784||cpu=23888,mem=65231803,energy=0,node=1990,billing=23888,fs/disk=0,vmem=0,pages=0,gres/gpu=1990,gres/gpu:2g.20gb=0,gres/gpu:a100=1990,gres/gpu:l40s=0,gres/gpumem=0,gres/gpuutil=0

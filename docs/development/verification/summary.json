@@ -1,0 +1,111 @@
+{
+  "baseline": {
+    "branch": "audit/repo-hardening-20260929",
+    "devel": "87ede55bbd8960bd40307526f56e0669ea7d9a62",
+    "main": "074d3e27d9950f48e7276ed69f0f0205f10ef223"
+  },
+  "coverage": {
+    "branches": 89.14728682170542,
+    "lines": 96.10747502583534,
+    "totals": {
+      "covered_branches": 690,
+      "covered_lines": 2790,
+      "excluded_lines": 109,
+      "missing_branches": 84,
+      "missing_lines": 113,
+      "num_branches": 774,
+      "num_partial_branches": 76,
+      "num_statements": 2903,
+      "percent_branches_covered": 89.14728682170542,
+      "percent_branches_covered_display": "89",
+      "percent_covered": 94.64237149850422,
+      "percent_covered_display": "95",
+      "percent_statements_covered": 96.10747502583534,
+      "percent_statements_covered_display": "96"
+    }
+  },
+  "cpu_full": {
+    "deselected": 6,
+    "log": "/tmp/osai-final-clean-green-tests.log",
+    "passed": 533,
+    "python": "3.11.9",
+    "seconds": 509.2
+  },
+  "distribution": {
+    "annotations": [
+      "grch37",
+      "grch38"
+    ],
+    "invalid_command_exit": 2,
+    "sdist_installed_help": true,
+    "wheel_help_entrypoints": 7,
+    "wheel_runtime_inference": true
+  },
+  "distribution_sha256": {
+    "openspliceai-0.0.8.dev0-py3-none-any.whl": "0c74146c59e699708f213450808251d27568ca55756df0f8892c3d252d28b0c4",
+    "openspliceai-0.0.8.dev0.tar.gz": "869165295bfd5c75c4d0203806e3e105090e2a8d17be32df649e73b3f89d9277"
+  },
+  "documentation": {
+    "broken_references": 0,
+    "local_pages": 37,
+    "local_references": 2014,
+    "log": "/tmp/openspliceai-hardening-docs.log",
+    "sphinx": "8.2.3",
+    "warnings_as_errors": true
+  },
+  "environment": {
+    "Markdown": "3.11",
+    "h5py": "3.16.0",
+    "mappy": "2.31",
+    "matplotlib": "3.11.2",
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "pysam": "0.24.1",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.17.1",
+    "torch": "2.4.1+cpu"
+  },
+  "keras_integration": {
+    "log": "/tmp/osai-final-keras-integration.log",
+    "passed": 1,
+    "seconds": 39.62
+  },
+  "keras_shared_alleles": {
+    "excluded": "MNV/delins numeric-score extensions and REF realignment boundary differences",
+    "log": "/tmp/osai-final-keras.log",
+    "passed": 4,
+    "python": "3.9.18",
+    "seconds": 591.81
+  },
+  "legacy_corrections": {
+    "log": "/tmp/osai-final-legacy-corrections.log",
+    "passed": 53,
+    "seconds": 125.3
+  },
+  "minimum_scientific": {
+    "deselected": 34,
+    "log": "/tmp/osai-minimum-stack-tests.log",
+    "passed": 505,
+    "python": "3.11.9",
+    "seconds": 160.79,
+    "versions": {
+      "h5py": "3.11.0",
+      "matplotlib": "3.8.4",
+      "numpy": "2.0.2",
+      "scikit-learn": "1.4.2",
+      "scipy": "1.13.0",
+      "torch": "2.3.0+cpu"
+    }
+  },
+  "scientific_comparison": {
+    "model_probabilities_bit_identical": true,
+    "scope": "four synthetic shared SNV/indel records including multiple alleles, both masks; one packaged 80nt checkpoint",
+    "vcf_events_equal_at_six_decimals": true
+  },
+  "unexecuted": [
+    "CUDA",
+    "Python 3.10",
+    "Python 3.12",
+    "remote CI"
+  ]
+}

@@ -1,2 +1,14 @@
 recursive-include logo *
 recursive-include openspliceai/variant/annotations *.txt
+include Makefile pytest.ini .coveragerc ruff.toml KNOWN_ISSUES.md
+include conda-recipe/meta.yaml
+recursive-include tests *.py *.md
+recursive-include validation *.py *.md *.mdx *.json *.sh *.sbatch *.html
+recursive-include ci *.constraints *.py *.sbatch
+
+recursive-include examples/tutorial *.py
+recursive-include docs/source *.py *.rst *.html *.css *.png *.svg
+recursive-include docs/development *.md *.json
+recursive-include verification/comprehensive *.md *.json *.tsv
+exclude verification/comprehensive/artifacts.json verification/comprehensive/distributions.json
+include docs/generate_reference.py docs/check_links.py docs/legacy_anchors.json docs/requirements.txt

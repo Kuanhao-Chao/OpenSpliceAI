@@ -3,6 +3,7 @@ import gffutils
 import os
 
 def parse_arguments():
+    """Parse options for the standalone historical annotation converter."""
     parser = argparse.ArgumentParser(description="Convert GFF file to custom tabular format.")
     parser.add_argument(
         "--gff",
@@ -114,6 +115,7 @@ def write_output(gene_data, output_file):
     print(f"Output written to {output_file}")
 
 def main():
+    """Run the module entrypoint with its documented command arguments."""
     args = parse_arguments()
 
     # Create or connect to GFF database

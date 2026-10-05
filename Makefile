@@ -1,50 +1,35 @@
-# OpenSpliceAI — reproducible test & quality entrypoints.
-#
-# All targets pin the interpreter and force CPU-only, single-threaded-ish, headless
-# execution so runs are deterministic and copy-pasteable across machines. Override the
-# interpreter on the CLI, e.g.:  make test PYTHON=python
-#
-#   make test       fast unit/regression suite (integration + slow deselected)  ~10s
-#   make test-all   the whole suite incl. integration/slow/keras                 ~3-4min
-#   make coverage   full suite + coverage report + gate (fails under $(COV_MIN)%)
-#   make lint       ruff over the package and the tests
-#
-# The coverage gate intentionally runs the FULL suite: integration tests exercise the
-# create-data / train / predict / variant / calibrate pipelines end-to-end and contribute
-# most of the covered lines. See tests/README.md for the coverage policy.
-
-PYTHON ?= /home/kchao10/miniconda3/envs/pytorch_cuda/bin/python
-RUFF   ?= /home/kchao10/miniconda3/envs/pytorch_cuda/bin/ruff
+# Portable CPU test entrypoints. Install with: python -m pip install -e '.[dev]'
+PYTHON ?= python
+RUFF ?= $(PYTHON) -m ruff
 COV_MIN ?= 95
-
-# CPU-only + headless + bounded BLAS threads => deterministic, prompt-free runs.
-ENV := CUDA_VISIBLE_DEVICES="" OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 MPLBACKEND=Agg
+THREADS ?= 2
+ENV := CUDA_VISIBLE_DEVICES="" OMP_NUM_THREADS=$(THREADS) MKL_NUM_THREADS=$(THREADS) OPENBLAS_NUM_THREADS=$(THREADS) TF_NUM_INTRAOP_THREADS=$(THREADS) TF_NUM_INTEROP_THREADS=1 MPLBACKEND=Agg
 PYTEST := $(ENV) $(PYTHON) -m pytest
 
-.PHONY: help test test-all coverage lint clean
-
+.PHONY: help test test-all test-cpu test-keras test-gpu coverage coverage-branch lint package clean
 help:
-	@echo "OpenSpliceAI make targets:"
-	@echo "  make test       - fast unit/regression suite (integration + slow deselected)"
-	@echo "  make test-all   - full suite (integration, slow, keras if TF present)"
-	@echo "  make coverage   - full suite + term/html coverage + gate (>= $(COV_MIN)%)"
-	@echo "  make lint       - ruff check over openspliceai/ and tests/"
-	@echo "  make clean      - remove coverage/pytest caches"
-	@echo "Override the interpreter with: make <target> PYTHON=/path/to/python"
-
+	@echo "test: fast unit/regression; test-cpu: full CPU; test-all: all available backends"
+	@echo "test-keras/test-gpu: optional backends; coverage: 95% line gate; coverage-branch: branch report"
+	@echo "lint: ruff; package: build sdist and wheel"
+	@echo "Override PYTHON=/path/to/python and THREADS=2 as needed."
 test:
-	$(PYTEST) -m "not integration and not slow" -q
-
+	$(PYTEST) -m "not integration and not slow and not keras and not gpu" -q
+test-cpu:
+	$(PYTEST) -m "not keras and not gpu" -q
 test-all:
 	$(PYTEST) -q
-
+test-keras:
+	$(PYTEST) -m keras -q
+test-gpu:
+	OMP_NUM_THREADS=$(THREADS) MKL_NUM_THREADS=$(THREADS) OPENBLAS_NUM_THREADS=$(THREADS) MPLBACKEND=Agg $(PYTHON) -m pytest -m gpu -q
 coverage:
-	$(PYTEST) --cov=openspliceai --cov-report=term-missing --cov-report=html \
-		--cov-fail-under=$(COV_MIN) -q
-
+	$(PYTEST) --cov=openspliceai --cov-report=term-missing --cov-report=html --cov-fail-under=$(COV_MIN) -q
+coverage-branch:
+	$(PYTEST) --cov=openspliceai --cov-branch --cov-report=term-missing --cov-report=json:coverage-branch.json -q
+	$(PYTHON) ci/check_coverage.py coverage-branch.json
 lint:
 	$(ENV) $(RUFF) check openspliceai tests
-
+package:
+	$(PYTHON) -m build
 clean:
-	rm -rf .pytest_cache htmlcov .coverage .coverage.*
-	find . -type d -name __pycache__ -prune -exec rm -rf {} +
+	rm -rf .pytest_cache htmlcov .coverage .coverage.* coverage-branch.json

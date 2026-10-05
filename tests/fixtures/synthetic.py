@@ -165,10 +165,12 @@ def write_mini_genome_and_gff(dirpath, seed=0):
 
 def write_variant_inputs(dirpath, seed=0):
     """Write ``ref.fa`` (~12kb so even the 10000nt keras window fits), a custom annotation TSV,
-    and ``variants.vcf`` containing an SNV, an insertion, a deletion and a multi-allelic record,
-    all near position 6000 (inside the gene and far from the chromosome ends). The VCF REF
-    alleles are read back from the generated reference so they match. Returns
-    (ref_path, ann_path, vcf_path).
+    and ``variants.vcf`` containing an SNV, an insertion, a deletion, a multi-allelic record,
+    three multi-nucleotide variants (equal-length 2->2 plus 3->2 and 2->3 delins, all with
+    ref>1 AND alt>1), and two reshape-gap records (a 60->1 deletion and a 60->60 MNV whose REF
+    lengths fall in dist_var+1 < ref_len <= 2*dist_var), spaced 100bp apart from position 6000
+    (inside the gene and far from the chromosome ends). The VCF REF alleles are read back from the
+    generated reference so they match. Returns (ref_path, ann_path, vcf_path).
     """
     import numpy as np
 
@@ -190,10 +192,29 @@ def write_variant_inputs(dirpath, seed=0):
     def base(pos1):  # 1-based -> base char
         return seq[pos1 - 1]
 
+    def span(pos1, n):  # n bases starting at 1-based pos1
+        return seq[pos1 - 1: pos1 - 1 + n]
+
+    _nxt = {"A": "C", "C": "G", "G": "T", "T": "A"}
+    def mut(s):  # every base changed to a guaranteed-different one
+        return "".join(_nxt[b] for b in s)
+
     p_snv, p_del, p_ins, p_multi = 6000, 6100, 6200, 6300
+    # multi-nucleotide variants (ref>1 AND alt>1): equal-length and both delins directions
+    p_mnv, p_delins_del, p_delins_ins = 6400, 6500, 6600
+    # reshape-gap records: dist_var+1 < ref_len <= 2*dist_var (60, for the default dist_var=50).
+    # These pass the "ref too long" guard's old > 2*dist_var threshold but overrun the score
+    # realignment -- large deletion empties the max-slice, equal-length MNV overruns cov -- so
+    # they must be skipped. Kept far apart / inside the gene like the others.
+    p_gap_del, p_gap_mnv = 6700, 6900
     alt_snv = "A" if base(p_snv) != "A" else "C"
     _others = [b for b in "ACGT" if b != base(p_multi)]
     alt_multi = f"{_others[0]},{_others[1]}"
+    mnv_ref = span(p_mnv, 2)                       # 2 -> 2 (equal length)
+    dd_ref = span(p_delins_del, 3)                 # 3 -> 2 (net deletion)
+    di_ref = span(p_delins_ins, 2)                 # 2 -> 3 (net insertion)
+    gap_del_ref = span(p_gap_del, 60)              # 60 -> 1 (large deletion, in reshape gap)
+    gap_mnv_ref = span(p_gap_mnv, 60)              # 60 -> 60 (equal-length MNV, in reshape gap)
     vcf_path = os.path.join(str(dirpath), "variants.vcf")
     with open(vcf_path, "w") as fh:
         fh.write("##fileformat=VCFv4.2\n##contig=<ID=chr_test,length=12000>\n")
@@ -202,4 +223,9 @@ def write_variant_inputs(dirpath, seed=0):
         fh.write(f"chr_test\t{p_del}\t.\t{base(p_del)}{base(p_del + 1)}\t{base(p_del)}\t.\t.\t.\n")  # deletion
         fh.write(f"chr_test\t{p_ins}\t.\t{base(p_ins)}\t{base(p_ins)}T\t.\t.\t.\n")              # insertion
         fh.write(f"chr_test\t{p_multi}\t.\t{base(p_multi)}\t{alt_multi}\t.\t.\t.\n")             # multi-allelic
+        fh.write(f"chr_test\t{p_mnv}\t.\t{mnv_ref}\t{mut(mnv_ref)}\t.\t.\t.\n")                  # MNV 2->2
+        fh.write(f"chr_test\t{p_delins_del}\t.\t{dd_ref}\t{mut(dd_ref[:2])}\t.\t.\t.\n")         # delins 3->2
+        fh.write(f"chr_test\t{p_delins_ins}\t.\t{di_ref}\t{mut(di_ref)}T\t.\t.\t.\n")            # delins 2->3
+        fh.write(f"chr_test\t{p_gap_del}\t.\t{gap_del_ref}\t{gap_del_ref[0]}\t.\t.\t.\n")         # gap deletion 60->1
+        fh.write(f"chr_test\t{p_gap_mnv}\t.\t{gap_mnv_ref}\t{mut(gap_mnv_ref)}\t.\t.\t.\n")       # gap MNV 60->60
     return ref_path, ann_path, vcf_path

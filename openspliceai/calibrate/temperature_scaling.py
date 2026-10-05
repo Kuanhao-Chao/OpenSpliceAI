@@ -10,187 +10,142 @@ from torch import nn
 import torch.nn.functional as F
 import numpy as np
 from openspliceai.train_base.utils import *
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import DataLoader
 
 
 def load_data_from_shard(h5f, shard_idx):
+    """Read one legacy calibration shard into channel-first NumPy arrays."""
     X = h5f[f'X{shard_idx}'][:].transpose(0, 2, 1)
     Y = h5f[f'Y{shard_idx}'][0, ...].transpose(0, 2, 1)
     return X, Y
 
 
 def get_validation_loader(h5f, idxs, batch_size):
-    """
-    Create a DataLoader for the validation data.
-    """
-    X_list, Y_list = [], []
-    for shard_idx in idxs:
-        X, Y = load_data_from_shard(h5f, shard_idx)
-        X_list.append(X)
-        Y_list.append(Y)
-    X = np.concatenate(X_list, axis=0)
-    Y = np.concatenate(Y_list, axis=0)
-    X = torch.tensor(X, dtype=torch.float32)
-    Y = torch.tensor(Y, dtype=torch.float32)
-    print("X:", X.shape)
-    print("Y:", Y.shape)
-    dataset = TensorDataset(X, Y)
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-    return loader
+    """Iterate an open HDF5 split without concatenating its shards in memory."""
+    from openspliceai.calibrate.streaming import ShardDataset
+    if batch_size < 1:
+        raise ValueError('Calibration batch size must be positive')
+    return DataLoader(ShardDataset(h5f, idxs), batch_size=batch_size, shuffle=False,
+                      drop_last=False, num_workers=0)
 
 
 class ModelWithTemperature(nn.Module):
-    """
-    Wraps a model with class-wise temperature scaling for better calibration.
+    """Class-wise logits scaling; fitting uses a temporary disk-backed cache.
+
+    ``logits``/``labels`` are bounded diagnostic previews, not the fitted split.
+    ``observation_count`` and ``history`` describe the complete optimization.
     """
     def __init__(self, model, num_classes):
+        """Initialize ModelWithTemperature with the supplied model, data or runtime settings."""
         super().__init__()
+        if num_classes != 3:
+            raise ValueError('OpenSpliceAI calibration requires three classes')
         self.model = model
-        # Each class gets its own temperature parameter
-        self.temperature = nn.Parameter(torch.ones(num_classes) * 1.0)
+        device = next(model.parameters(), torch.empty(0)).device
+        self.temperature = nn.Parameter(torch.ones(num_classes, device=device))
+        self.history = []
 
-    def forward(self, input):
-        logits = self.model(input)
-        return self.temperature_scale(logits)
+    def forward(self, inputs):
+        """Apply the model to the supplied channel-first inputs."""
+        return self.temperature_scale(self.model(inputs))
 
     def temperature_scale(self, logits):
-        """
-        Class-wise temperature scaling: each logit for class c is divided by
-        self.temperature[c]. If logits is [N, C], we broadcast over the batch dimension.
-        """
-        temperature = torch.clamp(self.temperature, min=0.05, max=5.0)
-        return logits / temperature
+        """Divide the class axis of (observations, 3) or (batch, 3, positions) logits."""
+        if logits.ndim not in (2, 3) or logits.shape[1] != 3:
+            raise ValueError('Logits must have three classes on axis 1')
+        temperature = self.temperature.clamp(min=.05, max=5)
+        return logits / (temperature.view(1, 3, 1) if logits.ndim == 3 else temperature)
 
     def save_temperature(self, filepath):
-        """
-        Save the temperature vector to a file.
-        """
-        torch.save(self.temperature.detach().cpu(), filepath)
-        print(f"Temperature vector saved to {filepath}")
+        """Validate and atomically save three CPU class temperatures."""
+        from openspliceai.checkpoints import validate_temperature
+        from openspliceai.checkpoints import atomic_torch_save
+        atomic_torch_save(validate_temperature(self.temperature).cpu(), filepath)
 
-    def load_temperature(self, filepath, valid_loader, params):
-        """
-        Load the temperature parameter (vector) from a file, then compute and store
-        logits/labels on the validation loader.
-        """
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        temperature = torch.load(filepath, map_location=device)
-        self.temperature = nn.Parameter(temperature.to(device))
-        self.temperature.data = torch.clamp(self.temperature.data, min=0.05, max=5.0)
-        print(f"Loaded temperature vector: {self.temperature.data.cpu().numpy()}")
-
-        # Collect logits and labels
-        logits_list, labels_list = [], []
-        with torch.no_grad():
-            for input, label in valid_loader:
-                input, label = input.to(device), label.to(device)
-                input, label = clip_datapoints(input, label, params["CL"], CL_max, params["N_GPUS"])
-                logits = self.model(input)
-                logits_list.append(logits.detach().cpu())
-                labels_list.append(label.detach().cpu())
-
-        logits = torch.cat(logits_list).permute(0, 2, 1).contiguous()
-        labels = torch.cat(labels_list).permute(0, 2, 1).contiguous().argmax(dim=-1)
-
-        # Flatten
-        N, L, C = logits.shape
-        logits = logits.view(-1, C).to(device)
-        labels = labels.view(-1).long().to(device)
-
-        self.logits, self.labels = logits, labels
-
-    def set_temperature(self, valid_loader, params):
-        """
-        Tune the vector of temperature parameters using the validation set.
-        """
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.to(device)
+    def load_temperature(self, filepath, valid_loader=None, params=None):
+        """Restore a valid temperature; optionally collect a bounded diagnostic preview."""
+        from openspliceai.checkpoints import validate_temperature
+        from openspliceai.calibrate.streaming import LogitCache
+        device = self.temperature.device
+        value = validate_temperature(torch.load(filepath, map_location=device, weights_only=True))
+        self.temperature = nn.Parameter(value.to(device))
         self.model.eval()
+        if valid_loader is not None:
+            with LogitCache(self.model, valid_loader, device, params) as cache:
+                self.logits, self.labels = cache.preview()
+                self.observation_count = len(cache)
 
-        # Collect logits and labels
-        logits_list, labels_list = [], []
+    def _cache_metrics(self, cache):
+        from openspliceai.calibrate.streaming import CalibrationStats
+        stats = CalibrationStats()
         with torch.no_grad():
-            for inputs, labels in valid_loader:
-                inputs, labels = inputs.to(device), labels.to(device)
-                inputs, labels = clip_datapoints(inputs, labels, params["CL"], CL_max, params["N_GPUS"])
-                logits = self.model(inputs)
-                logits_list.append(logits)
-                labels_list.append(labels)
+            for logits, labels in cache.batches(self.temperature.device):
+                stats.update(self.temperature_scale(logits), labels)
+        return stats.nll, stats.ece
 
-        logits = torch.cat(logits_list).permute(0, 2, 1).contiguous()
-        labels = torch.cat(labels_list).permute(0, 2, 1).contiguous().argmax(dim=-1)
+    def fit_cache(self, cache, epochs=10, early_stopping=False, patience=2):
+        """Optimize full-split NLL with one accumulated-gradient update per epoch.
 
-        # Flatten
-        N, L, C = logits.shape
-        logits = logits.view(-1, C)
-        labels = labels.view(-1).long()
-
-        self.logits, self.labels = logits.to(device), labels.to(device)
-
-        # Define losses
-        nll_criterion = nn.CrossEntropyLoss().to(device)
-        ece_criterion = _ECELoss().to(device)
-
-        # Print metrics before calibration
-        self._compute_and_log_metrics(nll_criterion, ece_criterion, 'Before temperature scaling')
-
-        # Optimize the temperature vector
-        optimizer = torch.optim.Adam([self.temperature], lr=0.01)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.1, patience=2, verbose=True)
-
-        best_loss = float('inf')
-        best_temp = self.temperature.data.clone()
-        patience_counter = 0
-        max_epochs = 2000
-        min_delta = 1e-6
-        patience = 2
-
-        for epoch in range(max_epochs):
+        Each checkpoint is scored after its update. The initial temperature is
+        included in best-state selection, so fitting cannot select a worse NLL.
+        """
+        if epochs < 1 or patience < 1:
+            raise ValueError('Calibration epochs and patience must be positive')
+        self.model.eval()
+        self.observation_count = len(cache)
+        self.logits, self.labels = cache.preview()
+        optimizer = torch.optim.Adam([self.temperature], lr=.01)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=.1,
+                                                              patience=patience)
+        best_loss, before_ece = self._cache_metrics(cache)
+        best_temp = self.temperature.detach().clone()
+        self.history = [{'epoch': 0, 'nll': best_loss, 'ece': before_ece,
+                         'temperature': best_temp.cpu().tolist()}]
+        no_improvement = 0
+        for epoch in range(epochs):
             optimizer.zero_grad()
-            loss = nll_criterion(self.temperature_scale(self.logits), self.labels)
-            ece_loss = ece_criterion(self.temperature_scale(self.logits), self.labels)
-            loss.backward()
+            for logits, labels in cache.batches(self.temperature.device):
+                loss = F.cross_entropy(self.temperature_scale(logits), labels, reduction='sum') / len(cache)
+                loss.backward()
             optimizer.step()
-            self.temperature.data = torch.clamp(self.temperature.data, min=0.05, max=5.0)
-            ece_loss = ece_loss.item()
-            current_loss = loss.item()
+            with torch.no_grad():
+                self.temperature.clamp_(.05, 5)
+            current_loss, current_ece = self._cache_metrics(cache)
+            if not np.isfinite(current_loss):
+                raise ValueError('Calibration produced a nonfinite objective')
             scheduler.step(current_loss)
-            # Early stopping logic
-            if best_loss - current_loss > min_delta:
-                best_loss = current_loss
-                best_temp = self.temperature.data.clone()
-                patience_counter = 0
+            self.history.append({'epoch': epoch+1, 'nll': current_loss, 'ece': current_ece,
+                                 'temperature': self.temperature.detach().cpu().tolist()})
+            if best_loss-current_loss > 1e-6:
+                best_loss, best_temp = current_loss, self.temperature.detach().clone()
+                no_improvement = 0
             else:
-                patience_counter += 1
-
-            print(f"Epoch {epoch+1}/{max_epochs}, Loss: {current_loss:.6f}, ECE: {ece_loss:.6f}",             
-                  f"Temperature: {self.temperature.data.cpu().numpy()}")
-            
-            if patience_counter >= patience:
-                print("Early stopping due to no improvement in loss.")
+                no_improvement += 1
+            print(f'Calibration epoch {epoch+1}/{epochs}: NLL={current_loss:.8f}, ECE={current_ece:.8f}')
+            if early_stopping and no_improvement >= patience:
                 break
+        with torch.no_grad():
+            self.temperature.copy_(best_temp)
+        return self
 
-        # Restore best temperature
-        self.temperature.data = best_temp.to(device)
-        print(f"Optimized temperature vector: {self.temperature.data.cpu().numpy()}")
-
-        # Print metrics after calibration
-        self._compute_and_log_metrics(nll_criterion, ece_criterion, 'After temperature scaling')
+    def set_temperature(self, valid_loader, params, epochs=10, early_stopping=False, patience=2):
+        """Cache logits once, fit temperatures, and remove temporary files on exit."""
+        from openspliceai.calibrate.streaming import LogitCache
+        with LogitCache(self.model, valid_loader, self.temperature.device, params) as cache:
+            return self.fit_cache(cache, epochs, early_stopping, patience)
 
     def _compute_and_log_metrics(self, nll_criterion, ece_criterion, phase):
-        logits_scaled = self.temperature_scale(self.logits)
-        nll = nll_criterion(logits_scaled, self.labels).item()
-        ece = ece_criterion(logits_scaled, self.labels).item()
-        print(f'{phase} - NLL: {nll:.4f}, ECE: {ece:.4f}')
+        """Print metrics of the bounded diagnostic preview (not full-split metrics)."""
+        logits = self.temperature_scale(self.logits.to(self.temperature.device))
+        labels = self.labels.to(self.temperature.device)
+        print(f'{phase} (preview) - NLL: {nll_criterion(logits, labels).item():.4f}, '
+              f'ECE: {ece_criterion(logits, labels).item():.4f}')
 
     def compute_ece_nll(self, logits, labels):
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        nll_criterion = nn.CrossEntropyLoss().to(device)
-        ece_criterion = _ECELoss().to(device)
-        nll = nll_criterion(logits.to(device), labels.to(device)).item()
-        ece = ece_criterion(logits.to(device), labels.to(device)).item()
-        return nll, ece
+        """Compute NLL and ECE for an explicit small (observations, 3) tensor."""
+        device = self.temperature.device
+        return (F.cross_entropy(logits.to(device), labels.to(device)).item(),
+                _ECELoss().to(device)(logits.to(device), labels.to(device)).item())
 
 
 class _ECELoss(nn.Module):
@@ -198,12 +153,14 @@ class _ECELoss(nn.Module):
     Expected Calibration Error (ECE) Loss.
     """
     def __init__(self, n_bins=15):
+        """Initialize _ECELoss with the supplied model, data or runtime settings."""
         super().__init__()
         bin_boundaries = torch.linspace(0, 1, n_bins + 1)
         self.bin_lowers = bin_boundaries[:-1]
         self.bin_uppers = bin_boundaries[1:]
 
     def forward(self, logits, labels):
+        """Apply the model to the supplied channel-first inputs."""
         softmaxes = F.softmax(logits, dim=1)
         confidences, predictions = torch.max(softmaxes, dim=1)
         accuracies = predictions.eq(labels)

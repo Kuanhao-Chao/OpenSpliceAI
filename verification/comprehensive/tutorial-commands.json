@@ -1,0 +1,137 @@
+[
+  {
+    "name": "create-data",
+    "argv": [
+      "/tmp/openspliceai-hardening-py311/bin/python",
+      "-c",
+      "from openspliceai.openspliceai import main; main()",
+      "create-data",
+      "--annotation-gff",
+      "/tmp/osai-comprehensive-tutorial-v2/genes.gff",
+      "--genome-fasta",
+      "/tmp/osai-comprehensive-tutorial-v2/genome.fa",
+      "--output-dir",
+      "/tmp/osai-comprehensive-tutorial-v2/data",
+      "--split-ratio",
+      ".75",
+      "--val_split_ratio",
+      ".25",
+      "--verify-h5"
+    ]
+  },
+  {
+    "name": "train",
+    "argv": [
+      "/tmp/openspliceai-hardening-py311/bin/python",
+      "-c",
+      "from openspliceai.openspliceai import main; main()",
+      "train",
+      "--output-dir",
+      "/tmp/osai-comprehensive-tutorial-v2/train",
+      "--project-name",
+      "tutorial",
+      "--flanking-size",
+      "80",
+      "--epochs",
+      "1",
+      "--train-dataset",
+      "/tmp/osai-comprehensive-tutorial-v2/data/dataset_train.h5",
+      "--validation-dataset",
+      "/tmp/osai-comprehensive-tutorial-v2/data/dataset_validation.h5",
+      "--test-dataset",
+      "/tmp/osai-comprehensive-tutorial-v2/data/dataset_test.h5"
+    ]
+  },
+  {
+    "name": "transfer",
+    "argv": [
+      "/tmp/openspliceai-hardening-py311/bin/python",
+      "-c",
+      "from openspliceai.openspliceai import main; main()",
+      "transfer",
+      "--output-dir",
+      "/tmp/osai-comprehensive-tutorial-v2/transfer",
+      "--pretrained-model",
+      "/tmp/osai-comprehensive-tutorial-v2/train/SpliceAI_tutorial_80_0_rs42/0/models/model_best.pt",
+      "--unfreeze",
+      "0",
+      "--project-name",
+      "tutorial",
+      "--flanking-size",
+      "80",
+      "--epochs",
+      "1",
+      "--train-dataset",
+      "/tmp/osai-comprehensive-tutorial-v2/data/dataset_train.h5",
+      "--validation-dataset",
+      "/tmp/osai-comprehensive-tutorial-v2/data/dataset_validation.h5",
+      "--test-dataset",
+      "/tmp/osai-comprehensive-tutorial-v2/data/dataset_test.h5"
+    ]
+  },
+  {
+    "name": "calibrate",
+    "argv": [
+      "/tmp/openspliceai-hardening-py311/bin/python",
+      "-c",
+      "from openspliceai.openspliceai import main; main()",
+      "calibrate",
+      "--output-dir",
+      "/tmp/osai-comprehensive-tutorial-v2/calibrate",
+      "--project-name",
+      "tutorial",
+      "--flanking-size",
+      "80",
+      "--epochs",
+      "2",
+      "--pretrained-model",
+      "/tmp/osai-comprehensive-tutorial-v2/train/SpliceAI_tutorial_80_0_rs42/0/models/model_best.pt",
+      "--validation-dataset",
+      "/tmp/osai-comprehensive-tutorial-v2/data/dataset_validation.h5",
+      "--test-dataset",
+      "/tmp/osai-comprehensive-tutorial-v2/data/dataset_test.h5"
+    ]
+  },
+  {
+    "name": "predict",
+    "argv": [
+      "/tmp/openspliceai-hardening-py311/bin/python",
+      "-c",
+      "from openspliceai.openspliceai import main; main()",
+      "predict",
+      "--model",
+      "/tmp/osai-comprehensive-tutorial-v2/calibrate/calibrated_model.pt",
+      "--flanking-size",
+      "80",
+      "--input-sequence",
+      "/tmp/osai-comprehensive-tutorial-v2/prediction.fa",
+      "--output-dir",
+      "/tmp/osai-comprehensive-tutorial-v2/predict",
+      "--threshold",
+      "0"
+    ]
+  },
+  {
+    "name": "variant",
+    "argv": [
+      "/tmp/openspliceai-hardening-py311/bin/python",
+      "-c",
+      "from openspliceai.openspliceai import main; main()",
+      "variant",
+      "--model",
+      "/tmp/osai-comprehensive-tutorial-v2/calibrate/calibrated_model.pt",
+      "--flanking-size",
+      "80",
+      "--ref-genome",
+      "/tmp/osai-comprehensive-tutorial-v2/genome.fa",
+      "--annotation",
+      "/tmp/osai-comprehensive-tutorial-v2/annotation.tsv",
+      "--input-vcf",
+      "/tmp/osai-comprehensive-tutorial-v2/variants.vcf",
+      "--output-vcf",
+      "/tmp/osai-comprehensive-tutorial-v2/annotated.vcf.gz",
+      "--precision",
+      "6"
+    ]
+  }
+]
