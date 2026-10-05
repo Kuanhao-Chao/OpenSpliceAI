@@ -26,6 +26,17 @@ For development, clone the repository and install its current checkout:
    python -m pip check
    openspliceai variant --help
 
+On Apple Silicon, a universal2 Python installation can make mappy compile both
+ARM and Intel slices with incompatible SIMD headers. Select the native ARM slice
+when installing dependencies:
+
+.. code-block:: bash
+
+   ARCHFLAGS='-arch arm64' python -m pip install -e '.[dev]'
+
+This is a native Apple Silicon build. Check the supported PyTorch/NumPy wheels
+before attempting an Intel Mac installation.
+
 The development audit branch is ``audit/comprehensive-20261004``. PyPI and Bioconda
 releases may have different defaults; a development checkout does not change the
 published release. Bioconda users can install in a separate environment with

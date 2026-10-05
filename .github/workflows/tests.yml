@@ -36,6 +36,10 @@ jobs:
           if [[ '${{ runner.os }}' == Linux ]]; then
             python -m pip install '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
           else
+            # setup-python provides universal2 Python on Apple Silicon. mappy
+            # selects SIMD headers for one native architecture, so compiling
+            # both slices together fails. Build dependencies for this runner.
+            export ARCHFLAGS="-arch arm64"
             python -m pip install '${{ matrix.torch }}'
           fi
           python -m pip install -e '.[dev]'
