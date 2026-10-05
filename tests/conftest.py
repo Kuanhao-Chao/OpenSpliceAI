@@ -10,6 +10,7 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
 
 import random
+from functools import wraps
 from pathlib import Path
 
 import numpy as np
@@ -42,7 +43,12 @@ def _cpu_mps_backend():
     # Hosted macOS runners advertise MPS without usable GPU memory. Explicit
     # device-selection tests can override this; CUDA availability is unchanged.
     with pytest.MonkeyPatch.context() as patch:
-        patch.setattr(torch.backends.mps, "is_available", lambda: False)
+        # Newer Torch Dynamo inspects __wrapped__ on this cached function.
+        # Preserve its metadata when replacing the availability result.
+        @wraps(torch.backends.mps.is_available)
+        def unavailable():
+            return False
+        patch.setattr(torch.backends.mps, "is_available", unavailable)
         yield
 
 
