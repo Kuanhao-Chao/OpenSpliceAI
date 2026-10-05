@@ -1,0 +1,124 @@
+........................................................................ [ 10%]
+........................................................................ [ 20%]
+........................................................................ [ 30%]
+........................................................................ [ 41%]
+........................................................................ [ 51%]
+........................................................................ [ 61%]
+........................................................................ [ 71%]
+........................................................................ [ 82%]
+........................................................................ [ 92%]
+......................................................                   [100%]
+=============================== warnings summary ===============================
+../osai-minimum-stack/matplotlib/_fontconfig_pattern.py:88: 6 warnings
+tests/unit/test_full_snv_concordance.py: 25 warnings
+  /tmp/osai-minimum-stack/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../osai-minimum-stack/matplotlib/_fontconfig_pattern.py:92: 6 warnings
+tests/unit/test_full_snv_concordance.py: 25 warnings
+  /tmp/osai-minimum-stack/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../osai-minimum-stack/matplotlib/_mathtext.py:45
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2010: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    p.space          = oneOf(self._space_widths)("space")
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2012: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    p.style_literal  = oneOf(
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2020: PyparsingDeprecationWarning: 'leaveWhitespace' deprecated - use 'leave_whitespace'
+    )("sym").leaveWhitespace()
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2024: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    p.start_group    = Optional(r"\math" + oneOf(self._fontnames)("font")) + "{"
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2027: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    p.delim          = oneOf(self._delims)
+
+tests/unit/test_full_snv_concordance.py: 45 warnings
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:1984: PyparsingDeprecationWarning: 'setName' deprecated - use 'set_name'
+    val.setName(key)
+
+tests/unit/test_full_snv_concordance.py: 44 warnings
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:1987: PyparsingDeprecationWarning: 'setParseAction' deprecated - use 'set_parse_action'
+    val.setParseAction(getattr(self, key))
+
+tests/unit/test_full_snv_concordance.py: 16 warnings
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:1748: PyparsingDeprecationWarning: 'setParseAction' deprecated - use 'set_parse_action'
+    return Empty().setParseAction(raise_error)
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2080: PyparsingDeprecationWarning: 'endQuoteChar' argument is deprecated, use 'end_quote_char'
+    p.text = cmd(r"\text", QuotedString('{', '\\', endQuoteChar="}"))
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2089: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    + OneOrMore(oneOf(["_", "^"]) - p.placeable)("subsuper")
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2138: PyparsingDeprecationWarning: 'unquoteResults' argument is deprecated, use 'unquote_results'
+    p.math_string   = QuotedString('$', '\\', unquoteResults=False)
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2139: PyparsingDeprecationWarning: 'leaveWhitespace' deprecated - use 'leave_whitespace'
+    p.non_math      = Regex(r"(?:(?:\\[$])|[^$])*").leaveWhitespace()
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2162: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    result = self._expression.parseString(s)
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2189: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    return self._math_expression.parseString(toks[0][1:-1], parseAll=True)
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+  /tmp/openspliceai-hardening-py311/lib/python3.11/site-packages/pyparsing/util.py:466: PyparsingDeprecationWarning: 'parseAll' argument is deprecated, use 'parse_all'
+    return fn(self, *args, **kwargs)
+
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance.py::test_all_cli_subcommands_execute_on_tiny_inputs
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+tests/unit/test_full_snv_concordance_depth.py::test_detailed_report_renders_all_bounded_density_figures
+  /tmp/osai-minimum-stack/matplotlib/_mathtext.py:2170: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    ParserElement.resetCache()
+
+tests/unit/test_train_loop.py::test_train_model_checkpointing_and_early_stop_bookkeeping[True]
+tests/unit/test_train_loop.py::test_train_model_checkpointing_and_early_stop_bookkeeping[False]
+  /tmp/openspliceai-torch23-probe/torch/optim/lr_scheduler.py:143: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+    warnings.warn("Detected call of `lr_scheduler.step()` before `optimizer.step()`. "
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+702 passed, 14 deselected, 211 warnings in 274.02s (0:04:34)

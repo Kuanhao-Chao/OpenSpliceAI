@@ -1,0 +1,13 @@
+PartitionName=a100
+   AllowGroups=ALL AllowAccounts=ALL AllowQos=qos_gpu,qos_gpu_condo,urgent,qos_gpu_cryo,qos_gpu_access
+   AllocNodes=ALL Default=NO QoS=N/A
+   DefaultTime=01:00:00 DisableRootJobs=NO ExclusiveUser=NO GraceTime=0 Hidden=NO
+   MaxNodes=3 MaxTime=3-00:00:00 MinNodes=1 LLN=NO MaxCPUsPerNode=48 MaxCPUsPerSocket=UNLIMITED
+   Nodes=gpu[01-04,06-12,14-18]
+   PriorityJobFactor=1 PriorityTier=1 RootOnly=NO ReqResv=NO OverSubscribe=YES:4
+   OverTimeLimit=NONE PreemptMode=OFF
+   State=UP TotalCPUs=768 TotalNodes=16 SelectTypeParameters=NONE
+   JobDefaults=DefCpuPerGPU=12
+   DefMemPerCPU=4000 MaxMemPerCPU=4000
+   TRES=cpu=768,mem=3000G,node=16,billing=768,gres/gpu=64,gres/gpu:a100=64
+   TRESBillingWeights=CPU=1.0,Mem=0.00025M,GRES/gpu=12.0

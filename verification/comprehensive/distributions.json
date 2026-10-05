@@ -1,0 +1,16 @@
+{
+  "archives": [
+    {
+      "filename": "openspliceai-0.1.0.dev0-py3-none-any.whl",
+      "bytes": 3602483,
+      "sha256": "9ac2450a24b85997c0aa21aa7350d00017f510558a354c677a76b26e2e934760"
+    },
+    {
+      "filename": "openspliceai-0.1.0.dev0.tar.gz",
+      "bytes": 7977686,
+      "sha256": "cea67b3b6ced0c5b5bd07ba4c1baf007717c8cd3696e5c06ec631c91ffe82fee"
+    }
+  ],
+  "smoke": "Both final archives installed into isolated dependency-copy environments; exact raw/calibrated inference, CLI, annotation checks and pip check are recorded separately.",
+  "source_build_core_commit": "2ad31fea9a9eea929a4faa6f6cbf201a55851c70"
+}

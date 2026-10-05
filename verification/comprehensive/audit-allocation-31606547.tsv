@@ -1,0 +1,2 @@
+JobIDRaw|JobName|Account|Partition|State|ExitCode|ElapsedRaw|AllocTRES
+31606547|osai_audit_keras_20261004|ssalzbe1_bigmem|bigmem|COMPLETED|0:0|171|billing=12,cpu=12,energy=104760,mem=32G,node=1

@@ -1,0 +1,5 @@
+JobIDRaw|Account|Partition|State|ElapsedRaw|AllocTRES
+31627264|ssalzbe1|parallel|RUNNING|201|billing=12,cpu=12,mem=32G,node=1
+31625921|ssalzbe1-chess|parallel|RUNNING|1702|billing=12,cpu=12,mem=32G,node=1
+31627233|ssalzbe1_bigmem|bigmem|RUNNING|231|billing=12,cpu=12,mem=32G,node=1
+31621241|ssalzbe1_gpu|a100|RUNNING|4196|billing=12,cpu=12,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1

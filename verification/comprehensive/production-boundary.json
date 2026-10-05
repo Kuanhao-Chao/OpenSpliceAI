@@ -1,0 +1,20 @@
+{
+  "head": "074d3e27d9950f48e7276ed69f0f0205f10ef223",
+  "tracked_status": [
+    " M openspliceai/variant/utils.py",
+    " M openspliceai/variant/variant.py"
+  ],
+  "existing_variant_patch_sha256": "41a02cc72bd41380b011706264e8861b7a176a2bbd1415bf0a5b7d235e8d9d52",
+  "code_checksum_file_sha256": "709648a4e0915b4b305eef1e2784bd6828207a51609f92b39279e7e88b1a915f",
+  "controller_ids": [
+    "31488544",
+    "31489753",
+    "31491805",
+    "31494107",
+    "31496207"
+  ],
+  "controller_phase": "needs_attention",
+  "controller_error": "OSError(5, 'Input/output error')",
+  "controller_error_at": "2026-10-02T21:35:51.862349+00:00",
+  "boundary": "No production source, signed controls, throttle, checkpoint or scoring output was mutated by the repository audit."
+}

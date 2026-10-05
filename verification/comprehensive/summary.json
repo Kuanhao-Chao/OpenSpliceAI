@@ -1,0 +1,193 @@
+{
+  "version": "0.1.0.dev0",
+  "core_commit": "2ad31fea9a9eea929a4faa6f6cbf201a55851c70",
+  "cpu": {
+    "passed": 702,
+    "backend_deselected": 14,
+    "seconds": 381.13,
+    "warnings": 9,
+    "package_totals": {
+      "covered_lines": 3214,
+      "num_statements": 3339,
+      "percent_covered": 94.92070788324523,
+      "percent_covered_display": "95",
+      "missing_lines": 125,
+      "excluded_lines": 111,
+      "percent_statements_covered": 96.25636418089248,
+      "percent_statements_covered_display": "96",
+      "num_branches": 1012,
+      "num_partial_branches": 94,
+      "covered_branches": 916,
+      "missing_branches": 96,
+      "percent_branches_covered": 90.51383399209486,
+      "percent_branches_covered_display": "91"
+    }
+  },
+  "minimum": {
+    "passed": 702,
+    "backend_deselected": 14,
+    "seconds": 274.02,
+    "warnings": 211,
+    "configuration": "Representative lower-bound overlay; separate fresh resolution configured in CI"
+  },
+  "research_coverage": {
+    "covered_lines": 5636,
+    "num_statements": 9007,
+    "percent_covered": 61.04362005707297,
+    "percent_covered_display": "61",
+    "missing_lines": 3371,
+    "excluded_lines": 48,
+    "percent_statements_covered": 62.57355390252026,
+    "percent_statements_covered_display": "63",
+    "num_branches": 3258,
+    "num_partial_branches": 497,
+    "covered_branches": 1851,
+    "missing_branches": 1407,
+    "percent_branches_covered": 56.81399631675875,
+    "percent_branches_covered_display": "57"
+  },
+  "initial_keras": {
+    "backend": "keras",
+    "status": 0,
+    "counts": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "python": "3.11.9 (main, Apr 19 2024, 16:48:06) [GCC 11.2.0]",
+    "platform": "Linux-4.18.0-477.21.1.el8_8.x86_64-x86_64-with-glibc2.28",
+    "torch": "2.4.1+cpu",
+    "numpy": "2.0.2",
+    "job_id": "31606547",
+    "tensorflow": "2.18.0",
+    "tf_keras": "2.18.0",
+    "spliceai": "1.3.1"
+  },
+  "final_backends": {
+    "source_manifest_sha256": "57e3b693c99e9b0eed01c1a25e01dd21203bd50596bdea8a6cabecd6e492226a",
+    "keras": {
+      "job_id": "31628903",
+      "status": "passed",
+      "expected_cases": 5,
+      "counts": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "allocated_seconds": 127,
+      "pytest_seconds": 88.12
+    },
+    "cuda": {
+      "job_id": "31628943",
+      "status": "dependency_pending",
+      "expected_cases": 9,
+      "dependencies": [
+        "afterok:31628903",
+        "afterany:31494759_*"
+      ]
+    }
+  },
+  "distribution_smokes": {
+    "wheel": "passed",
+    "sdist": "passed",
+    "pip_check": "passed",
+    "isolated_dependency_copies": true,
+    "final_archive_repeat": "passed"
+  },
+  "tutorial": {
+    "commands_passed": 6,
+    "bed_rows": 1999,
+    "calibrated_inference": [
+      "predict",
+      "variant"
+    ],
+    "synthetic_model": true
+  },
+  "documentation": {
+    "warnings_as_errors": "passed",
+    "pages": 39,
+    "local_references": 2690,
+    "legacy_anchors": 215,
+    "browsers": [
+      "chromium",
+      "firefox"
+    ],
+    "responsive_theme_checks": 32,
+    "search": "passed",
+    "published": false,
+    "automated_browser_ci": "configured; actual workflow result pending"
+  },
+  "inventory": {
+    "files": {
+      "tooling_examples": 19,
+      "maintained_package": 35,
+      "historical": 59,
+      "verification": 87,
+      "research_campaign": 45
+    },
+    "lines": {
+      "tooling_examples": 1461,
+      "maintained_package": 5739,
+      "historical": 8888,
+      "verification": 10873,
+      "research_campaign": 16334
+    },
+    "definitions": {
+      "tooling_examples": 44,
+      "maintained_package": 217,
+      "historical": 308,
+      "verification": 701,
+      "research_campaign": 577
+    }
+  },
+  "audit_resources": {
+    "limit_billing_hours": 200,
+    "limit_a100_hours": 2,
+    "completed_billing_hours": 0.9933333333333333,
+    "completed_a100_hours": 0,
+    "scheduled_max_billing_hours": 9,
+    "scheduled_max_a100_hours": 0.75,
+    "allowance_after_scheduled_max_billing_hours": 190.00666666666666,
+    "allowance_after_scheduled_max_a100_hours": 1.25
+  },
+  "pending": [
+    "Nine required CUDA cases",
+    "Successful additional Python/macOS CI evidence",
+    "Independent r13 controller recovery and final content audit"
+  ],
+  "production": {
+    "head": "074d3e27d9950f48e7276ed69f0f0205f10ef223",
+    "existing_dirty_paths": [
+      "openspliceai/variant/utils.py",
+      "openspliceai/variant/variant.py"
+    ],
+    "controller": "31496207",
+    "controller_phase": "needs_attention",
+    "source_modified_by_this_audit": false,
+    "latest_scheduler_snapshot": {
+      "captured_at_utc": "2026-10-05T11:55:00Z",
+      "qualification": "Approximate capture time; raw rows retained.",
+      "running_scoring_tasks": 99,
+      "allocated_cpu_units": 1188,
+      "a100s": 6,
+      "cpu_lanes": [
+        55,
+        25,
+        13
+      ]
+    }
+  },
+  "verification_limits": [
+    "Finite fixture checks and execution coverage cannot prove universal correctness or biological generalization.",
+    "Research/historical workflows are separate from maintained-package coverage.",
+    "Configured or queued checks are not successful evidence."
+  ],
+  "conda_recipe": {
+    "version": "0.1.0.dev0",
+    "source": "local checkout",
+    "dependency_floors": "aligned with setup.py",
+    "build_status": "not executed"
+  },
+  "implementation_commit": "3efbfc3a72d4285dbe23bf7061dfc7e538e70a92",
+  "package_function_bodies_with_cpu_execution": 204
+}

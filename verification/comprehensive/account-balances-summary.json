@@ -1,0 +1,38 @@
+{
+  "captured_at_utc": "2026-10-05T06:00:00Z",
+  "timing_qualification": "Approximate capture time; raw rows retained. Shared usage changes continually.",
+  "accounts": [
+    {
+      "account": "ssalzbe1",
+      "total_billing_hours": 100000.0,
+      "used_billing_hours": 46392.64833333333,
+      "remaining_billing_hours": 53607.35166666667,
+      "reserve_floor_hours": 25000.0,
+      "before_10percent_contingency_spendable_hours": 28607.35166666667
+    },
+    {
+      "account": "ssalzbe1-chess",
+      "total_billing_hours": 50000.0,
+      "used_billing_hours": 21577.52111111111,
+      "remaining_billing_hours": 28422.47888888889,
+      "reserve_floor_hours": 12500.0,
+      "before_10percent_contingency_spendable_hours": 15922.47888888889
+    },
+    {
+      "account": "ssalzbe1_bigmem",
+      "total_billing_hours": 85000.0,
+      "used_billing_hours": 12133.698888888888,
+      "remaining_billing_hours": 72866.30111111111,
+      "reserve_floor_hours": 21250.0,
+      "before_10percent_contingency_spendable_hours": 51616.30111111111
+    },
+    {
+      "account": "ssalzbe1_gpu",
+      "total_billing_hours": 50000.0,
+      "used_billing_hours": 5443.177777777778,
+      "remaining_billing_hours": 44556.822222222225,
+      "reserve_floor_hours": 12500.0,
+      "before_10percent_contingency_spendable_hours": 32056.822222222225
+    }
+  ]
+}
