@@ -36,6 +36,8 @@ when installing dependencies:
 
 This is a native Apple Silicon build. Check the supported PyTorch/NumPy wheels
 before attempting an Intel Mac installation.
+Compatibility checks exercise the macOS CPU path. Execution on physical MPS
+hardware has not been validated by this audit.
 
 The development audit branch is ``audit/comprehensive-20261004``. PyPI and Bioconda
 releases may have different defaults; a development checkout does not change the

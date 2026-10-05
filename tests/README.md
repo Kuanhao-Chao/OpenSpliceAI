@@ -3,6 +3,9 @@
 Install an isolated environment with `python -m pip install -e '.[dev]'`.
 The Makefile uses the active `python`; override `PYTHON=/path/to/python` if needed.
 CPU targets bound BLAS/TensorFlow threads and use the headless plotting backend.
+The shared fixture disables MPS availability for CPU tests on macOS; CUDA tests
+keep their explicit device checks. Native MPS execution requires separate hardware
+validation and is not established by the macOS CPU compatibility checks.
 
 | Command | Scope |
 |---|---|
@@ -12,7 +15,7 @@ CPU targets bound BLAS/TensorFlow threads and use the headless plotting backend.
 | `make test-keras` | Original SpliceAI comparison; requires TensorFlow, spliceai and weights |
 | `make test-gpu` | CUDA numerical comparison; does not clear visible devices |
 | `make coverage` | Full available suite, 95% line-coverage gate |
-| `make coverage-branch` | Full CPU coverage with separate 95% statement and 90% branch gates |
+| `make coverage-branch` | Full available suite with separate 95% statement and 90% branch gates |
 | `make lint` | Ruff for package and tests |
 | `make package` | Build sdist and wheel |
 

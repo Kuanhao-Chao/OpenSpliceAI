@@ -17,7 +17,7 @@ MPLCONFIGDIR="$FSC_OUTPUT_DIR/.cache/matplotlib"
 /usr/bin/mkdir -p "$MPLCONFIGDIR"
 fingerprint_script="$FSC_PACKAGE_DIR/slurm/fingerprint.sh"
 [[ -x "$fingerprint_script" ]] || { echo "fingerprint helper missing: $fingerprint_script" >&2; exit 1; }
-[[ "$("$fingerprint_script" "$FSC_PACKAGE_DIR")" == "$FSC_EXPECTED_CODE_SHA256" ]] || { echo "analysis code changed after submission" >&2; exit 1; }
+[[ "$("$fingerprint_script" "$FSC_PACKAGE_DIR" "$FSC_PYTHON")" == "$FSC_EXPECTED_CODE_SHA256" ]] || { echo "analysis code changed after submission" >&2; exit 1; }
 cd "$FSC_REPO_ROOT"
 clean_environment=(
     /usr/bin/env -i
