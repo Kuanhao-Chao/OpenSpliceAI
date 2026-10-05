@@ -153,7 +153,8 @@ def test_split_fasta_produces_overlapping_segments(tmp_path):
 
     headers, seqs = _read_segments(str(out))
     # grounded: 250 / 100 -> 3 windows, each padded by CL_max//2 = 40 of flanking
-    assert headers == ["chr1:1-140(.)", "chr1:61-240(.)", "chr1:161-250(.)"]
+    assert [header.split(' OSAI_')[0] for header in headers] == ["chr1:1-140(.)", "chr1:61-240(.)", "chr1:161-250(.)"]
+    assert [pr.prediction_interval(header+':+', len(seq))[-2:] for header, seq in zip(headers, seqs)] == [(0, 100), (40, 140), (40, 90)]
     assert len(seqs) == 3
     # segments overlap: segment1 ends at 140, segment2 starts at 61 (overlap 61..140)
     assert len(seqs[0]) == 140 and len(seqs[1]) == 180 and len(seqs[2]) == 90
@@ -167,7 +168,7 @@ def test_create_name_adjusts_coordinates_for_chr_pattern(tmp_path):
     seq = "".join(rng.choice(list("ACGT"), size=250))
     fa = tmp_path / "long.fa"
     # genes-fa style long name carrying absolute coordinates on chr2
-    fa.write_text(">geneX chr2:1000-2000(+)\n" + seq + "\n")
+    fa.write_text(">geneX chr2:1000-1249(+)\n" + seq + "\n")
 
     genes = Fasta(str(fa), one_based_attributes=True, read_long_names=True,
                   sequence_always_upper=True)
@@ -177,13 +178,13 @@ def test_create_name_adjusts_coordinates_for_chr_pattern(tmp_path):
     headers, _ = _read_segments(str(out))
     # create_name: start = abs_start - 1 + start_pos ; abs_start = 1000
     # so segment relative 1-140 -> 1000..1139 ; relative 61-240 -> 1060..1239 ; 161-250 -> 1160..1249
-    assert headers == [
+    assert [header.split(' OSAI_')[0] for header in headers] == [
         "geneX chr2:1000-1139(+)",
         "geneX chr2:1060-1239(+)",
         "geneX chr2:1160-1249(+)",
     ]
     # prefix and strand preserved from the original header
-    assert all(h.startswith("geneX chr2:") and h.endswith("(+)") for h in headers)
+    assert all(h.startswith("geneX chr2:") and '(+)' in h for h in headers)
 
 
 def test_split_fasta_short_sequence_not_split(tmp_path):
@@ -215,7 +216,7 @@ def test_get_sequences_large_threshold_writes_txt(tmp_path):
     )
     assert datafile.endswith(".txt")
     assert datafile == out_dir + "datafile.txt"
-    assert NAME == ["chr1:+"]          # forward strand appended by default
+    assert NAME == ["chr1 OSAI_LENGTH=300:+"]
     assert os.path.exists(datafile)
 
 

@@ -56,7 +56,7 @@ def test_predict_and_write_pt(tmp_path, model_80nt):
 def test_load_pytorch_models_builds_table_then_exits_on_mismatch(packaged_80nt_state, cl):
     """An 80nt checkpoint loaded as a larger flanking size builds that architecture
     (exercising the W/AR table branch) then exits because no model loads."""
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         pr.load_pytorch_models(packaged_80nt_state, torch.device("cpu"), 5000, cl)
 
 
@@ -68,7 +68,7 @@ def test_load_pytorch_models_size_mismatch_branch(tmp_path, packaged_80nt_state)
     state[key] = torch.zeros(state[key].shape[0] + 1, *state[key].shape[1:])  # wrong shape
     bad = str(tmp_path / "bad.pt")
     torch.save(state, bad)
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         pr.load_pytorch_models(bad, torch.device("cpu"), 5000, 80)
 
 
@@ -118,7 +118,7 @@ def test_split_fasta_non_chr_name_uses_record_name(tmp_path):
     out = tmp_path / "split.fa"
     pr.split_fasta(genes, str(out), CL_max=80, split_fasta_threshold=100)
     headers = [ln[1:] for ln in out.read_text().splitlines() if ln.startswith(">")]
-    assert headers[0].startswith("plainseq:") and headers[0].endswith("(.)")
+    assert headers[0].startswith("plainseq:1-140(.) OSAI_CORE=0:100 ")
 
 
 # --- get_sequences: splitting + minus-strand reverse-complement + debug --------------
@@ -143,7 +143,7 @@ def test_get_sequences_neg_strand_reverse_complements(tmp_path):
     _datafile, NAME, SEQ = pr.get_sequences(str(fa), str(tmp_path) + "/", CL_max=80,
                                             hdf_threshold_len=10 ** 9,
                                             split_fasta_threshold=10 ** 9, neg_strands=["chr1"])
-    assert NAME == ["chr1:-"]
+    assert NAME == ["chr1 OSAI_LENGTH=120:-"]
     assert SEQ[0] == str(Seq(seq).reverse_complement())
 
 
@@ -196,7 +196,7 @@ def test_process_gff_skips_malformed_line(tmp_path):
 def test_load_pytorch_models_empty_dir_exits(tmp_path):
     d = tmp_path / "empty"
     d.mkdir()
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         pr.load_pytorch_models(str(d), torch.device("cpu"), 5000, 80)
 
 
@@ -204,17 +204,17 @@ def test_load_pytorch_models_dir_with_only_corrupt_checkpoint_exits(tmp_path):
     d = tmp_path / "models"
     d.mkdir()
     (d / "bad.pt").write_text("not a torch checkpoint")
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         pr.load_pytorch_models(str(d), torch.device("cpu"), 5000, 80)
 
 
 def test_load_pytorch_models_unloadable_file_exits(tmp_path):
     bad = tmp_path / "x.pt"
     bad.write_text("garbage")
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         pr.load_pytorch_models(str(bad), torch.device("cpu"), 5000, 80)
 
 
 def test_load_pytorch_models_nonexistent_path_exits(tmp_path):
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         pr.load_pytorch_models(str(tmp_path / "nope.pt"), torch.device("cpu"), 5000, 80)

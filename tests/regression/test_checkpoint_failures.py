@@ -17,9 +17,9 @@ def loader(request):
 
 
 def test_missing_checkpoint_returns_failure(loader, tmp_path):
-    with pytest.raises(SystemExit) as exc:
+    with pytest.raises(ValueError) as exc:
         loader(tmp_path / "missing.pt")
-    assert exc.value.code == 1
+    assert isinstance(exc.value, ValueError)
 
 
 @pytest.mark.parametrize("invalid_kind", ["corrupt", "empty_state", "wrong_shape"])
@@ -34,9 +34,9 @@ def test_one_valid_member_cannot_hide_invalid_member(loader, tmp_path, packaged_
         state = torch.load(packaged_80nt_state, map_location="cpu", weights_only=True)
         state["initial_conv.weight"] = torch.zeros(1)
         torch.save(state, bad)
-    with pytest.raises(SystemExit) as exc:
+    with pytest.raises(ValueError) as exc:
         loader(tmp_path)
-    assert exc.value.code == 1
+    assert isinstance(exc.value, ValueError)
 
 
 def test_pth_extension_loads_and_preserves_weights(loader, tmp_path, packaged_80nt_state):
@@ -50,12 +50,12 @@ def test_pth_extension_loads_and_preserves_weights(loader, tmp_path, packaged_80
 
 @pytest.mark.parametrize("wrong_flank", [400, 2000, 10000])
 def test_calibration_rejects_incompatible_checkpoint(packaged_80nt_state, wrong_flank):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         initialize_model_and_optim(torch.device("cpu"), wrong_flank, packaged_80nt_state)
 
 
 def test_calibration_rejects_empty_checkpoint(tmp_path):
     path = tmp_path / "empty.pt"
     torch.save({}, path)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         initialize_model_and_optim(torch.device("cpu"), 80, path)

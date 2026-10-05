@@ -28,7 +28,7 @@ def test_variant_cli_missing_required_arg_exits(tmp_path):
         input_vcf=None, output_vcf=str(tmp_path / "o.vcf"), ref_genome="r", annotation="a",
         model="m", flanking_size=80, distance=50, mask=0, model_type="pytorch",
         precision=2, batch_size=1)
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         variant_mod.variant(args)
 
 
@@ -40,5 +40,5 @@ def test_variant_cli_bad_input_vcf_exits(tmp_path):
         input_vcf=str(junk), output_vcf=str(tmp_path / "o.vcf"), ref_genome="r", annotation="a",
         model="m", flanking_size=80, distance=50, mask=0, model_type="pytorch",
         precision=2, batch_size=1)
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         variant_mod.variant(args)

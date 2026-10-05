@@ -15,8 +15,10 @@ import os
 import secrets
 import signal
 import stat
-
-# NOTE: if running with gpu, note that cudnn version should be 8.9.6 or higher, numpy <2.0.0
+import sys
+import math
+import gzip
+from contextlib import redirect_stdout
 
 
 _OPEN_SPLICEAI_HEADER = (
@@ -66,10 +68,22 @@ def _validate_output(path, expected_records):
     if not os.path.isfile(path) or os.path.getsize(path) == 0:
         raise RuntimeError("temporary output VCF is empty")
 
-    with open(path, "rb") as handle:
-        handle.seek(-1, os.SEEK_END)
-        if handle.read(1) != b"\n":
-            raise RuntimeError("temporary output VCF is not newline-terminated")
+    with open(path, 'rb') as handle:
+        compressed = handle.read(2) == b'\x1f\x8b'
+    if compressed:
+        try:
+            with gzip.open(path, 'rb') as handle:
+                last = b''
+                for block in iter(lambda: handle.read(65536), b''):
+                    last = block[-1:]
+        except (OSError, EOFError) as exc:
+            raise RuntimeError(f'temporary output VCF is not parseable: {exc}') from exc
+    else:
+        with open(path, 'rb') as handle:
+            handle.seek(-1, os.SEEK_END)
+            last = handle.read(1)
+    if last != b'\n':
+        raise RuntimeError('temporary output VCF is not newline-terminated')
 
     observed_records = 0
     try:
@@ -84,7 +98,16 @@ def _validate_output(path, expected_records):
                 if isinstance(values, str):
                     values = (values,)
                 for value in values:
-                    if len(str(value).split("|")) != 10:
+                    fields = str(value).split('|')
+                    try:
+                        if len(fields) != 10 or not fields[0] or not fields[1]:
+                            raise ValueError('expected allele, symbol and eight numeric fields')
+                        scores = [float(field) for field in fields[2:6]]
+                        if not all(math.isfinite(score) and -1 <= score <= 1 for score in scores):
+                            raise ValueError('scores must be finite probability differences')
+                        for field in fields[6:]:
+                            int(field)
+                    except ValueError:
                         raise RuntimeError(
                             "temporary output VCF contains a malformed OpenSpliceAI annotation"
                         )
@@ -179,7 +202,15 @@ def variant(args):
     the ``OpenSpliceAI`` INFO field of the output VCF (``args.output_vcf``,
     default stdout). Returns nothing.
     """
-    print("Running SpliceAI-toolkit with 'variant' mode")
+    # Capture the output stream before redirecting diagnostics, including loader
+    # prints, to stderr. htslib's '-' writes to descriptor 1 directly.
+    output_vcf = args.output_vcf
+    with redirect_stdout(sys.stderr):
+        return _variant(args, output_vcf)
+
+
+def _variant(args, output_vcf):
+    print("Running OpenSpliceAI with 'variant' mode")
     start_time = time.time()
     
     # Set up logging
@@ -189,13 +220,12 @@ def variant(args):
     if None in [args.input_vcf, args.output_vcf, args.ref_genome, args.annotation, args.model, args.flanking_size]:
         logging.error('Usage: openspliceai [-h] [-m [model]] [-f [flanking_size]] [-I [input]] [-O [output]] -R reference -A annotation '
                       '[-D [distance]] [-M [mask]]')
-        exit(1)
+        raise ValueError('Input/output VCF, reference, annotation, model and context are required')
 
     # Define arguments
     ref_genome = args.ref_genome
     annotation = args.annotation
     input_vcf = args.input_vcf
-    output_vcf = args.output_vcf
     distance = args.distance
     mask = args.mask
     model = args.model
@@ -203,6 +233,7 @@ def variant(args):
     model_type = args.model_type
     precision = args.precision
     batch_size = getattr(args, 'batch_size', 1)
+    validate_scoring_options(distance, mask, flanking_size, precision, batch_size)
 
     print(f'''Running with genome: {ref_genome}, annotation: {annotation}, 
           model(s): {model}, model_type: {model_type}, 
@@ -215,12 +246,13 @@ def variant(args):
         vcf = pysam.VariantFile(input_vcf)
     except (IOError, ValueError) as e:
         logging.error('Error reading input file: {}'.format(e))
-        exit(1)
+        raise ValueError(f'Error reading input file: {e}') from e
 
     output = None
     temp_output = None
     expected_records = 0
     previous_handlers = {}
+    ann = None
     try:
         # Build the annotator before creating any output. A missing/corrupt model must
         # not truncate an already valid destination.
@@ -248,7 +280,8 @@ def variant(args):
 
         print('\t[INFO] Generating output VCF file')
         try:
-            output = pysam.VariantFile(output_target, mode='w', header=header)
+            mode = 'wz' if destination and destination.endswith(('.gz', '.bgz')) else 'w'
+            output = pysam.VariantFile(output_target, mode=mode, header=header)
         except (IOError, ValueError) as e:
             logging.error('Error generating output VCF file: {}'.format(e))
             raise
@@ -272,6 +305,8 @@ def variant(args):
                         [rec for _, rec in supported], ann, distance, mask,
                         flanking_size, precision, batch_size
                     )
+                    if len(results) != len(supported):
+                        raise RuntimeError('Batched scoring did not return one result per record')
                     scores_by_idx = {
                         idx: scores for (idx, _), scores in zip(supported, results)
                     }
@@ -317,6 +352,8 @@ def variant(args):
             except Exception:
                 pass
         vcf.close()
+        if ann is not None and hasattr(ann, 'close'):
+            ann.close()
         if temp_output is not None:
             try:
                 os.unlink(temp_output)

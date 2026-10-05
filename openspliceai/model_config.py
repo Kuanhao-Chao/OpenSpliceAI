@@ -6,8 +6,8 @@ def model_hyperparameters(flanking_size):
     """Return the published (L, N_GPUS, W, AR, batch size) configuration.
 
     Fresh arrays prevent callers from mutating another model's configuration.
-    N_GPUS preserves the historical batch/remainder convention; it does not
-    enable multi-device execution.
+    N_GPUS is a compatibility field in the legacy tuple. It neither enables
+    multi-device execution nor truncates partial batches.
     """
     flank = int(flanking_size)
     schedules = {

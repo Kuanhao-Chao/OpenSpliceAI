@@ -151,9 +151,9 @@ def test_write_batch_to_bed_minus_strand_genomic_coords():
 
 def test_write_batch_to_bed_absolute_fallback_when_name_has_no_coords():
     ab, db = io.StringIO(), io.StringIO()
-    pr.write_batch_to_bed("myseq+", _preds(donor=0.9, acceptor=0.0), ab, db)
+    pr.write_batch_to_bed("myseq:+", _preds(donor=0.9, acceptor=0.0), ab, db)
     out = db.getvalue()
-    assert "absolute_coordinates" in out and out.splitlines()[0].startswith("myseq+")
+    assert out.splitlines()[0].split('\t') == ['myseq', '0', '1', 'myseq_Donor', '0.900000', '+']
 
 
 def test_write_batch_to_bed_threshold_is_strict():
@@ -166,7 +166,7 @@ def test_write_batch_to_bed_skips_undefined_strand(capsys):
     ab, db = io.StringIO(), io.StringIO()
     pr.write_batch_to_bed("g chr1:1-10(.)", _preds(acceptor=0.9), ab, db)
     assert ab.getvalue() == "" and db.getvalue() == ""
-    assert "Undefined strand" in capsys.readouterr().out
+    assert "Undefined strand" in capsys.readouterr().err
 
 
 # --- generate_bed end-to-end (predict.h5 -> BED) -------------------------------------

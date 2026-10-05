@@ -23,6 +23,7 @@ class ResidualUnit(nn.Module):
     """
 
     def __init__(self, l, w, ar):
+        """Initialize ResidualUnit with the supplied model, data or runtime settings."""
         super().__init__()
         self.batchnorm1 = nn.BatchNorm1d(l)
         self.batchnorm2 = nn.BatchNorm1d(l)
@@ -52,6 +53,7 @@ class Cropping1D(nn.Module):
     """
 
     def __init__(self, cropping):
+        """Initialize Cropping1D with the supplied model, data or runtime settings."""
         super().__init__()
         self.cropping = cropping
 
@@ -72,6 +74,7 @@ class Skip(nn.Module):
     """
 
     def __init__(self, l):
+        """Initialize Skip with the supplied model, data or runtime settings."""
         super().__init__()
         self.conv = nn.Conv1d(l, l, 1)
 
@@ -105,6 +108,7 @@ class SpliceAI(nn.Module):
     """
 
     def __init__(self, L, W, AR, apply_softmax=True):
+        """Initialize SpliceAI with the supplied model, data or runtime settings."""
         super(SpliceAI, self).__init__()
         self.apply_softmax = apply_softmax  # new parameter to control softmax usage
         self.initial_conv = nn.Conv1d(4, L, 1)
@@ -117,6 +121,15 @@ class SpliceAI(nn.Module):
         self.final_conv = nn.Conv1d(L, 3, 1)
         self.CL = 2 * np.sum(AR * (W - 1))
         self.crop = Cropping1D((self.CL//2, self.CL//2))
+
+    def train(self, mode=True):
+        """Set training mode while preserving buffers in frozen BatchNorm layers."""
+        super().train(mode)
+        if mode:
+            for module in self.modules():
+                if isinstance(module, nn.BatchNorm1d) and all(not p.requires_grad for p in module.parameters()):
+                    module.eval()
+        return self
 
     def forward(self, x):
         """Run a one-hot DNA batch through the network.

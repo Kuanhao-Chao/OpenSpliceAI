@@ -53,11 +53,6 @@ def test_plot_uses_independent_counts_for_calibrated_curve(tmp_path, monkeypatch
 def test_evaluation_saves_calibrated_counts_from_calibrated_predictions(tmp_path, monkeypatch):
     import torch
     from openspliceai.calibrate import calibrate
-    # Independent curves have different numbers of occupied bins after scaling.
-    curves = [(np.array([0., 1.]), np.array([0., 1.]), np.array([2, 2])),
-              (np.array([.5]), np.array([.5]), np.array([4]))]*3
-    iterator = iter(curves)
-    monkeypatch.setattr(calibrate, "compute_calibration_curve", lambda *a, **k: next(iterator))
     for name in ("plot_score_distribution", "plot_calibration_curves", "plot_brier_scores", "plot_calibration_map"):
         monkeypatch.setattr(calibrate, name, lambda *a, **k: None)
     saved = []
@@ -65,21 +60,15 @@ def test_evaluation_saves_calibrated_counts_from_calibrated_predictions(tmp_path
 
     class Base(torch.nn.Module):
         def forward(self, inputs):
-            return torch.zeros(2, 3, 2)
+            return torch.tensor([[[1., 1.1], [0., 0.], [0., 0.]]]*2)
+    from openspliceai.calibrate.temperature_scaling import ModelWithTemperature
+    wrapped = ModelWithTemperature(Base(), 3)
+    wrapped.temperature.data.fill_(5.)
 
-    class Calibrated:
-        model = Base()
-        def compute_ece_nll(self, *args):
-            return 0., 0.
-
-        def temperature_scale(self, logits):
-            return logits
-
-
-    loader = [(torch.zeros(2, 4, 10082), torch.tensor([[[1., 0.], [0., 1.], [0., 0.]]]*2))]
-    calibrate.evaluate_and_visualize(Calibrated(), loader, torch.device("cpu"), str(tmp_path),
+    loader = [(torch.zeros(2, 4, 10002), torch.tensor([[[1., 0.], [0., 1.], [0., 0.]]]*2))]
+    calibrate.evaluate_and_visualize(wrapped, loader, torch.device("cpu"), str(tmp_path),
                                      "test", {"CL": 80, "N_GPUS": 2}, 80)
     assert [suffix for suffix, _ in saved] == ["original", "calibrated"]*3
-    for (_, original), (_, scaled) in zip(saved[::2], saved[1::2]):
-        np.testing.assert_array_equal(original, [2, 2])
-        np.testing.assert_array_equal(scaled, [4])
+    np.testing.assert_array_equal(saved[0][1], [2, 2])
+    np.testing.assert_array_equal(saved[1][1], [4])
+    assert all(counts.sum() == 4 for _, counts in saved)

@@ -109,7 +109,8 @@ def test_distillation_loss_l2sp_adds_positive_drift_penalty(tmp_path, model_80nt
 # --------------------------------------------------------------------------- #
 def _tiny_shard(path, fill):
     """A minimal X0/Y0 shard with a constant X fill value so its source is identifiable."""
-    X = np.full((4, 8, 4), fill, dtype=np.int8)
+    X = np.zeros((4, 8, 4), dtype=np.int8)
+    X[..., 0] = fill
     Y = np.zeros((1, 4, 6, 3), dtype=np.int8)
     Y[..., 0] = 1
     with h5py.File(path, "w") as f:
@@ -143,7 +144,7 @@ def test_resolve_shard_loader_routes_train_vs_rehearsal(tmp_path):
         xb_train = next(iter(tbu.resolve_shard_loader(train_h5f, 0, CPU, 2, params, shuffle=False)))[0]
         xb_reh = next(iter(tbu.resolve_shard_loader(train_h5f, 1, CPU, 2, params, shuffle=False)))[0]
         assert torch.all(xb_train == 0)   # position 0 -> ("train", 0)
-        assert torch.all(xb_reh == 1)     # position 1 -> ("rehearsal", 0) -> genomic handle
+        assert torch.all(xb_reh[:, 0] == 1) and torch.all(xb_reh[:, 1:] == 0)
     finally:
         train_h5f.close()
         reh_h5f.close()
@@ -209,7 +210,7 @@ def test_cycle_anchor_batches_raises_on_empty_shards(tmp_path):
     """If every shard is smaller than the batch size, drop_last yields nothing -> clear error
     instead of an infinite hang."""
     p = str(tmp_path / "small.h5")
-    write_dataset_h5(p, n_windows=1, seed=1)  # 1 window, batch_size 2 -> 0 batches (drop_last)
+    write_dataset_h5(p, n_windows=0, seed=1)  # genuinely empty shard
     h5f = h5py.File(p, "r")
     it = tr.cycle_anchor_batches(h5f, np.array([0]), CPU, 2, {})
     try:
@@ -247,7 +248,7 @@ def test_initialize_flanking_architecture(packaged_80nt_state, flank, n_units, b
     """Each flanking size selects the right W/AR length and BATCH_SIZE (the table duplicated
     across subcommands)."""
     _m, _o, _s, params = tr.initialize_model_and_optim_transfer(
-        CPU, flank, 10, "MultiStepLR", packaged_80nt_state, unfreeze=1, unfreeze_all=True)
+        CPU, flank, 10, "MultiStepLR", packaged_80nt_state, unfreeze=1, unfreeze_all=True, allow_partial_checkpoint=True)
     assert len(params["W"]) == n_units and len(params["AR"]) == n_units
     assert params["BATCH_SIZE"] == batch_size
 
@@ -318,16 +319,12 @@ def test_setup_distill_only(tmp_path, packaged_80nt_state):
             h.close()
 
 
-def test_setup_l2sp_without_distill_is_inert(tmp_path, packaged_80nt_state):
-    """L2-SP only activates alongside a distillation teacher; on its own it is a no-op."""
+def test_setup_l2sp_without_distill_is_rejected(tmp_path, packaged_80nt_state):
+    """A requested penalty must not silently become a no-op."""
     params = _params_for_setup(packaged_80nt_state)
     args = types.SimpleNamespace(pretrained_model=packaged_80nt_state, l2sp=0.1)  # distill_weight defaults 0
-    _idxs, handles = tr.setup_forgetting_mitigation(args, params, CPU, np.array([0]), str(tmp_path) + "/")
-    try:
-        assert "L2SP" not in params and "TEACHER" not in params
-    finally:
-        for h in handles:
-            h.close()
+    with pytest.raises(ValueError, match='l2sp requires'):
+        tr.setup_forgetting_mitigation(args, params, CPU, np.array([0]), str(tmp_path) + "/")
 
 
 def test_setup_rehearsal_shards_capped_to_available(tmp_path, packaged_80nt_state):
@@ -352,7 +349,7 @@ def test_resolve_shard_loader_casts_position_to_int(tmp_path):
     params = {"SHARD_TABLE": [("train", 0), ("rehearsal", 0)], "REHEARSAL_H5F": reh_h5f}
     try:
         xb = next(iter(tbu.resolve_shard_loader(train_h5f, 1.0, CPU, 2, params, shuffle=False)))[0]
-        assert torch.all(xb == 1)                        # float 1.0 -> table[1] -> rehearsal handle
+        assert torch.all(xb[:, 0] == 1) and torch.all(xb[:, 1:] == 0)
     finally:
         train_h5f.close()
         reh_h5f.close()

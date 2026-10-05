@@ -11,6 +11,7 @@ from openspliceai.calibrate.calibrate_utils import *
 import torch
 
 def plot_score_distribution(probs, probs_scaled, labels, output_dir, index):
+    """Save bounded before/after class-score histograms split by true class."""
     index_names = {
         0: ('non-splice site', 'neither'),
         1: ('acceptor site', 'acceptor'),
@@ -36,6 +37,7 @@ def plot_score_distribution(probs, probs_scaled, labels, output_dir, index):
 
 def score_frequency_distribution(probs, probs_scaled, labels, outdir, index=1):
     # Flatten the tensors for simplicity
+    """Bin class probabilities and plot their empirical frequency distribution."""
     probabilities_flat = probs[:, index]
     probabilities_scaled_flat = probs_scaled[:, index]
     print("probabilities_flat.shape: ", probabilities_flat.shape)
@@ -83,6 +85,7 @@ def score_frequency_distribution(probs, probs_scaled, labels, outdir, index=1):
 
 
 def plot_calibration_curves(calibration_data, calibration_data_scaled, classes, output_dir):
+    """Save before/after reliability curves for all three model classes."""
     fig, axs = plt.subplots(1, 3, figsize=(20, 5.5))
     for i, (class_name, (orig_data, scaled_data)) in enumerate(zip(classes, zip(calibration_data, calibration_data_scaled))):
         prob_true, prob_pred, bin_counts = orig_data
@@ -106,6 +109,7 @@ def plot_calibration_curves(calibration_data, calibration_data_scaled, classes, 
 
 
 def plot_brier_scores(brier_uncal, brier_cal, classes, output_dir):
+    """Save the original and calibrated per-class Brier score comparison."""
     plt.figure(figsize=(8, 6))
     x = np.arange(len(classes))
     plt.bar(x - 0.2, brier_uncal, 0.4, label='Uncalibrated')
@@ -120,6 +124,7 @@ def plot_brier_scores(brier_uncal, brier_cal, classes, output_dir):
 
 
 def plot_calibration_map(scaled_model, device, output_dir):
+    """Save the class-temperature probability transformation over a probability grid."""
     p1d = np.linspace(0, 1, 20)
     p0, p1 = np.meshgrid(p1d, p1d)
     p2 = 1 - p0 - p1

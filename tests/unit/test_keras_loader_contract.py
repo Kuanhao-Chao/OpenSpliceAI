@@ -29,9 +29,9 @@ def test_keras_loader_errors_are_failures(tmp_path, fake_keras, kind):
         if kind == "partial":
             (path / "valid.h5").touch()
             (path / "invalid.h5").touch()
-    with pytest.raises(SystemExit) as exc:
+    with pytest.raises(ValueError) as exc:
         load_keras_models(str(path))
-    assert exc.value.code == 1
+    assert isinstance(exc.value, ValueError)
 
 
 def test_keras_directory_and_file_load_complete_requested_set(tmp_path, fake_keras):

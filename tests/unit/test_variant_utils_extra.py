@@ -123,14 +123,14 @@ def test_resolve_default_spliceai_models_returns_five_paths():
 
 @pytest.mark.parametrize("cl", [400, 2000, 10000])
 def test_load_pytorch_models_table_branch_then_exit(packaged_80nt_state, cl):
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.load_pytorch_models(packaged_80nt_state, cl)
 
 
 def test_load_pytorch_models_empty_dir_exits(tmp_path):
     d = tmp_path / "empty"
     d.mkdir()
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.load_pytorch_models(str(d), 80)
 
 
@@ -138,16 +138,16 @@ def test_load_pytorch_models_corrupt_dir_and_file_exit(tmp_path):
     d = tmp_path / "models"
     d.mkdir()
     (d / "bad.pt").write_text("nope")
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.load_pytorch_models(str(d), 80)
     bad = tmp_path / "x.pt"
     bad.write_text("nope")
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.load_pytorch_models(str(bad), 80)
 
 
 def test_load_pytorch_models_invalid_path_exits(tmp_path):
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.load_pytorch_models(str(tmp_path / "missing.pt"), 80)
 
 
@@ -157,14 +157,14 @@ def test_load_pytorch_models_size_mismatch_branch(tmp_path, packaged_80nt_state)
     state[key] = torch.zeros(state[key].shape[0] + 1, *state[key].shape[1:])   # wrong shape
     bad = str(tmp_path / "bad.pt")
     torch.save(state, bad)
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.load_pytorch_models(bad, 80)
 
 
 def test_annotator_unsupported_model_type_exits(tmp_path):
     from tests.fixtures.synthetic import write_variant_inputs
     ref, ann, _vcf = write_variant_inputs(tmp_path)
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.Annotator(ref, ann, model_path="x", model_type="bogus", CL=80)
 
 
@@ -173,7 +173,7 @@ def test_annotator_malformed_annotation_exits(tmp_path):
     ref, _ann, _vcf = write_variant_inputs(tmp_path)
     bad = tmp_path / "bad.tsv"
     bad.write_text("not\ta\tvalid\theader\n1\t2\t3\t4\n")   # no #NAME column -> KeyError
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.Annotator(ref, str(bad), model_path="x", model_type="pytorch", CL=80)
 
 
@@ -181,7 +181,7 @@ def test_annotator_malformed_annotation_exits(tmp_path):
 def test_load_keras_models_error_paths(tmp_path):
     empty = tmp_path / "empty"
     empty.mkdir()
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.load_keras_models(str(empty))             # no .h5 in dir
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         vu.load_keras_models(str(tmp_path / "nope")) # invalid path

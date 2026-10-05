@@ -11,6 +11,10 @@ import numpy as np
 from math import ceil
 import gffutils
 import random
+import hashlib
+import sqlite3
+import tempfile
+from pathlib import Path
 from openspliceai.constants import *
 
 def check_and_count_motifs(seq, labels, donor_motif_counts, acceptor_motif_counts):
@@ -54,17 +58,19 @@ def get_chromosome_lengths(seq_dict):
     return chrom_lengths
 
 
-def split_chromosomes(seq_dict, method='random', split_ratio=0.8):
+def split_chromosomes(seq_dict, method='random', split_ratio=0.8, rng=None):
     """
     Split chromosomes into training and testing groups.
     """
+    if not 0 <= split_ratio <= 1:
+        raise ValueError('Chromosome split ratio must be between zero and one')
     chromosome_lengths = get_chromosome_lengths(seq_dict)
     print("Chromosome lengths: ", chromosome_lengths)
     if method == 'random':
         total_length = sum(chromosome_lengths.values())
         target_test_length = total_length * (1-split_ratio)
         chromosomes = list(chromosome_lengths.keys())
-        random.shuffle(chromosomes)
+        (rng or random).shuffle(chromosomes)
         train_chroms = {}
         test_chroms = {}
         current_train_length = 0
@@ -107,16 +113,48 @@ def split_chromosomes(seq_dict, method='random', split_ratio=0.8):
 
 
 def create_or_load_db(gff_file, db_file='gff.db'):
+    """Reuse a SHA-256-matched annotation cache; rebuild stale caches atomically.
+
+    The fingerprint is stored inside the SQLite database, so source identity
+    and annotation contents change together. The caller must close ``db.conn``.
     """
-    Create a gffutils database from a GFF file, or load it if it already exists.
-    """
-    if not os.path.exists(db_file):
-        print("Creating new database...")
-        db = gffutils.create_db(gff_file, dbfn=db_file, force=True, keep_order=True, merge_strategy='merge', sort_attribute_values=True)
-    else:
-        print("Loading existing database...")
-        db = gffutils.FeatureDB(db_file)
-    return db
+    digest = hashlib.sha256()
+    with open(gff_file, 'rb') as source:
+        for block in iter(lambda: source.read(1024*1024), b''):
+            digest.update(block)
+    fingerprint = digest.hexdigest()
+    if os.path.isfile(db_file):
+        connection = sqlite3.connect(db_file)
+        try:
+            cached = connection.execute('SELECT sha256 FROM openspliceai_source').fetchone()
+            if cached and cached[0] == fingerprint:
+                return gffutils.FeatureDB(db_file)
+        except sqlite3.DatabaseError:
+            pass  # Unsigned legacy caches and corrupt caches require rebuilding.
+        finally:
+            connection.close()
+    destination = Path(db_file)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(prefix=destination.name+'.', suffix='.db', dir=destination.parent)
+    os.close(descriptor)
+    database = None
+    try:
+        database = gffutils.create_db(gff_file, dbfn=temporary, force=True, keep_order=True,
+                                      merge_strategy='merge', sort_attribute_values=True)
+        database.conn.execute('CREATE TABLE openspliceai_source (sha256 TEXT NOT NULL)')
+        database.conn.execute('INSERT INTO openspliceai_source VALUES (?)', (fingerprint,))
+        database.conn.commit()
+        database.conn.close()
+        database = None
+        with open(temporary, 'rb') as source:
+            os.fsync(source.fileno())
+        os.replace(temporary, destination)
+    finally:
+        if database is not None:
+            database.conn.close()
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+    return gffutils.FeatureDB(db_file)
 
 ###################################################
 # create_dataset.py functions
@@ -217,7 +255,7 @@ def create_datapoints(seq, label):
     return X, Y
 
 
-def split_train_val(data, val_split_ratio):
+def split_train_val(data, val_split_ratio, rng=None):
     """
     Split training data into training and validation sets.
 
@@ -228,16 +266,17 @@ def split_train_val(data, val_split_ratio):
     Returns:
         tuple: (train_data, val_data), each a list of lists with the same structure as input
     """
-    # Transpose data to a list of records
+    if not 0 <= val_split_ratio <= 1:
+        raise ValueError('Validation split ratio must be between zero and one')
+    if len(data) != 7 or len({len(field) for field in data}) != 1:
+        raise ValueError('Expected seven equally sized gene data fields')
+    # Group by gene ID: repeated isoform rows cannot cross a split boundary.
     records = list(zip(*data))
-    # Shuffle records in place for random split
-    random.shuffle(records)
-    total = len(records)
-    val_size = int(total * val_split_ratio)
-
-    # Split into validation and training records
-    val_records = records[:val_size]
-    train_records = records[val_size:]
+    genes = list(dict.fromkeys(record[0] for record in records))
+    (rng or random).shuffle(genes)
+    validation_genes = set(genes[:int(len(genes)*val_split_ratio)])
+    val_records = [record for record in records if record[0] in validation_genes]
+    train_records = [record for record in records if record[0] not in validation_genes]
     # Handle case where no records
     if not train_records:
         train_data = [[] for _ in data]
