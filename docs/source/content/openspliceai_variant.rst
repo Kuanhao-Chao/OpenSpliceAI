@@ -1,380 +1,51 @@
-
-|
-
-
 .. _variant_subcommand:
 
 variant
 =======
 
-The ``variant`` subcommand evaluates the impact of genomic variants (SNPs and small INDELs) on splice sites by comparing model predictions on the reference (wild-type) sequence to predictions on the altered (mutant) sequence. It annotates a VCF file with “delta” scores for four events—acceptor gain, acceptor loss, donor gain, and donor loss—along with the relative position of each event. These delta scores reflect how much the mutation modifies the model’s predicted splice site strength and location.
+Annotate a VCF using the matching genome FASTA, transcript annotation and
+complete model checkpoint or ensemble. ``--model`` is required. Built-in
+``grch37``/``grch38`` tables are packaged; use an assembly-matched custom table
+for other genomes. Custom TSV columns are ``#NAME, CHROM, STRAND, TX_START,
+TX_END, EXON_START, EXON_END`` (tab-separated). Transcript and exon starts are
+zero-based, ends are exclusive; exon lists are comma-separated. Strands are +/−,
+exons are ordered and lie within their transcript. Empty annotation tables
+produce pass-through records.
 
-|
+For each alternate allele and overlapping gene, reference and alternate windows
+are scored within ``--distance`` (0–4999). AG/AL/DG/DL are maximum probability
+changes for acceptor gain/loss and donor gain/loss. DP gives the maximizing offset
+in the forward genomic frame for both strands. Ties use the first maximizing
+position. ``--mask 1`` suppresses gains at annotated sites and losses away from
+annotated sites. Missing/unsupported symbolic alleles, reference mismatches,
+unavailable chromosome windows and REF spans longer than distance+1 are skipped;
+the input record is retained. SNVs, insertions, deletions and supported MNV/delins
+receive numeric scores. Original SpliceAI does not score the MNV/delins extension.
 
-Overview
---------
+PyTorch ``--batch-size >1`` reuses reference windows and groups alternate windows
+by width. FP32 is the default; ``OSAI_TF32=1`` and ``OSAI_CUDNN_BENCH=1`` opt into
+other kernels and require workload-specific numerical validation.
+``OSAI_DETERMINISTIC=1`` requests deterministic algorithms; configure
+``CUBLAS_WORKSPACE_CONFIG`` before importing PyTorch for CUDA. Backend settings
+are restored after library calls. Rounding affects DS only; DP is integer.
 
-Similar to SpliceAI’s variant annotation approach (Jaganathan et al., 2019), the ``variant`` subcommand:
+Filesystem output is validated then atomically published. ``.gz``/``.bgz`` paths
+use BGZF. Failure preserves an existing output; stdin/stdout streams have no
+atomic replacement. Diagnostics go to stderr. Reference contigs absent from
+annotations pass through unchanged. For original Keras weights use an explicit
+``.h5`` path/directory with ``-t keras -f 10000``; the repository-only ``SpliceAI``
+preset also requires these flags and installed weights.
 
-- **Parses** a user-provided VCF file.
-- **Retrieves** the reference genome context from a FASTA file.
-- **Loads** a trained OpenSpliceAI model (PyTorch *or* Keras).
-- **Predicts** splice site probabilities for both wild-type and mutated sequences.
-- **Computes** the maximum change in donor or acceptor probability (delta scores) within a fixed window (default ±50 nt) around each variant for each event.
-- **Outputs** an annotated VCF, including delta scores and delta positions for each allele.
-
-|
-
-Input Files
------------
-
-1. **VCF File**
-
-   A standard VCF file containing variants (SNPs, small insertions, and deletions).
-
-2. **Reference Genome (FASTA)**
-
-   A FASTA file used to extract wild-type sequences. The subcommand checks that the reference allele in the VCF matches the reference genome.
-
-3. **Annotation File**
-
-   A gene annotation table that defines the genomic regions to consider. You may pass the
-   built-in shortcuts ``grch37`` (GENCODE V24lift37 canonical) or ``grch38`` (GENCODE V24
-   canonical) — these tables **ship inside the package**
-   (``openspliceai/variant/annotations/{grch37,grch38}.txt``) and are resolved automatically
-   regardless of the current working directory — or supply a path to your own custom
-   annotation file in the same format. Variants outside of annotated genes or too close to the
-   chromosome ends (by default, within the flanking region) are skipped.
-
-4. **Trained Model Checkpoint(s)**
-
-   A directory or file containing one or more OpenSpliceAI model checkpoints (PyTorch ``.pt`` / ``.pth`` state dictionaries or Keras ``.h5``). The subcommand averages predictions across all supplied models. An unreadable or incompatible member aborts the ensemble with a nonzero exit status.
-
-|
-
-Output Files
-------------
-
-The primary output is a **VCF file** with added OpenSpliceAI annotations for each variant that passes filtering. SNVs, simple INDELs, and multi-nucleotide variants (MNVs / delins, where REF **and** ALT are both multiple bases) within genes are annotated, as long as the REF allele is no longer than ``dist_var + 1`` bases (``dist_var`` is the ``-D/--distance`` window, default 50, so REF ≤ 51 bp by default; raise ``-D`` for longer spans). Records whose REF exceeds that are skipped with a warning rather than scored. Variants in multiple genes have separate predictions for each gene. Each variant line in the annotated VCF contains a string in the ``INFO`` field with the format:
-
-.. code-block:: text
-
-   ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL
-
-.. list-table::
-   :widths: 15 85
-   :header-rows: 1
-
-   * - Field
-     - Description
-   * - ALLELE
-     - Alternate allele
-   * - SYMBOL
-     - Gene symbol
-   * - DS_AG
-     - Delta score (acceptor gain)
-   * - DS_AL
-     - Delta score (acceptor loss)
-   * - DS_DG
-     - Delta score (donor gain)
-   * - DS_DL
-     - Delta score (donor loss)
-   * - DP_AG
-     - Delta position (acceptor gain)
-   * - DP_AL
-     - Delta position (acceptor loss)
-   * - DP_DG
-     - Delta position (donor gain)
-   * - DP_DL
-     - Delta position (donor loss)
-
-- **Delta Scores**: Acceptor gain, acceptor loss, donor gain, and donor loss. Each score is a maximum change in predicted splice-site probability within the scoring window. It is not a calibrated probability that the variant alters splicing.
-- **Delta Positions**: Relative positions (±50 by default) of these maximum changes. Positive values indicate increasing genomic coordinates; negative values indicate decreasing genomic coordinates, on either gene strand.
-
-For example,
-.. code-block:: text
-
-   A|MYGENE|0.27|0.00|0.09|0.02|3|-4|7|-2
-
-This string shows:
-- Alternate allele is A
-- We are on MYGENE
-- The base positon 3 bases toward increasing genomic coordinates of the variant has the highest acceptor gain score of 0.27
-- The base position 4 bases toward decreasing genomic coordinates of the variant has the highest acceptor loss score rounded to 0.00
-- The base position 7 bases toward increasing genomic coordinates of the variant has the highest donor gain score of 0.09
-- The base position 2 bases toward decreasing genomic coordinates of the variant has the highest donor loss score of 0.02
-
-|
-
-Delta Score Computation
------------------------
-
-The “delta” score measures how much a mutation changes splice site predictions within a fixed window around the variant (default ±50 nucleotides, adjusted by ``-D`` parameter). For each variant, we compute reference predictions (:math:`d_{ref}`, :math:`a_{ref}`) and alternative predictions (:math:`d_{alt}`, :math:`a_{alt}`) for donor (:math:`d`) and acceptor (:math:`a`) channels:
-
-.. math::
-   \mathrm{DS}(\mathrm{Acceptor\,Gain}) = \max\bigl(a_{alt} - a_{ref}\bigr)
-   :label: eq:12
-
-.. math::
-   \mathrm{DS}(\mathrm{Acceptor\,Loss}) = \max\bigl(a_{ref} - a_{alt}\bigr)
-   :label: eq:13
-
-.. math::
-   \mathrm{DS}(\mathrm{Donor\,Gain}) = \max\bigl(d_{alt} - d_{ref}\bigr)
-   :label: eq:14
-
-.. math::
-   \mathrm{DS}(\mathrm{Donor\,Loss}) = \max\bigl(d_{ref} - d_{alt}\bigr)
-   :label: eq:15
-
-where each maximum is taken over a window of 101 positions (±50) centered on the variant. The position of the maximum difference is recorded as the “delta position” (negative toward decreasing genomic coordinates, positive toward increasing coordinates).
-
-|
-
-Usage
------
-
-.. code-block:: text
-
-   usage: openspliceai variant [-h] -R reference -A annotation [-I [input]] [-O [output]] [-D [distance]] [-M [mask]] [--model MODEL]
-                              [--flanking-size {80,400,2000,10000}] [--model-type {keras,pytorch}] [--precision PRECISION]
-                              [--batch-size BATCH_SIZE]
-
-   optional arguments:
-         -h, --help            show this help message and exit
-         -R, --ref-genome reference
-                                 path to the reference genome fasta file
-         -A, --annotation annotation
-                                 "grch37" (GENCODE V24lift37 canonical annotation file in package), "grch38" (GENCODE V24 canonical annotation file in package), or path to a similar custom gene annotation file
-         -I, --input-vcf [input]
-                                 path to the input VCF file, defaults to standard in
-         -O, --output-vcf [output]
-                                 path to the output VCF file, defaults to standard out
-         -D, --distance [distance]
-                                 maximum distance between the variant and gained/lost splice site, defaults to 50
-         -M, --mask [mask]     mask scores representing annotated acceptor/donor gain and unannotated acceptor/donor loss, defaults to 0
-         --model, -m MODEL     Path to a SpliceAI model file, or path to a directory of SpliceAI models, or "SpliceAI" for the default model
-         --flanking-size, -f {80,400,2000,10000}
-                                 Sum of flanking sequence lengths on each side of input (i.e. 40+40)
-         --model-type, -t {keras,pytorch}
-                                 Type of model file (keras or pytorch)
-         --precision, -p PRECISION
-                                 Number of decimal places to round the output scores
-         --batch-size, -b BATCH_SIZE
-                                 Number of windows per GPU forward pass. >1 enables batched inference (pytorch only) for large speedups on many-variant inputs; 1 (default) preserves the exact original per-variant path
-
-|
-
-Batched inference (``--batch-size``)
-------------------------------------
-
-By default (``--batch-size 1``) ``variant`` scores one window at a time, exactly reproducing
-the original per-variant code path. On a **PyTorch** model you can pass ``--batch-size N`` (with
-``N > 1``) to score many variants per forward pass, which gives large speedups on VCFs with many
-variants — especially on a GPU. The batched path is numerically equivalent to the default: it
-deduplicates the shared reference window across a position's alternate alleles and groups windows
-by length so single-nucleotide and INDEL variants are handled correctly, then applies the same
-crop / argmax / mask / formatting steps.
-
-.. note::
-
-   - Batching only applies to PyTorch models. With ``--model-type keras`` the subcommand always
-     uses the per-variant path regardless of ``--batch-size``.
-   - A good starting point on a GPU is ``--batch-size 32`` to ``256``; larger batches use more
-     GPU memory. On CPU, batching still helps but the gains are smaller.
-   - Two optional environment variables tune throughput on NVIDIA GPUs:
-     ``OSAI_CUDNN_BENCH=1`` enables cuDNN autotuning (all windows share one length, so this is
-     effective), and ``OSAI_TF32=1`` (the default) enables the TF32 fast path on Ampere/A100
-     hardware. TF32 adds ~1e-3 of noise — far below the rounded score resolution — so set
-     ``OSAI_TF32=0`` if you need output that is bit-for-bit identical to the per-variant path.
+Example
+-------
 
 .. code-block:: bash
 
-   openspliceai variant \
-      --input-vcf many_variants.vcf \
-      --ref-genome GRCh38.fa \
-      --annotation grch38 \
-      --model /path/to/pytorch_models/ \
-      --model-type pytorch \
-      --flanking-size 10000 \
-      --batch-size 64 \
-      --output-vcf annotated_variants.vcf
+   openspliceai variant -R genome.fa -A annotation.tsv -I variants.vcf -O scored.vcf.gz --model model_80nt.pt --model-type pytorch -f 80 --batch-size 8 --precision 6
 
-|
+Complete options
+----------------
 
-Examples
---------
+.. include:: ../_generated/cli-variant.inc
 
-Example: Discovering pathogenic human variants
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-   openspliceai variant \
-      --input-vcf input_variants.vcf \
-      --ref-genome GRCh38.fa \
-      --annotation grch38 \
-      --model /path/to/pytorch_models/ \
-      --model-type pytorch \
-      --flanking-size 400 \
-      --distance 100 \
-      --mask 1 \
-      --output-vcf annotated_variants.vcf
-
-This command:
-
-1. **Loads** the reference genome from ``GRCh38.fa``.
-2. **Reads** the built-in ``grch38`` gene annotation that ships inside the package.
-3. **Scans** the directory ``/path/to/pytorch_models/`` for PyTorch checkpoints, averaging predictions from all found models.
-4. **Computes** donor and acceptor delta scores within ±100 nucleotides of each variant.
-5. **Masks** scores representing annotated acceptor/donor gain and unannotated acceptor/donor loss. (This is useful for novel/pathogenic variant discovery).
-6. **Writes** a new VCF (``annotated_variants.vcf``) with the masked annotations for the four delta scores and positions in the ``INFO`` field.
-
-|
-
-Example: Annotating all variant in VCF
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-   openspliceai variant \
-      --input-vcf sample_variants.vcf \
-      --ref-genome GRCh37.fa \
-      --annotation grch37 \
-      --model /path/to/keras_models/ \
-      --model-type keras \
-      --flanking-size 10000 \
-      --output-vcf annotated_samples.vcf
-      --precision 3
-
-This command:
-
-1. **Loads** the reference genome from ``GRCh37.fa``.
-2. **Reads** the built-in ``grch37`` gene annotation that ships inside the package.
-3. **Scans** the directory ``/path/to/keras_models/`` for Keras checkpoints, averaging predictions from all found models.
-4. **Computes** donor and acceptor delta scores within ±50 nucleotides of each variant.
-5. **Writes** a new VCF (``annotated_samples.vcf``) with all annotations for the four delta scores and positions in the ``INFO`` field (these are unmasked by default, so all scores are included). The scores are rounded to three decimal places.
-
-|
-
-Scoring custom sequences
-------------------------
-
-Sometimes you want to score changes that don't fit a one-row-per-single-variant VCF — for
-example **several substitutions within a short window** (adjacent or not), comparing a wild-type
-span to an arbitrary mutant span while keeping the surrounding genomic context. There are two
-ways to do this with OpenSpliceAI.
-
-**1. Reference-anchored windows → a single MNV record (recommended).**
-If the sequence you want to score corresponds to a real locus in your reference genome, encode
-the whole edited window as **one multi-nucleotide VCF record**: REF is the reference span, ALT is
-your edited span. ``variant`` extracts the flanking context around it automatically and returns
-delta scores for the combined edit. For example, to score ``ref: ATGATTCCT`` → ``alt: ACGAATCCA``
-at ``chr1:1000000``:
-
-.. code-block:: text
-
-   #CHROM  POS      ID  REF        ALT        QUAL  FILTER  INFO
-   chr1    1000000  .   ATGATTCCT  ACGAATCCA  .     .       .
-
-.. code-block:: bash
-
-   openspliceai variant -R GRCh38.fa -A grch38 -m /path/to/models/ -f 10000 \
-      -I custom.vcf -O custom.annotated.vcf
-
-The REF allele must match the reference at that position, and its length must be
-≤ ``-D/--distance`` + 1 (default 50 → up to 51 bp; raise ``-D`` for wider windows). The changes
-inside the window need not be adjacent — any span of substitutions/indels is treated as one
-combined edit and collapsed to a single delta per event.
-
-**2. Fully-synthetic sequences (not in any reference).**
-If your sequences are not tied to a reference locus, score them directly against a loaded model,
-the same way the original SpliceAI does for custom sequences. Provide a wild-type and a mutant
-sequence of length ``flanking_size + 1`` (the extra base is the position being scored; pad with
-``N`` if you don't have full context) and take the per-position difference of the donor/acceptor
-channels:
-
-.. code-block:: python
-
-   import numpy as np, torch
-   from openspliceai.variant.utils import one_hot_encode
-   from openspliceai.train_base.openspliceai import SpliceAI  # or load a packaged checkpoint
-
-   flank = 80                                   # must match the model's flanking size
-   ref = "…"                                    # length flank + L (L = bases you want scored)
-   alt = "…"                                    # same length as ref (substitutions), N-padded ends OK
-
-   model = ...                                  # build SpliceAI(...) and load_state_dict(...); model.eval()
-   def scores(seq):
-       x = torch.tensor(one_hot_encode(seq)[None].transpose(0, 2, 1), dtype=torch.float32)
-       with torch.no_grad():
-           y = model(x).permute(0, 2, 1).numpy()[0]   # (L, 3): [null, acceptor, donor]
-       return y
-   y_ref, y_alt = scores(ref), scores(alt)
-   delta_acceptor = y_alt[:, 1] - y_ref[:, 1]   # >0 gain, <0 loss, per position
-   delta_donor    = y_alt[:, 2] - y_ref[:, 2]
-
-A runnable version of both approaches is in ``examples/variant/``: ``custom_sequence_mnv.vcf`` +
-``score_custom_mnv.sh`` for the VCF path, and ``score_custom_sequence.py`` for the synthetic path.
-
-|
-
-Processing Pipeline
--------------------
-
-#. **VCF Parsing/Filtering**
-
-   - For each variant, the subcommand checks if it lies within an annotated gene region. If it isn't, it will be filtered out.  
-   - Variants that are too close to the chromosome ends (within half of the full input window, ``flanking-size`` / 2 + ``distance``, of an end), have a reference allele longer than ``distance`` + 1 bases (beyond which the score window can no longer be realigned), or have reference alleles mismatching the FASTA are automatically skipped.
-
-#. **Reference & Mutant Sequence Extraction**
-
-   - A window of :math:`2 \times \text{dist_var} + 1` around the variant is extracted from the FASTA (e.g., 101 nt for ``--dist-var=50``).
-   - For each alternative allele, the subcommand constructs a mutant sequence by substituting the variant base(s).
-
-#. **Model Loading & Prediction**
-
-   - The user may supply **PyTorch** (``.pt``) or **Keras** (``.h5``) model checkpoints.  
-   - If a directory is provided, predictions from each model are averaged.  
-   - Wild-type (reference) and mutant sequences are one-hot encoded and fed into the model(s) in evaluation mode.
-
-#. **Delta Score Calculation**
-
-   - The difference in donor/acceptor probabilities (:math:`d_{alt}-d_{ref}`, :math:`a_{alt}-a_{ref}`) is computed across the window.  
-   - The maximum positive or negative differences yield the four delta scores: donor gain, donor loss, acceptor gain, and acceptor loss (Equations :eq:`eq:12`–:eq:`eq:15`).
-
-#. **VCF Annotation**
-
-   - The four delta scores and their positions (relative to the variant site) are appended to each variant’s INFO field.  
-   - The annotated VCF includes the annotations in the ``INFO`` field, following the string format described above.
-
-|
-
-Workflow
-~~~~~~~~
-.. image:: ../_images/variant_workflow.png
-   :alt: Variant Workflow
-   :align: center
-
-|
-
-Conclusion
-----------
-
-The ``variant`` subcommand enables fine-grained analysis of how single-nucleotide changes or small variants affect splice site usage. Essentially, it provides a convenient, post-hoc annotation step for variant effect prediction.
-
-|
-|
-|
-|
-|
-
-.. image:: ../_images/jhu-logo-dark.png
-   :alt: My Logo
-   :class: logo, header-image only-light
-   :align: center
-
-.. image:: ../_images/jhu-logo-white.png
-   :alt: My Logo
-   :class: logo, header-image only-dark
-   :align: center
+See :doc:`output_explanation` for schemas and :doc:`migration` for changed behavior.

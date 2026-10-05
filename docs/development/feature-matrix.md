@@ -1,5 +1,8 @@
 # Feature verification matrix
 
+This is the September baseline matrix. The current corrected implementation is
+mapped in [the comprehensive feature matrix](../../verification/comprehensive/feature-matrix.md).
+
 This inventory covers the packaged commands and current validation helpers.
 Named files contain the executable evidence; final environment results and
 remaining limitations are recorded in `repository-audit.md`.

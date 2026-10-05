@@ -1,0 +1,287 @@
+{
+  "index": [
+    "cite-us",
+    "key-features",
+    "next-steps",
+    "table-of-contents",
+    "user-support-contributors",
+    "what-openspliceai-does",
+    "who-should-use-openspliceai"
+  ],
+  "content/openspliceai_variant": [
+    "batched-inference-batch-size",
+    "conclusion",
+    "delta-score-computation",
+    "example-annotating-all-variant-in-vcf",
+    "example-discovering-pathogenic-human-variants",
+    "examples",
+    "input-files",
+    "output-files",
+    "overview",
+    "processing-pipeline",
+    "scoring-custom-sequences",
+    "usage",
+    "variant",
+    "variant-subcommand",
+    "workflow"
+  ],
+  "content/license": [
+    "license"
+  ],
+  "content/openspliceai_calibrate": [
+    "calibrate",
+    "calibrate-subcommand",
+    "inputs-and-splits",
+    "outputs-and-reuse"
+  ],
+  "content/openspliceai_create-data": [
+    "canonical-transcript-selection",
+    "conclusion",
+    "create-data",
+    "create-data-subcommand",
+    "example-creating-the-human-mane-dataset",
+    "examples",
+    "gene-sequence-chunking",
+    "gene-sequence-processing",
+    "input-files",
+    "label-generation",
+    "output-files",
+    "processing-pipeline",
+    "removal-of-pseudogenes-and-paralogous-genes",
+    "splice-site-labeling-options",
+    "training-and-testing-data-splitting",
+    "usage"
+  ],
+  "content/openspliceai_train": [
+    "conclusion",
+    "example-training-a-model-on-human-mane-data",
+    "examples",
+    "input-files",
+    "output-files",
+    "processing-steps",
+    "subcommand-description",
+    "train",
+    "train-subcommand",
+    "usage"
+  ],
+  "content/openspliceai_transfer": [
+    "conclusion",
+    "example-transfer-learning-from-human-model-to-a-new-species",
+    "examples",
+    "freezing-and-reproducibility",
+    "input-files",
+    "mitigating-catastrophic-forgetting",
+    "output-files",
+    "processing-pipeline",
+    "subcommand-description",
+    "transfer",
+    "transfer-subcommand",
+    "usage"
+  ],
+  "content/openspliceai_vs_spliceai": [
+    "architectural-and-implementation-differences",
+    "conclusion",
+    "delta-score-calculation",
+    "id1",
+    "model-calibration-and-variant-analysis",
+    "openspliceai-vs-spliceai",
+    "overview",
+    "performance-and-efficiency",
+    "training-flexibility-and-transfer-learning"
+  ],
+  "content/installation": [
+    "check-openspliceai-installation",
+    "detailed-installation-for-pytorch-and-mappy",
+    "id1",
+    "install-from-source",
+    "install-the-development-devel-version",
+    "install-through-conda",
+    "install-through-pip",
+    "installation",
+    "installation-methods",
+    "next-steps",
+    "overview",
+    "prerequisites",
+    "terminal-output-example"
+  ],
+  "content/behind_scenes": [
+    "architecture-and-framework",
+    "behind-the-scenes",
+    "behind-the-scenes-splam",
+    "conclusion",
+    "data-preprocessing-and-one-hot-encoding",
+    "model-calibration",
+    "performance-and-benchmarking",
+    "training-and-optimization",
+    "transfer-learning",
+    "variant-effect-analysis"
+  ],
+  "content/openspliceai_predict": [
+    "checkpoint-validation",
+    "conclusion",
+    "example-predicting-all-splice-sites-in-sample",
+    "example-predicting-splice-sites-for-human-genes",
+    "examples",
+    "input-files",
+    "output-files",
+    "overview",
+    "predict",
+    "predict-subcommand",
+    "processing-pipeline",
+    "usage",
+    "workflow"
+  ],
+  "content/changelog": [
+    "changelog",
+    "initial-release",
+    "v0-0-6-2026-06-13",
+    "v0-0-7-2026-06-23",
+    "v0-0-8-dev0-unreleased"
+  ],
+  "content/function_manual": [
+    "openspliceai",
+    "user-manual"
+  ],
+  "content/output_explanation": [
+    "id1",
+    "output-files"
+  ],
+  "content/contact": [
+    "contact",
+    "contact-us"
+  ],
+  "content/development": [
+    "continuous-validation",
+    "coverage",
+    "development-and-testing",
+    "development-testing",
+    "installing-the-development-dependencies",
+    "layout-of-tests",
+    "linting-with-ruff",
+    "pre-commit-hooks",
+    "running-the-test-suite",
+    "test-markers"
+  ],
+  "content/how_to_page": [
+    "id1",
+    "q-a"
+  ],
+  "content/pretrained_models/index": [
+    "pretrained-models-home",
+    "released-openspliceai-models"
+  ],
+  "content/pretrained_models/arabidopsis_plant": [
+    "released-models",
+    "thale-cress-arabidopsis-thaliana",
+    "thale-cress-plant-spliceai"
+  ],
+  "content/pretrained_models/zebrafish": [
+    "released-models",
+    "zebrafish-danio-rerio",
+    "zebrafish-spliceai"
+  ],
+  "content/pretrained_models/bee_insect": [
+    "bee-insect-spliceai",
+    "honeybee-apis-mellifera",
+    "released-models"
+  ],
+  "content/pretrained_models/GRCh38_MANE": [
+    "alignment-whats-next",
+    "human-mane",
+    "human-mane-spliceai",
+    "released-models",
+    "results",
+    "training-validation-testing-training-report"
+  ],
+  "content/pretrained_models/mouse": [
+    "alignment-whats-next",
+    "mouse-mus-musculus",
+    "mouse-spliceai",
+    "released-models"
+  ],
+  "content/pretrained_models/GRCh38_RefSeq": [
+    "alignment-whats-next",
+    "human-refseq",
+    "human-refseq-spliceai",
+    "released-models"
+  ],
+  "content/usage/index": [
+    "same-species-section",
+    "subcommands-for-spliceai-toolkit"
+  ],
+  "content/train_your_own_model/index": [
+    "train-your-own-model",
+    "train-your-own-openspliceai-models"
+  ],
+  "content/train_your_own_model/train_mouse": [
+    "conclusion",
+    "id1",
+    "prerequisites",
+    "step-1-create-training-and-test-datasets",
+    "step-2-train-the-mouse-model",
+    "step-3-optional-calibrate-the-mouse-model",
+    "step-4-deploy-your-trained-mouse-model",
+    "train-your-own-model-mouse"
+  ],
+  "content/train_your_own_model/train_human_mane": [
+    "conclusion",
+    "prerequisites",
+    "step-1-create-training-and-test-datasets",
+    "step-2-train-the-openspliceai-mane-model",
+    "step-3-optional-calibrate-the-model",
+    "step-4-use-your-trained-model",
+    "train-your-own-model-human-mane",
+    "train-your-own-model-mane"
+  ],
+  "content/quick_start_guide/index": [
+    "quick-start-guide",
+    "quick-start-home",
+    "usage-1-predict",
+    "usage-2-train-from-scratch",
+    "usage-3-transfer-learning"
+  ],
+  "content/quick_start_guide/quickstart_create-data": [
+    "before-you-begin",
+    "next-steps",
+    "one-liner-start",
+    "quick-start-create-data",
+    "quick-start-guide-create-data"
+  ],
+  "content/quick_start_guide/quickstart_variant": [
+    "before-you-begin",
+    "next-steps",
+    "one-liner-start",
+    "quick-start-guide-variant",
+    "quick-start-variant"
+  ],
+  "content/quick_start_guide/quickstart_calibrate": [
+    "before-you-begin",
+    "key-steps-in-calibration",
+    "next-steps",
+    "quick-start",
+    "quick-start-calibrate",
+    "quick-start-guide-calibrate"
+  ],
+  "content/quick_start_guide/quickstart_train": [
+    "before-you-begin",
+    "next-steps",
+    "one-liner-start",
+    "quick-start-guide-train",
+    "quick-start-train"
+  ],
+  "content/quick_start_guide/quickstart_predict": [
+    "before-you-begin",
+    "next-steps",
+    "one-liner-start",
+    "predicting-a-single-gene-of-interest",
+    "quick-start-guide-predict",
+    "quick-start-predict"
+  ],
+  "content/quick_start_guide/quickstart_transfer": [
+    "before-you-begin",
+    "next-steps",
+    "one-liner-start",
+    "quick-start-guide-transfer",
+    "quick-start-transfer"
+  ]
+}

@@ -1,5 +1,7 @@
 {# Paths go through pathto() so they resolve from any page depth, not just the site root. #}
 <div>
-    <img src="{{ pathto('_static/JHU_ccb-dark.png', 1) }}" class="sidebar_ccb" alt="Johns Hopkins Center for Computational Biology" style="vertical-align: bottom; bottom:0; margin-top: 50px; width:80%">
-    <img src="{{ pathto('_static/JHU_wse-dark.png', 1) }}" class="sidebar_wse" alt="Johns Hopkins Whiting School of Engineering" style="vertical-align: bottom; bottom:0; margin-top: 8px; margin-bottom: 8px; width:80%;">
+    <img src="{{ pathto('_static/JHU_ccb-dark.png', 1) }}" class="only-light" alt="Johns Hopkins Center for Computational Biology" style="margin-top:50px;width:80%">
+    <img src="{{ pathto('_static/JHU_ccb-white.png', 1) }}" class="only-dark" alt="Johns Hopkins Center for Computational Biology" style="margin-top:50px;width:80%">
+    <img src="{{ pathto('_static/JHU_wse-dark.png', 1) }}" class="only-light" alt="Johns Hopkins Whiting School of Engineering" style="margin-top:8px;width:80%">
+    <img src="{{ pathto('_static/JHU_wse-white.png', 1) }}" class="only-dark" alt="Johns Hopkins Whiting School of Engineering" style="margin-top:8px;width:80%">
 </div>

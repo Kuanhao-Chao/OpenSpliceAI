@@ -16,10 +16,20 @@
 
 
 # -- Project information -----------------------------------------------------
+import importlib.util
+from pathlib import Path
+import json
+from docutils import nodes
+
+reference_spec = importlib.util.spec_from_file_location('osai_reference', Path(__file__).parents[1]/'generate_reference.py')
+reference = importlib.util.module_from_spec(reference_spec)
+reference_spec.loader.exec_module(reference)
+reference.generate()
+
 master_doc = 'index'
 project = 'OpenSpliceAI'
-release = '0.0.8.dev0'
-version = '0.0.8.dev0'
+release = '0.1.0.dev0'
+version = '0.1.0.dev0'
 copyright = '2024, Kuan-Hao Chao'
 author = 'Kuan-Hao Chao'
 
@@ -77,13 +87,13 @@ html_baseurl = 'https://khchao.com/OpenSpliceAI/'
 
 # html_logo = "./_static/logo.png"
 html_theme_options = {
-    "announcement": "OpenSpliceAI: A Comprehensive Framework for Cross-Species Splicing Prediction and Variant Impact Analysis",
+    "announcement": "Cross-species splice-site prediction",
 
     "sidebar_hide_name": True,
 
     "source_repository": "https://github.com/Kuanhao-Chao/OpenSpliceAI",
     "source_branch": "main",
-    "source_directory": "docs/",
+    "source_directory": "docs/source/",
 
     "navigation_with_keys": True,
     "top_of_page_button": "edit",
@@ -141,3 +151,10 @@ html_static_path = ['_static']
 
 def setup(app):
     app.add_css_file('custom.css')
+    anchors = json.loads((Path(__file__).parents[1]/'legacy_anchors.json').read_text())
+    def retain_anchors(app, tree, name):
+        existing = {identifier for node in tree.findall() if isinstance(node, nodes.Element) for identifier in node.get('ids', [])}
+        for identifier in anchors.get(name, []):
+            if identifier not in existing:
+                tree.insert(0, nodes.target('', '', ids=[identifier]))
+    app.connect('doctree-resolved', retain_anchors)

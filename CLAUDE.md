@@ -88,8 +88,10 @@ schedulers are `MultiStepLR` or `CosineAnnealingWarmRestarts`. Checkpoints are s
 (`model_{epoch}.pt`, `model_best.pt`). Metrics (top-k accuracy + AUPRC for donor & acceptor, per-class
 precision/recall/F1) are appended to per-metric `.txt` files. Output layout:
 `{output_dir}/SpliceAI_{project}_{flank}_{exp}_rs{seed}/{exp}/{models,LOG/{TRAIN,VAL,TEST}}/`.
-`transfer` additionally loads a pretrained checkpoint (filtering size-mismatched keys) and can freeze all but the last
-`--unfreeze` residual units (`--unfreeze-all` is the default).
+`transfer` loads students strictly by default; `--allow-partial-checkpoint` explicitly permits partial initialization.
+Teachers always load strictly. `--unfreeze N` trains the output head plus the last N residual units and keeps frozen
+BatchNorm buffers in evaluation mode (`--unfreeze-all` is the default). Padding is excluded from losses and metrics.
+Focal alpha/gamma are honored; MultiStepLR advances per epoch and cosine restarts use fractional epoch progress.
 
 ### Predict (`predict/predict.py`)
 Multi-stage, designed to scale to whole genomes: extract sequences (optionally just gene regions when `-a/--annotation`
@@ -97,7 +99,7 @@ GFF is given) → split FASTA entries longer than `--split-threshold` (default 1
 predictions are seamless** → one-hot encode to `dataset.h5`/`.pt` → load model(s) → infer → write `donor_predictions.bed`
 and `acceptor_predictions.bed`. Two modes: default **turbo** (`predict_and_write`, streamed, no intermediate file) vs
 `--predict-all` (writes `predict.h5` then `generate_bed`). **If `--model` is a directory, all checkpoints in it are
-ensembled by averaging predictions.** Checkpoint `.pt` files are state_dicts loaded into a freshly-built `SpliceAI`;
+ensembled by averaging predictions.** Raw state_dicts and versioned calibrated artifacts are loaded strictly;
 a flanking-size mismatch aborts loading with a nonzero exit status. Every ensemble member must load.
 
 ### Variant (`variant/variant.py`, `variant/utils.py`)
@@ -108,9 +110,9 @@ donor gain/loss, written to the `OpenSpliceAI` INFO field with format
 `ALLELE|SYMBOL|DS_AG|DS_AL|DS_DG|DS_DL|DP_AG|DP_AL|DP_DG|DP_DL`. Reads stdin / writes stdout by default.
 
 ### Calibrate (`calibrate/`)
-Post-hoc **temperature scaling** (`ModelWithTemperature`) of a trained model. Fits a temperature on the validation
-set, reports ECE/NLL and Brier scores, writes calibration-curve plots, and saves `temperature.pt`/`.txt` and a full
-`calibrated_model.pt`.
+Post-hoc **temperature scaling** (`ModelWithTemperature`) fits full observed validation NLL using a bounded
+disk-backed logits cache. Exact ECE/NLL/Brier statistics are distinct from bounded plotting samples.
+It saves `temperature.pt`/`.txt` and a versioned CPU-portable `calibrated_model.pt`, directly usable by inference.
 
 ## Pretrained models (`models/`)
 `models/openspliceai-{mane,mouse,zebrafish,arabidopsis,honeybee}/{80,400,2000,10000}nt/model_*nt_rs{10..14}.pt` — five
@@ -126,3 +128,5 @@ directory). `mane` is the human GRCh38/MANE model. `models/spliceai/` holds the 
   databases (`*.gff_db`) and `examples/data/*` genomes are large local artifacts, not committed.
 - Architecture schedules are centralized in `model_config.py`; preserve the published schedules and batch conventions when changing them.
 - Full user docs (Sphinx) are in `docs/source/` and hosted at https://khchao.com/OpenSpliceAI/.
+- The 0.1.0.dev0 audit, migration and pending backend gates are in `docs/development/comprehensive-audit.md`
+  and `verification/comprehensive/`. Production r13 remains on its separately frozen source.
