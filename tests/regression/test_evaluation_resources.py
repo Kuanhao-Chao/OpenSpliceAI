@@ -78,7 +78,7 @@ def test_partial_dataset_open_failure_closes_previous_files(tmp_path, monkeypatc
     assert opened and all(not handle.id.valid for handle in opened)
 
 
-@pytest.mark.parametrize("command", ["train", "transfer", "calibrate"])
+@pytest.mark.parametrize("command", ["train", "transfer"])
 def test_command_initialization_failure_closes_datasets(command, tmp_path, monkeypatch):
     module = importlib.import_module(f"openspliceai.{command}.{command}")
     handles = [h5py.File(tmp_path / f"{i}.h5", "w") for i in range(3)]

@@ -57,8 +57,7 @@ def test_write_batch_to_bed_threshold_filters():
 
 def test_write_batch_to_bed_absolute_fallback():
     ab, db = io.StringIO(), io.StringIO()
-    # no 'chrN:start-end(strand)' pattern -> absolute-coordinate output, strand from last char
-    pp.write_batch_to_bed("scaffold123+", _spiked_predictions(), ab, db, threshold=0.5)
+    # Plain FASTA IDs produce local BED6 coordinates; :+ supplies orientation.
+    pp.write_batch_to_bed("scaffold123:+", _spiked_predictions(), ab, db, threshold=0.5)
     a = _cols(ab.getvalue())[0]
-    assert a[0] == "scaffold123+" and a[1] == "2" and a[2] == "3"
-    assert a[-1] == "absolute_coordinates"
+    assert a == ['scaffold123', '2', '3', 'scaffold123_Acceptor', '0.900000', '+']

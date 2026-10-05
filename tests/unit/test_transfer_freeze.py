@@ -54,7 +54,7 @@ def test_unfreeze_two_trains_only_last_two_residual_units(packaged_80nt_state):
         assert not isinstance(ru, Skip)
 
     # Every other parameter in the whole model is frozen.
-    unfrozen_ids = {id(p) for ru in res_units[-2:] for p in ru.parameters()}
+    unfrozen_ids = {id(p) for ru in res_units[-2:] for p in ru.parameters()} | {id(p) for p in model.final_conv.parameters()}
     others = [p for p in model.parameters() if id(p) not in unfrozen_ids]
     assert others, "expected the model to have other (frozen) parameters"
     assert all(not p.requires_grad for p in others)
@@ -72,7 +72,7 @@ def test_unfreeze_one_trains_only_last_residual_unit(packaged_80nt_state):
     assert isinstance(last, ResidualUnit) and not isinstance(last, Skip)
     assert all(p.requires_grad for p in last.parameters())
 
-    unfrozen_ids = {id(p) for p in last.parameters()}
+    unfrozen_ids = {id(p) for p in last.parameters()} | {id(p) for p in model.final_conv.parameters()}
     others = [p for p in model.parameters() if id(p) not in unfrozen_ids]
     assert all(not p.requires_grad for p in others)
 
@@ -82,13 +82,13 @@ def test_optimizer_only_holds_trainable_params(packaged_80nt_state):
     the last ResidualUnit's parameters and nothing else."""
     model, optimizer, _, _ = _build(packaged_80nt_state, unfreeze=1, unfreeze_all=False)
     last = _residual_units(model)[-1]
-    expected_ids = {id(p) for p in last.parameters()}
+    expected_ids = {id(p) for p in last.parameters()} | {id(p) for p in model.final_conv.parameters()}
     opt_ids = {id(p) for group in optimizer.param_groups for p in group["params"]}
     assert opt_ids == expected_ids
 
 
-def test_frozen_parameters_keep_legacy_batchnorm_updates(packaged_80nt_state):
-    """Parameter freezing does not freeze running buffers during transfer training."""
+def test_frozen_batchnorm_buffers_are_unchanged(packaged_80nt_state):
+    """Frozen BatchNorm running buffers remain unchanged in training mode."""
     model, _, _, _ = _build(packaged_80nt_state, unfreeze=1, unfreeze_all=False)
     first = _residual_units(model)[0]
     assert all(not parameter.requires_grad for parameter in first.parameters())
@@ -96,4 +96,4 @@ def test_frozen_parameters_keep_legacy_batchnorm_updates(packaged_80nt_state):
     model.train()
     with torch.no_grad():
         model(torch.randn(2, 4, 180))
-    assert torch.equal(first.batchnorm1.num_batches_tracked, before + 1)
+    assert torch.equal(first.batchnorm1.num_batches_tracked, before)

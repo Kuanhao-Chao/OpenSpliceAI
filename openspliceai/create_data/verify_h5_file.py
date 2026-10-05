@@ -1,68 +1,49 @@
-"""
-Filename: verify_h5_file.py
-Author: Kuan-Hao Chao
-Date: 2025-03-20
-Description: Functions to process sequences to/from .h5 datasets.
-"""
+"""Bounded integrity checks and one representative plot for each encoded split."""
+from pathlib import Path
+import time
 
 import h5py
-import torch
 import matplotlib.pyplot as plt
-import time 
+
+from openspliceai.data_schema import shard_indices, validate_shard, validate_encoding
+
 
 def verify_h5(args):
-    """
-    Verifies the integrity of the created testing and/or training h5 datasets.
-    """
-    # record start time for benchmark
-    print("--- Step 3: Verifying integrity of h5 file ... ---")
-    start_time = time.time()
+    """Validate every X/Y pair, including validation, metadata and empty splits.
 
-    # construct the filename and open h5 file
-    dataset_ls = [] 
-    if args.chr_split == 'test':
-        dataset_ls.append('test')
-    elif args.chr_split == 'train-test':
-        dataset_ls.append('test')
-        dataset_ls.append('train')
-    for dataset_type in dataset_ls:
-        if args.biotype =="non-coding":
-            filename = f"{args.output_dir}/dataset_{dataset_type}_ncRNA.h5"
-            figname = f"{args.output_dir}/verify_{dataset_type}_ncRNA.png"
-        elif args.biotype =="protein-coding":
-            filename = f"{args.output_dir}/dataset_{dataset_type}.h5"
-            figname = f"{args.output_dir}/verify_{dataset_type}.png"
-
+    Read at most 32 windows per batch. A split with no windows is reported
+    explicitly; fitting commands reject it when selected for training/evaluation.
+    """
+    start = time.monotonic()
+    if args.biotype not in ('all', 'protein-coding', 'non-coding'):
+        raise ValueError('Unknown biotype')
+    if args.chr_split not in ('test', 'train-test'):
+        raise ValueError('Chromosome split must be test or train-test')
+    suffix = '_ncRNA' if args.biotype == 'non-coding' else ''
+    for split in (('test',) if args.chr_split == 'test' else ('test', 'train', 'validation')):
+        filename = Path(args.output_dir)/f'dataset_{split}{suffix}.h5'
         print(f'Verifying {filename}...')
-        with h5py.File(filename, 'r') as hf:
-            # print the available dataset keys in the file
-            print(f"Dataset keys: {list(hf.keys())}\n\n")
-
-            # convert datasets to PyTorch tensors and display their shapes
-            X0_tensor = torch.from_numpy(hf['X0'][:]).float()  
-            Y0_tensor = torch.from_numpy(hf['Y0'][:]) 
-            print(f"X0 shape: {X0_tensor.shape}, Y0 shape: {Y0_tensor.shape}")
-
-            # process a representative chunk (the last available) for visualization.
-            # The dataset may have only a handful of chunks (X0, X1, ...), so pick the
-            # last one that exists rather than a hardcoded index.
-            last_idx = max((int(k[1:]) for k in hf.keys() if k.startswith('X')))
-            x = torch.from_numpy(hf[f'X{last_idx}'][:]).float()
-            y = torch.from_numpy(hf[f'Y{last_idx}'][:])
-            print(f"x[0].shape: {x[0].shape}, y[0].shape: {y[0].shape}")
-
-            # plot the sum of the last entry in the 'X3' dataset along its rows
-            fig = plt.figure(figsize=(7, 3))
-            ax = fig.add_subplot(111)
-            ax.set_xlim([0, 15000])
-            ax.plot(x[-1].sum(axis=1))  # Sum over rows and plot
-            fig.savefig(figname, dpi=300, bbox_inches='tight')
-            plt.close(fig)
-
-            # additional info
-            print("x[0].sum(axis=1): ", len(x[len(x)-1].sum(axis=1))) # Length of row sum in the last 'X3' entry
-            print("x[0].sum(axis=0): ", len(x[len(x)-1].sum(axis=0))) # Length of column sum in the last 'X3' entry
-            print(f"(x[0].sum(axis=1) == 0).sum(): {(x[0].sum(axis=1) == 0).sum()}") # Number of zero-sum rows in the first 'X3' entry
-
-    # END
-    print(("--- %s seconds ---" % (time.time() - start_time)))
+        representative = None
+        count = 0
+        with h5py.File(filename, 'r') as handle:
+            for index in shard_indices(handle):
+                samples = validate_shard(handle, index)
+                for first in range(0, samples, 32):
+                    inputs = handle[f'X{index}'][first:first+32]
+                    labels = handle[f'Y{index}'][0, first:first+32]
+                    validate_encoding(inputs, labels)
+                    if representative is None:
+                        representative = inputs[0].sum(axis=1)
+                count += samples
+        print(f'{split}: {count} windows')
+        if representative is None:
+            print(f'{split}: empty split; no verification plot')
+            continue
+        figure, axis = plt.subplots(figsize=(7, 3))
+        try:
+            axis.plot(representative)
+            axis.set(xlabel='Input position', ylabel='Encoded nucleotide count')
+            figure.savefig(Path(args.output_dir)/f'verify_{split}{suffix}.png', dpi=150, bbox_inches='tight')
+        finally:
+            plt.close(figure)
+    print(f'--- {time.monotonic()-start:.2f} seconds ---')

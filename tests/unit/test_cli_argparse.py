@@ -78,7 +78,7 @@ def test_variant_flanking_size_rejects_unsupported():
 
 
 def test_variant_flanking_size_accepts_supported():
-    args = parse_args(["variant", "-R", "r", "-A", "grch38", "-f", "400"])
+    args = parse_args(["variant", "-R", "r", "-A", "grch38", "-m", "model.pt", "-f", "400"])
     assert args.flanking_size == 400
 
 

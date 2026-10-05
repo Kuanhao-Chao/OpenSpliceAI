@@ -11,21 +11,39 @@ import platform
 import sys
 import os
 import time
+import random
+import math
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 from sklearn.metrics import average_precision_score, precision_recall_fscore_support, accuracy_score
 from openspliceai.constants import *
+from openspliceai.data_schema import shard_indices, validate_shard, validate_encoding
+from openspliceai.checkpoints import atomic_torch_save
 
 def setup_environment(args):
-    assert int(args.flanking_size) in [80, 400, 2000, 10000]
+    """Validate context/iteration settings, seed Python/NumPy/Torch, and select a device."""
+    if int(args.flanking_size) not in [80, 400, 2000, 10000]:
+        raise ValueError('Unsupported flanking size')
+    seed = int(getattr(args, 'random_seed', 42))
+    if seed < 0 or seed >= 2**32:
+        raise ValueError('Random seed must be in [0, 2**32)')
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    for name in ('epochs', 'patience'):
+        if hasattr(args, name) and getattr(args, name) < 1:
+            raise ValueError(f'{name} must be positive')
     device = setup_device()
     print("device: ", device, file=sys.stderr)
     return device
 
 
 def initialize_test_paths(args):
+    """Create historical evaluation log directories from command arguments."""
     log_output_test_base = initialize_test_paths_inner(
         args.output_dir, args.project_name, args.flanking_size, args.exp_num, 
         args.random_seed, args.test_target, args.log_dir
@@ -34,6 +52,7 @@ def initialize_test_paths(args):
 
 
 def initialize_test_paths_inner(output_dir, project_name, flanking_size, exp_num, random_seed, test_target, log_dir):
+    """Create and return the TEST log path for a historical model run."""
     MODEL_VERSION = f"SpliceAI_{project_name}_{flanking_size}_{exp_num}_rs{random_seed}"
     model_train_outdir = f"{output_dir}/{MODEL_VERSION}/{exp_num}/"
     log_output_base = f"{model_train_outdir}{log_dir}/"
@@ -45,28 +64,22 @@ def initialize_test_paths_inner(output_dir, project_name, flanking_size, exp_num
 
 
 def load_test_datasets(args):
+    """Open the selected HDF5 test split; the caller owns and closes the handle."""
     test_h5f = h5py.File(args.test_dataset, 'r')
     return test_h5f
 
 
 def generate_test_indices(random_seed, test_h5f):
-    np.random.seed(random_seed)
-    test_idxs = np.arange(len(test_h5f.keys()) // 2)
-    np.random.shuffle(test_idxs)
-    return test_idxs
+    """Return a locally seeded permutation of actual paired shard indices."""
+    return np.random.default_rng(random_seed).permutation(shard_indices(test_h5f))
 
 
 def clip_datapoints_spliceai27(X, Y, CL, N_GPUS):
-    rem = X.shape[0]%N_GPUS
+    """Legacy channel-last crop helper; device count never removes samples."""
+    if CL < 0 or CL > CL_max or (CL_max-CL) % 2:
+        raise ValueError('Invalid symmetric context crop')
     clip = (CL_max-CL)//2
-    if rem != 0 and clip != 0:
-        return X[:-rem, clip:-clip], [Y[t][:-rem] for t in range(1)]
-    elif rem == 0 and clip != 0:
-        return X[:, clip:-clip], [Y[t] for t in range(1)]
-    elif rem != 0 and clip == 0:
-        return X[:-rem], [Y[t][:-rem] for t in range(1)]
-    else:
-        return X, [Y[t] for t in range(1)]
+    return (X[:, clip:-clip] if clip else X), [Y[0]]
 
 
 class MetricsAccumulator:
@@ -79,6 +92,7 @@ class MetricsAccumulator:
     """
 
     def __init__(self, num_classes):
+        """Initialize MetricsAccumulator with the supplied model, data or runtime settings."""
         self.true_classes = []
         self.predicted_classes = []
         self.num_classes = num_classes
@@ -102,11 +116,14 @@ class MetricsAccumulator:
         print(f"true_classes: {true_classes.shape}, predicted_classes: {predicted_classes.shape}")
         class_accuracies = classwise_accuracy(true_classes, predicted_classes, self.num_classes)
         overall_accuracy = np.mean(class_accuracies)
-        precision, recall, f1, _ = precision_recall_fscore_support(true_classes, predicted_classes, average=None)
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            true_classes, predicted_classes, labels=np.arange(self.num_classes),
+            average=None, zero_division=0)
         return overall_accuracy, precision, recall, f1, class_accuracies
 
 
 def calculate_batch_metrics(y_true, y_pred, metric_files, accumulator):
+    """Accumulate class labels and append per-batch evaluation metrics."""
     accumulator.update(y_true, y_pred)
     batch_accuracies = classwise_accuracy(y_true, y_pred, accumulator.num_classes)
     batch_overall_accuracy = np.mean(batch_accuracies)
@@ -114,12 +131,14 @@ def calculate_batch_metrics(y_true, y_pred, metric_files, accumulator):
     
 
 def process_batch(model, X, Y, params):  # pragma: no cover - Keras-only (model.predict); reachable only via the disabled 'test' subcommand
+    """Run the historical Keras channel-last evaluation helper."""
     Xc, Yc = clip_datapoints_spliceai27(X, Y, params['CL'], 2)
     Yp = model.predict(Xc, batch_size=params['BATCH_SIZE'])
     return Yc[0], Yp
 
 
 def test_SpliceAI_Keras_model(model, test_h5f, test_idxs, args, params, test_metric_files):  # pragma: no cover - Keras-only (model.predict); reachable only via the disabled 'test' subcommand
+    """Evaluate the historical Keras testing path; the test command is disabled."""
     print(f"\n{'='*60}")
     start_time = time.time()    
     print("--------------------------------------------------------------")
@@ -227,6 +246,7 @@ def test_SpliceAI_Keras_model(model, test_h5f, test_idxs, args, params, test_met
 
 
 def test_model(model, optimizer, test_h5f, test_idxs, args, device, params, test_metric_files):
+    """Evaluate a PyTorch test split and return its complete observed-label loss."""
     print("test_idxs: ", test_idxs)
     print(f"\n{'='*60}")
     start_time = time.time()
@@ -241,6 +261,7 @@ def test_model(model, optimizer, test_h5f, test_idxs, args, device, params, test
 # Model training
 ###########################
 def initialize_paths(args):
+    """Create train/validation/test log directories for a model run."""
     model_output_base, log_output_train_base, log_output_val_base, log_output_test_base = initialize_paths_inner(
         args.output_dir, args.project_name, args.flanking_size, args.exp_num, SL, args.loss, args.random_seed
     )
@@ -249,16 +270,34 @@ def initialize_paths(args):
 
 def load_datasets(args):
     # Transfer ownership only after all files were opened successfully.
+    """Open three distinct HDF5 splits, closing earlier handles on initialization failure."""
     with ExitStack() as stack:
         train_h5f = stack.enter_context(h5py.File(args.train_dataset, 'r'))
-        valid_dataset = os.path.join(os.path.dirname(args.train_dataset),
-                                    os.path.basename(args.train_dataset).replace("train", "validation"))
+        valid_dataset = resolve_validation_dataset(args)
         valid_h5f = stack.enter_context(h5py.File(valid_dataset, 'r'))
         test_h5f = stack.enter_context(h5py.File(args.test_dataset, 'r'))
-        batch_num = len(train_h5f.keys()) // 2
+        batch_num = len(shard_indices(train_h5f))
         print("* Batch_num: ", batch_num, file=sys.stderr)
         stack.pop_all()
         return train_h5f, valid_h5f, test_h5f, batch_num
+
+
+def resolve_validation_dataset(args):
+    """Resolve an explicit validation file or the legacy train filename convention."""
+    explicit = getattr(args, 'validation_dataset', None)
+    train = getattr(args, 'train_dataset', None)
+    if explicit:
+        path = explicit
+    elif train and 'train' in os.path.basename(train):
+        path = os.path.join(os.path.dirname(train), os.path.basename(train).replace('train', 'validation'))
+    else:
+        raise ValueError('Supply --validation-dataset; the training filename cannot resolve it')
+    if train and os.path.realpath(path) == os.path.realpath(train):
+        raise ValueError('Training and validation datasets must be distinct')
+    test = getattr(args, 'test_dataset', None)
+    if test and os.path.realpath(path) == os.path.realpath(test):
+        raise ValueError('Validation and test datasets must be distinct')
+    return path
 
 
 def generate_indices(train_h5f, valid_h5f, test_h5f):
@@ -267,9 +306,10 @@ def generate_indices(train_h5f, valid_h5f, test_h5f):
     # train_idxs = idxs[:int(0.9 * batch_num)]
     # val_idxs = idxs[int(0.9 * batch_num):]
     # test_idxs = np.arange(len(test_h5f.keys()) // 2)
-    train_idxs = np.arange(len(train_h5f.keys()) // 2)    
-    val_idxs = np.arange(len(valid_h5f.keys()) // 2)        
-    test_idxs = np.arange(len(test_h5f.keys()) // 2)
+    """Discover paired training shards and deterministically select validation/test shards."""
+    train_idxs = np.asarray(shard_indices(train_h5f), dtype=int)
+    val_idxs = np.asarray(shard_indices(valid_h5f), dtype=int)
+    test_idxs = np.asarray(shard_indices(test_h5f), dtype=int)
     # # Other approach of splitting test set
     # # Generate and shuffle indices for training set
     # train_idxs = np.arange(batch_num)
@@ -285,6 +325,7 @@ def generate_indices(train_h5f, valid_h5f, test_h5f):
 
 
 def create_metric_files(log_output_base):
+    """Create named metric logs and return a mapping of output paths."""
     metric_types = ['donor_topk_all', 'donor_topk', 'donor_auprc', 'donor_accuracy', 'donor_precision', 
                     'donor_recall', 'donor_f1', 'acceptor_topk_all', 'acceptor_topk', 'acceptor_auprc', 
                     'acceptor_accuracy', 'acceptor_precision', 'acceptor_recall', 'acceptor_f1', 
@@ -297,7 +338,7 @@ def setup_device():
 
     Returns a ``torch.device``.
     """
-    device_str = "cuda" if torch.cuda.is_available() else "mps" if platform.system() == "Darwin" else "cpu"
+    device_str = "cuda" if torch.cuda.is_available() else "mps" if platform.system() == "Darwin" and torch.backends.mps.is_available() else "cpu"
     return torch.device(device_str)
 
 
@@ -326,15 +367,22 @@ def load_data_from_shard(h5f, shard_idx, device, batch_size, params, shuffle=Fal
 
     Reads the chunked dataset, transposes both tensors to ``(N, channels,
     length)`` as the model expects, wraps them in a ``TensorDataset``, and
-    returns a ``DataLoader`` (``drop_last=True``, ``pin_memory=True``) with the
-    given ``batch_size`` and ``shuffle`` setting.
+    keeps the final partial batch. Explicit training ``DROP_LAST`` applies only
+    when shuffle is enabled; evaluation always keeps every sample.
     """
+    validate_shard(h5f, shard_idx)
     X = h5f[f'X{shard_idx}'][:].transpose(0, 2, 1)
     Y = h5f[f'Y{shard_idx}'][0, ...].transpose(0, 2, 1)
+    validate_encoding(X.transpose(0, 2, 1), Y.transpose(0, 2, 1))
     X = torch.tensor(X, dtype=torch.float32)
     Y = torch.tensor(Y, dtype=torch.float32)
     ds = TensorDataset(X, Y)
-    return DataLoader(ds, batch_size=batch_size, shuffle=shuffle, drop_last=True, pin_memory=True)
+    if batch_size < 1:
+        raise ValueError('Batch size must be positive')
+    return DataLoader(ds, batch_size=batch_size, shuffle=shuffle and len(ds) > 0,
+                      drop_last=bool(shuffle and params.get('DROP_LAST', False)),
+                      pin_memory=device.type == 'cuda',
+                      generator=params.get('TORCH_GENERATOR') if shuffle else None)
 
 
 def resolve_shard_loader(h5f, shard_pos, device, batch_size, params, shuffle=False):
@@ -356,6 +404,7 @@ def resolve_shard_loader(h5f, shard_pos, device, batch_size, params, shuffle=Fal
 
 
 def classwise_accuracy(true_classes, predicted_classes, num_classes):
+    """Return per-class recall in fixed class order, with zero for absent classes."""
     class_accuracies = []
     for i in range(num_classes):
         true_positives = np.sum((predicted_classes == i) & (true_classes == i))
@@ -369,13 +418,17 @@ def classwise_accuracy(true_classes, predicted_classes, num_classes):
 
 
 def metrics(batch_ypred, batch_ylabel, metric_files, run_mode):
+    """Append observed-position ranking and fixed-order classification statistics."""
     _, predicted_classes = torch.max(batch_ypred, 1)
     true_classes = torch.argmax(batch_ylabel, dim=1)
-    true_classes = true_classes.numpy()
-    predicted_classes = predicted_classes.numpy()
+    observed = (batch_ylabel.sum(dim=1) > 0).numpy()
+    true_classes = true_classes.numpy()[observed]
+    predicted_classes = predicted_classes.numpy()[observed]
     true_classes_flat = true_classes.flatten()
     predicted_classes_flat = predicted_classes.flatten()
-    precision, recall, f1, _ = precision_recall_fscore_support(true_classes_flat, predicted_classes_flat, average=None)
+    precision, recall, f1, support = precision_recall_fscore_support(
+        true_classes_flat, predicted_classes_flat, labels=[0, 1, 2],
+        average=None, zero_division=0)
     class_accuracies = classwise_accuracy(true_classes, predicted_classes, 3)
     overall_accuracy = np.mean(class_accuracies)
     print(f"Overall Accuracy: {overall_accuracy}")
@@ -385,7 +438,7 @@ def metrics(batch_ypred, batch_ylabel, metric_files, run_mode):
                 f.write(f"{overall_accuracy}\n")
     ss_types = ["Non-splice", "acceptor", "donor"]
     for i, (acc, prec, rec, f1_score) in enumerate(zip(class_accuracies, precision, recall, f1)):
-        print(f"Class {ss_types[i]}\t: Accuracy={acc}, Precision={prec}, Recall={rec}, F1={f1_score}")
+        print(f"Class {ss_types[i]}\t: Support={support[i]}, Recall={acc}, Precision={prec}, F1={f1_score}")
         if ss_types[i] == "Non-splice":
             continue
         for k, v in metric_files.items():
@@ -400,56 +453,38 @@ def metrics(batch_ypred, batch_ylabel, metric_files, run_mode):
                     f.write(f"{acc}\n")
 
 
-def model_evaluation(batch_ylabel, batch_ypred, metric_files, run_mode, criterion):
+def model_evaluation(batch_ylabel, batch_ypred, metric_files, run_mode, criterion, params=None):
+    """Report the complete selected split and return its observation-weighted loss."""
     if not batch_ylabel or not batch_ypred:
         raise ValueError("No evaluation batches: check shard sizes, batch size and split contents")
-    batch_ylabel = torch.cat(batch_ylabel, dim=0)
-    batch_ypred = torch.cat(batch_ypred, dim=0)
-    is_expr = (batch_ylabel.sum(axis=(1,2)) >= 1).cpu().numpy()
-    if np.any(is_expr):
-        subset_size = 1000
-        indices = np.arange(batch_ylabel[is_expr].shape[0])
-        subset_indices = np.random.choice(indices, size=min(subset_size, len(indices)), replace=False)
-        batch_ylabel = batch_ylabel[is_expr][subset_indices, :, :]
-        batch_ypred = batch_ypred[is_expr][subset_indices, :, :]
-        Y_true_1 = batch_ylabel[:, 1, :].flatten().cpu().detach().numpy()
-        Y_true_2 = batch_ylabel[:, 2, :].flatten().cpu().detach().numpy()
-        Y_pred_1 = batch_ypred[:, 1, :].flatten().cpu().detach().numpy()
-        Y_pred_2 = batch_ypred[:, 2, :].flatten().cpu().detach().numpy()
-        acceptor_topk_accuracy, acceptor_auprc = print_topl_statistics(np.asarray(Y_true_1),
-                            np.asarray(Y_pred_1), metric_files["acceptor_topk_all"], ss_type='acceptor', print_top_k=True)
-        donor_topk_accuracy, donor_auprc = print_topl_statistics(np.asarray(Y_true_2),
-                            np.asarray(Y_pred_2), metric_files["donor_topk_all"], ss_type='donor', print_top_k=True)
-        if criterion == "cross_entropy_loss":
-            loss = categorical_crossentropy_2d(batch_ylabel, batch_ypred)
-        elif criterion == "focal_loss":
-            loss = focal_loss(batch_ylabel, batch_ypred)
-        for k, v in metric_files.items():
-            with open(v, 'a') as f:
-                if k == "loss_batch":
-                    f.write(f"{loss.item()}\n")
-                elif k == "donor_topk":
-                    f.write(f"{donor_topk_accuracy}\n")
-                elif k == "donor_auprc":
-                    f.write(f"{donor_auprc}\n")
-                elif k == "acceptor_topk":
-                    f.write(f"{acceptor_topk_accuracy}\n")
-                elif k == "acceptor_auprc":
-                    f.write(f"{acceptor_auprc}\n")
-        print("***************************************\n")
-        metrics(batch_ypred, batch_ylabel, metric_files, run_mode)
-    batch_ylabel = []
-    batch_ypred = []
+    labels = torch.cat(batch_ylabel, dim=0)
+    predictions = torch.cat(batch_ypred, dim=0)
+    if labels.shape != predictions.shape or labels.numel() == 0:
+        raise ValueError('Evaluation labels and predictions must have the same nonempty shape')
+    loss = compute_loss(labels, predictions, criterion, params)
+    values = {'loss_batch': loss.item()}
+    for index, site in ((1, 'acceptor'), (2, 'donor')):
+        observed = labels.sum(dim=1) > 0
+        truth = labels[:, index, :][observed].numpy()
+        scores = predictions[:, index, :][observed].numpy()
+        topk, auprc = print_topl_statistics(truth, scores, metric_files[f'{site}_topk_all'],
+                                           ss_type=site, print_top_k=True)
+        values[f'{site}_topk'] = topk
+        values[f'{site}_auprc'] = auprc
+    for key, value in values.items():
+        with open(metric_files[key], 'a') as handle:
+            handle.write(f'{value}\n')
+    metrics(predictions, labels, metric_files, run_mode)
     return loss
 
 
 @torch.no_grad()
 def valid_epoch(model, h5f, idxs, batch_size, criterion, device, params, metric_files, flanking_size, run_mode):
+    """Evaluate all selected shards without gradients, retaining partial batches."""
     print(f"\033[1m{run_mode.capitalize()}ing model...\033[0m")
     model.eval()
     running_loss = 0.0
-    np.random.seed(params["RANDOM_SEED"])
-    shuffled_idxs = np.random.choice(idxs, size=len(idxs), replace=False)
+    shuffled_idxs = np.asarray(idxs)
     print("shuffled_idxs: ", shuffled_idxs)
     batch_ylabel = []
     batch_ypred = []
@@ -464,10 +499,7 @@ def valid_epoch(model, h5f, idxs, batch_size, criterion, device, params, metric_
             DNAs, labels = clip_datapoints(DNAs, labels, params["CL"], CL_max, params["N_GPUS"])
             DNAs, labels = DNAs.to(torch.float32).to(device), labels.to(torch.float32).to(device)
             yp = model(DNAs)
-            if criterion == "cross_entropy_loss":
-                loss = categorical_crossentropy_2d(labels, yp)
-            elif criterion == "focal_loss":
-                loss = focal_loss(labels, yp)
+            loss = compute_loss(labels, yp, criterion, params)
             with open(metric_files["loss_every_update"], 'a') as f:
                 f.write(f"{loss.item()}\n")
             running_loss += loss.item()
@@ -478,28 +510,35 @@ def valid_epoch(model, h5f, idxs, batch_size, criterion, device, params, metric_
             pbar.update(1)
             batch_idx += 1
         pbar.close()
-    eval_loss = model_evaluation(batch_ylabel, batch_ypred, metric_files, run_mode, criterion)
+    eval_loss = model_evaluation(batch_ylabel, batch_ypred, metric_files, run_mode, criterion, params)
     return eval_loss
 
 
 def train_epoch(model, h5f, idxs, batch_size, criterion, optimizer, scheduler, device, params, metric_files, flanking_size, run_mode, global_batch_idx):
+    """Train one complete epoch, with optional rehearsal/distillation and fractional cosine timing."""
     print(f"\033[1m{run_mode.capitalize()}ing model...\033[0m")
     model.train()
     running_loss = 0.0
-    np.random.seed(params["RANDOM_SEED"])
-    shuffled_idxs = np.random.choice(idxs, size=len(idxs), replace=False)
+    rng = params.setdefault("SHUFFLE_RNG", np.random.default_rng(params["RANDOM_SEED"]))
+    shuffled_idxs = rng.permutation(idxs)
     print("shuffled_idxs: ", shuffled_idxs)
     batch_ylabel = []
     batch_ypred = []
     print_dict = {}
 
-    # Calculate total number of batches in the epoch
+    # Count from shard shapes: avoid reading every shard twice, and use the
+    # same drop-last policy as the training loaders for scheduler timing.
     total_batches_in_epoch = 0
     for shard_idx in idxs:
-        # Load the loader to get its length
-        loader = resolve_shard_loader(h5f, shard_idx, device, batch_size, params, shuffle=False)
-        total_batches_in_epoch += len(loader)
+        table = params.get('SHARD_TABLE')
+        source, index = table[int(shard_idx)] if table is not None else ('train', shard_idx)
+        handle = params['REHEARSAL_H5F'] if source == 'rehearsal' else h5f
+        count = validate_shard(handle, index)
+        total_batches_in_epoch += count // batch_size if params.get('DROP_LAST', False) else (count+batch_size-1) // batch_size
 
+    if total_batches_in_epoch == 0:
+        raise ValueError('No training batches; disable --drop-last or check the selected split')
+    batch_in_epoch = 0
     for i, shard_idx in enumerate(shuffled_idxs, 1):
         print(f"Shard {i}/{len(shuffled_idxs)}")
         loader = resolve_shard_loader(h5f, shard_idx, device, batch_size, params, shuffle=True)
@@ -510,10 +549,7 @@ def train_epoch(model, h5f, idxs, batch_size, criterion, optimizer, scheduler, d
             DNAs, labels = DNAs.to(torch.float32).to(device), labels.to(torch.float32).to(device)
             optimizer.zero_grad()
             yp = model(DNAs)
-            if criterion == "cross_entropy_loss":
-                loss = categorical_crossentropy_2d(labels, yp)
-            elif criterion == "focal_loss":
-                loss = focal_loss(labels, yp)
+            loss = compute_loss(labels, yp, criterion, params)
             # Optional knowledge-distillation / Learning-without-Forgetting auxiliary loss:
             # keep the student close to a frozen teacher on genomic anchor windows so it does
             # not forget canonical genomic splice sites while finetuning on narrow data.
@@ -530,8 +566,10 @@ def train_epoch(model, h5f, idxs, batch_size, criterion, optimizer, scheduler, d
             pbar.update(1)
 
             # Update the scheduler
-            epoch_fraction = global_batch_idx / total_batches_in_epoch
-            scheduler.step(epoch_fraction)
+            if isinstance(scheduler, torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):
+                epoch_fraction = params.get('EPOCH', 0) + (batch_in_epoch + 1) / total_batches_in_epoch
+                scheduler.step(epoch_fraction)
+            batch_in_epoch += 1
             # Log current learning rate
             current_lr = scheduler.get_last_lr()[0]
             print_dict["lr"] = f"{current_lr:.6e}"        
@@ -539,7 +577,7 @@ def train_epoch(model, h5f, idxs, batch_size, criterion, optimizer, scheduler, d
             with open(metric_files['learning_rate_every_batch'], 'a') as f:
                 f.write(f"{current_lr}\n")
         pbar.close()
-    eval_loss = model_evaluation(batch_ylabel, batch_ypred, metric_files, run_mode, criterion)
+    eval_loss = model_evaluation(batch_ylabel, batch_ypred, metric_files, run_mode, criterion, params)
     return eval_loss, global_batch_idx
 
 
@@ -555,56 +593,49 @@ def threshold_predictions(y_probs, threshold=0.5):
     return (y_probs > threshold).astype(int)
 
 
-def clip_datapoints(X, Y, CL, CL_max, N_GPUS):
+def clip_datapoints(X, Y, CL, CL_max, N_GPUS=1):
+    """Crop input context, keeping every sample and the output labels intact.
+
+    N_GPUS is retained as a compatibility argument; it never discards samples.
+    CL and CL_max describe total context (half on each side), not device count.
     """
-    Clip the input data points to the desired length.
-    """
-    rem = X.shape[0]%N_GPUS
+    if CL < 0 or CL > CL_max or (CL_max - CL) % 2:
+        raise ValueError('Context crop must be nonnegative, symmetric and within CL_max')
+    if X.ndim != 3 or Y.ndim != 3 or X.shape[0] != Y.shape[0]:
+        raise ValueError('Input and labels must be 3D tensors with matching batch sizes')
+    if X.shape[-1]-Y.shape[-1] != CL_max or X.shape[1] != 4 or Y.shape[1] != 3:
+        raise ValueError('Input/label channels or stored context do not match the requested schema')
     clip = (CL_max-CL)//2
-    if rem != 0 and clip != 0:
-        return X[:-rem, :, clip:-clip], Y[:-rem]
-    elif rem == 0 and clip != 0:
-        return X[:, :, clip:-clip], Y
-    elif rem != 0 and clip == 0:
-        return X[:-rem], Y[:-rem]
-    else:
-        return X, Y
+    if X.shape[-1] <= 2*clip:
+        raise ValueError('Input is shorter than the required context crop')
+    return (X[:, :, clip:-clip] if clip else X), Y
 
 
 def print_topl_statistics(y_true, y_pred, file, ss_type='acceptor', print_top_k=False):
-    """
-    Print top-k statistics for the given splice site type.
-    """
-    idx_true = np.nonzero(y_true == 1)[0]
-    argsorted_y_pred = np.argsort(y_pred)
-    sorted_y_pred = np.sort(y_pred)
-    topkl_accuracy = []
-    threshold = []
-    for top_length in [0.5, 1, 2, 4]:
-        num_elements = int(top_length * len(idx_true))
-        if num_elements > len(y_pred):  # Check to prevent out-of-bounds access
-            print(f"Warning: Requested top_length {top_length} with {len(idx_true)} true elements exceeds y_pred size of {len(y_pred)}. Adjusting to fit.")
-            num_elements = len(y_pred)  # Adjust num_elements to prevent out-of-bounds error
-        idx_pred = argsorted_y_pred[-int(top_length*len(idx_true)):]
-        topkl_accuracy += [np.size(np.intersect1d(idx_true, idx_pred)) \
-                  / float(min(len(idx_pred), len(idx_true))+1e-10)]
-        threshold += [sorted_y_pred[-num_elements]]
-    auprc = average_precision_score(y_true, y_pred)
+    """Write top-k recall and AUPRC; absent positive sites are explicitly undefined."""
+    y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)
+    if y_true.shape != y_pred.shape or y_true.size == 0:
+        raise ValueError('Ranking metrics need matching nonempty arrays')
+    idx_true = np.flatnonzero(y_true == 1)
+    order = np.argsort(y_pred, kind='stable')
+    topkl_accuracy, threshold = [], []
+    for multiplier in (.5, 1, 2, 4):
+        count = min(int(multiplier * len(idx_true)), len(y_pred))
+        selected = order[-count:] if count else np.array([], dtype=int)
+        topkl_accuracy.append(len(np.intersect1d(idx_true, selected)) / min(count, len(idx_true))
+                              if count and len(idx_true) else (0.0 if len(idx_true) else float('nan')))
+        threshold.append(float(y_pred[order[-count]]) if count else float('nan'))
+    auprc = average_precision_score(y_true, y_pred) if len(idx_true) else float('nan')
+    row = topkl_accuracy + [auprc] + threshold + [len(idx_true)]
     if print_top_k:
-        print(f"\n\033[1m{ss_type}:\033[0m")
-        print((("%.4f\t\033[91m%.4f\t\033[0m%.4f\t%.4f\t\033[94m%.4f\t\033[0m"
-            + "%.4f\t%.4f\t%.4f\t%.4f\t%d") % (topkl_accuracy[0], topkl_accuracy[1], topkl_accuracy[2],
-            topkl_accuracy[3], auprc, threshold[0], threshold[1],
-            threshold[2], threshold[3], len(idx_true))))
-    with open(file, 'a') as f:
-        f.write((("%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"
-          + "%.4f\t%.4f\t%.4f\t%.4f\t%d\n") % (topkl_accuracy[0], topkl_accuracy[1], topkl_accuracy[2],
-          topkl_accuracy[3], auprc, threshold[0], threshold[1],
-          threshold[2], threshold[3], len(idx_true))))
+        print(f'{ss_type}: top-k/AUPRC/cutoffs/support ' + '\t'.join(map(str, row)))
+    with open(file, 'a') as handle:
+        handle.write('\t'.join(map(str, row)) + '\n')
     return topkl_accuracy[1], auprc
 
 
 def weighted_binary_cross_entropy(output, target, weights=None):    
+    """Compute the legacy two-splice-channel BCE helper with optional class weights."""
     if weights is not None:
         assert len(weights) == 2
         loss = weights[1] * (target * torch.log(output+1e-10)) + \
@@ -618,21 +649,78 @@ def categorical_crossentropy_2d(y_true, y_pred):
     """
     Compute 2D categorical cross-entropy loss.
     """
-    return - torch.mean(y_true[:, 0, :]*torch.log(y_pred[:, 0, :]+1e-10)
-                        + y_true[:, 1, :]*torch.log(y_pred[:, 1, :]+1e-10)
-                        + y_true[:, 2, :]*torch.log(y_pred[:, 2, :]+1e-10))
+    observed = _validate_loss_inputs(y_true, y_pred)
+    loss = -(y_true*y_pred.clamp(min=1e-10, max=1).log()).sum(dim=1)
+    return loss[observed].mean()
 
 
 def focal_loss(y_true, y_pred, alpha=0.25, gamma=2.0):
+    """Mean categorical focal loss over (batch, classes, positions).
+
+    alpha is a nonnegative scalar or three class weights. gamma is finite and
+    nonnegative. Scalar alpha scales the objective; class weights balance classes.
     """
-    Compute 2D focal loss.
-    """
-    # Ensuring numerical stability
-    gamma = 2
-    epsilon = 1e-10
-    return - torch.mean(y_true[:, 0, :]*torch.log(y_pred[:, 0, :]+epsilon) * torch.pow(torch.sub(1, y_pred[:, 0, :]), gamma)
-                        + y_true[:, 1, :]*torch.log(y_pred[:, 1, :]+epsilon) * torch.pow(torch.sub(1, y_pred[:, 1, :]), gamma)
-                        + y_true[:, 2, :]*torch.log(y_pred[:, 2, :]+epsilon) * torch.pow(torch.sub(1, y_pred[:, 2, :]), gamma))
+    if not math.isfinite(float(gamma)) or gamma < 0:
+        raise ValueError('Focal gamma must be finite and nonnegative')
+    weights = torch.as_tensor(alpha, dtype=y_pred.dtype, device=y_pred.device)
+    if weights.shape not in (torch.Size([]), torch.Size([3])) or not torch.isfinite(weights).all() or (weights < 0).any():
+        raise ValueError('Focal alpha must be a nonnegative scalar or three finite weights')
+    if weights.ndim:
+        weights = weights.view(1, 3, 1)
+    probabilities = y_pred.clamp(min=1e-10, max=1)
+    observed = _validate_loss_inputs(y_true, y_pred)
+    losses = -(y_true * weights * (1-probabilities).pow(gamma) * probabilities.log()).sum(dim=1)
+    return losses[observed].mean()
+
+
+def _validate_loss_inputs(labels, probabilities):
+    if labels.shape != probabilities.shape or labels.ndim != 3 or labels.shape[1] != 3:
+        raise ValueError('Loss requires matching (batch, 3, positions) tensors')
+    for values in (labels, probabilities):
+        if not torch.isfinite(values).all() or (values < 0).any() or (values > 1).any():
+            raise ValueError('Loss labels/probabilities must be finite and between zero and one')
+    totals = labels.sum(dim=1)
+    observed = totals > 0
+    if not observed.any():
+        raise ValueError('Loss requires at least one observed label')
+    if not torch.allclose(totals[observed], torch.ones_like(totals[observed]), rtol=1e-5, atol=1e-6):
+        raise ValueError('Observed class labels must sum to one')
+    return observed
+
+
+def compute_loss(labels, predictions, criterion, params=None):
+    """Evaluate the configured primary loss consistently in every workflow."""
+    if criterion == 'cross_entropy_loss':
+        return categorical_crossentropy_2d(labels, predictions)
+    if criterion == 'focal_loss':
+        params = params or {}
+        return focal_loss(labels, predictions, params.get('FOCAL_ALPHA', .25), params.get('FOCAL_GAMMA', 2.0))
+    raise ValueError(f'Unsupported loss: {criterion}')
+
+
+def configure_training_params(args, params):
+    """Configure loss, batch retention and a reproducible advancing shuffle RNG."""
+    params['FOCAL_ALPHA'] = getattr(args, 'focal_alpha', .25)
+    params['FOCAL_GAMMA'] = getattr(args, 'focal_gamma', 2.0)
+    for key in ('FOCAL_ALPHA', 'FOCAL_GAMMA'):
+        if not math.isfinite(params[key]) or params[key] < 0:
+            raise ValueError(f'{key} must be finite and nonnegative')
+    params['RANDOM_SEED'] = args.random_seed
+    params['DROP_LAST'] = getattr(args, 'drop_last', False)
+    params['SHUFFLE_RNG'] = np.random.default_rng(args.random_seed)
+    params['TORCH_GENERATOR'] = torch.Generator().manual_seed(args.random_seed)
+
+
+def initialize_scheduler(optimizer, epochs, name, decay_epochs=5):
+    """Build a scheduler with positive milestones and scheduler-specific cadence."""
+    if epochs < 1:
+        raise ValueError('Epochs must be positive')
+    if name == 'MultiStepLR':
+        milestones = list(range(max(1, epochs-decay_epochs), epochs))
+        return torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=.5)
+    if name == 'CosineAnnealingWarmRestarts':
+        return torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=1, eta_min=1e-5)
+    raise ValueError(f'Unsupported scheduler: {name}')
 
 
 def distillation_loss(model, params, device):
@@ -654,9 +742,9 @@ def distillation_loss(model, params, device):
     if not weight or weight <= 0:
         return 0.0
     teacher = params["TEACHER"]
-    a_DNAs, _ = next(params["ANCHOR_ITER"])
+    a_DNAs, a_labels = next(params["ANCHOR_ITER"])
     a_DNAs = a_DNAs.to(device)
-    a_DNAs, _ = clip_datapoints(a_DNAs, a_DNAs, params["CL"], CL_max, params["N_GPUS"])
+    a_DNAs, _ = clip_datapoints(a_DNAs, a_labels, params["CL"], CL_max, params["N_GPUS"])
     a_DNAs = a_DNAs.to(torch.float32).to(device)
     with torch.no_grad():
         teacher_probs = teacher(a_DNAs)
@@ -690,12 +778,15 @@ def train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, tra
     epochs_no_improve = 0
     global_batch_idx = 0  # Initialize before the training loop
     for epoch in range(args.epochs):
+        params['EPOCH'] = epoch
         print(f"\n{'='*60}")
         # current_lr = optimizer.param_groups[0]['lr']
         # print(f">> Epoch {epoch + 1}; Current Learning Rate: {current_lr}")
         start_time = time.time()
         train_loss, global_batch_idx= train_epoch(model, train_h5f,
                         train_idxs, params["BATCH_SIZE"], args.loss, optimizer, scheduler, device, params, train_metric_files, args.flanking_size, run_mode="train", global_batch_idx=global_batch_idx)
+        if isinstance(scheduler, torch.optim.lr_scheduler.MultiStepLR):
+            scheduler.step()
         val_loss = valid_epoch(model, valid_h5f, val_idxs, params["BATCH_SIZE"], args.loss, device, 
                                params, valid_metric_files, args.flanking_size, "validation")
         test_loss = valid_epoch(model, test_h5f, test_idxs, params["BATCH_SIZE"], args.loss, device,
@@ -710,11 +801,11 @@ def train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, tra
         print(f"Training Loss: {train_loss}")
         print(f"Validation Loss: {val_loss}")
         print(f"Testing Loss: {test_loss}")
-        torch.save(model.state_dict(), f"{model_output_base}/model_{epoch}.pt")
+        atomic_torch_save(model.state_dict(), f"{model_output_base}/model_{epoch}.pt")
         if args.early_stopping:
             if val_loss.item() < best_val_loss:
                 best_val_loss = val_loss.item()
-                torch.save(model.state_dict(), f"{model_output_base}/model_best.pt")
+                atomic_torch_save(model.state_dict(), f"{model_output_base}/model_best.pt")
                 print("New best model saved.")
                 epochs_no_improve = 0
             else:
@@ -726,7 +817,7 @@ def train_model(model, optimizer, scheduler, train_h5f, valid_h5f, test_h5f, tra
         else:
             if val_loss.item() < best_val_loss:
                 best_val_loss = val_loss.item()
-                torch.save(model.state_dict(), f"{model_output_base}/model_best.pt")
+                atomic_torch_save(model.state_dict(), f"{model_output_base}/model_best.pt")
                 print("New best model saved.")
         current_lr = scheduler.get_last_lr()[0]
         with open(train_metric_files['learning_rate_every_epoch'], 'a') as f:

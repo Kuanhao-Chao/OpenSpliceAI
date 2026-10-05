@@ -33,7 +33,7 @@ def test_transfer_rejects_checkpoint_with_no_matching_parameters(tmp_path, targe
     transfer = importlib.import_module("openspliceai.transfer.transfer")
     path = tmp_path / "empty.pt"
     torch.save({}, path)
-    with pytest.raises(ValueError, match="matching parameters"):
+    with pytest.raises(ValueError, match="nonempty state dictionary"):
         if target == "student":
             transfer.initialize_model_and_optim_transfer(torch.device("cpu"), 80, 10,
                 "MultiStepLR", path, 1, True)

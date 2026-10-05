@@ -10,6 +10,7 @@ from sklearn.calibration import calibration_curve
 from sklearn.metrics import brier_score_loss
 
 def compute_calibration_curve(labels, probs, n_bins=10, strategy='quantile'):
+    """Return aligned occupied-bin fractions, probabilities and counts."""
     prob_true, prob_pred = calibration_curve(labels, probs, n_bins=n_bins, strategy=strategy)
     if strategy == 'quantile':
         quantiles = np.linspace(0, 1, n_bins + 1)
@@ -25,6 +26,7 @@ def compute_calibration_curve(labels, probs, n_bins=10, strategy='quantile'):
 
 
 def compute_confidence_intervals(prob_true, bin_counts, z=1.96):
+    """Return Wilson binomial intervals for the provided reliability bins."""
     if np.shape(prob_true) != np.shape(bin_counts):
         raise ValueError("Calibration probabilities and counts must have matching shapes")
     ci_lower, ci_upper = [], []
@@ -37,10 +39,12 @@ def compute_confidence_intervals(prob_true, bin_counts, z=1.96):
 
 
 def reverse_softmax(probs):
+    """Recover logits up to a shared additive constant from probabilities."""
     return np.log(np.clip(probs, 1e-8, 1.0))
 
 
 def save_calibration_data(output_dir, class_name, flanking_size, prob_true, prob_pred, bin_counts, suffix):
+    """Write aligned reliability statistics and confidence intervals as CSV."""
     np.savez(
         f"{output_dir}/calibration_data_{class_name}_{suffix}_{flanking_size}nt.npz",
         prob_true=prob_true,
@@ -50,6 +54,7 @@ def save_calibration_data(output_dir, class_name, flanking_size, prob_true, prob
 
 
 def calculate_brier_scores(labels, probs, probs_scaled):
+    """Return mean squared probability error independently for each class."""
     return (
         [brier_score_loss((labels == i).astype(int), probs[:, i]) for i in range(3)],
         [brier_score_loss((labels == i).astype(int), probs_scaled[:, i]) for i in range(3)]

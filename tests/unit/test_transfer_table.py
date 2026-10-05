@@ -8,11 +8,10 @@ from openspliceai.transfer.transfer import initialize_model_and_optim_transfer
 
 @pytest.mark.parametrize("flank", [80, 400, 2000, 10000])
 def test_transfer_builder_each_flanking_size(packaged_80nt_state, flank):
-    """Build every flanking architecture; the 80nt checkpoint loads with strict=False
-    (size-mismatched keys filtered) so larger sizes initialise cleanly."""
+    """Cross-context initialization requires explicit partial-checkpoint opt-in."""
     model, optimizer, scheduler, params = initialize_model_and_optim_transfer(
         torch.device("cpu"), flank, 10, "MultiStepLR", packaged_80nt_state,
-        unfreeze=0, unfreeze_all=True)
+        unfreeze=0, unfreeze_all=True, allow_partial_checkpoint=(flank != 80))
     assert params["CL"] == flank and params["L"] == 32
     assert optimizer is not None and scheduler is not None
 

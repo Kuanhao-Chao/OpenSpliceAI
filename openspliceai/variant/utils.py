@@ -1,4 +1,7 @@
+from openspliceai.checkpoints import unpack_checkpoint, CalibratedSpliceAI, CheckpointError
 from importlib.resources import files
+from contextlib import contextmanager
+from threading import RLock
 import pandas as pd
 import numpy as np
 from openspliceai.model_config import model_hyperparameters
@@ -17,9 +20,57 @@ from openspliceai.predict.utils import *
 ## LOADING PYTORCH AND KERAS MODELS
 ##############################################
 
+_INFERENCE_LOCK = RLock()
+
+
+@contextmanager
+def inference_settings():
+    """Use scoped FP32 inference settings; OSAI_* flags accept only 0 or 1.
+
+    TF32 and cuDNN benchmarking are opt-in. Restore the caller's complete
+    settings on success and failure. The lock serializes this library's use of
+    process-global backend flags; unrelated caller threads must coordinate too.
+    Set CUBLAS_WORKSPACE_CONFIG before importing torch for deterministic CUDA.
+    """
+    options = {}
+    for name in ('OSAI_TF32', 'OSAI_CUDNN_BENCH', 'OSAI_DETERMINISTIC'):
+        value = os.environ.get(name, '0')
+        if value not in ('0', '1'):
+            raise ValueError(f'{name} must be 0 or 1')
+        options[name] = value == '1'
+    with _INFERENCE_LOCK:
+        previous = (torch.backends.cudnn.benchmark, torch.backends.cudnn.allow_tf32,
+                    torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.deterministic,
+                    torch.are_deterministic_algorithms_enabled(),
+                    torch.is_deterministic_algorithms_warn_only_enabled())
+        try:
+            deterministic = options['OSAI_DETERMINISTIC']
+            torch.backends.cudnn.benchmark = options['OSAI_CUDNN_BENCH'] and not deterministic
+            torch.backends.cudnn.allow_tf32 = options['OSAI_TF32']
+            torch.backends.cuda.matmul.allow_tf32 = options['OSAI_TF32']
+            torch.backends.cudnn.deterministic = deterministic
+            torch.use_deterministic_algorithms(deterministic)
+            yield
+        finally:
+            (torch.backends.cudnn.benchmark, torch.backends.cudnn.allow_tf32,
+             torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.deterministic) = previous[:4]
+            torch.use_deterministic_algorithms(previous[4], warn_only=previous[5])
+
+
+def validate_scoring_options(distance, mask, flanking_size, precision, batch_size=1):
+    """Reject unsupported scoring configurations for direct Python callers too."""
+    if not isinstance(distance, (int, np.integer)) or not 0 <= distance < 5000:
+        raise ValueError('Distance must be an integer between 0 and 4999')
+    if mask not in (0, 1) or flanking_size not in (80, 400, 2000, 10000):
+        raise ValueError('Mask must be 0/1 and context one of 80, 400, 2000, 10000')
+    if not isinstance(precision, (int, np.integer)) or not 0 <= precision <= 12:
+        raise ValueError('Precision must be an integer between 0 and 12')
+    if not isinstance(batch_size, (int, np.integer)) or batch_size < 1:
+        raise ValueError('Batch size must be a positive integer')
+
 def setup_device():
         """Select computation device based on availability."""
-        device_str = "cuda" if torch.cuda.is_available() else "mps" if platform.system() == "Darwin" else "cpu"
+        device_str = "cuda" if torch.cuda.is_available() else "mps" if platform.system() == "Darwin" and torch.backends.mps.is_available() else "cpu"
         return torch.device(device_str)
 
 
@@ -76,9 +127,10 @@ def load_pytorch_models(model_path, CL):
     # Load all model state dicts given the supplied model path
     if os.path.isdir(model_path):
         model_files = glob.glob(os.path.join(model_path, '*.pt')) + glob.glob(os.path.join(model_path, '*.pth')) # gets all PyTorch models from supplied directory
+        model_files = sorted(model_files)
         if not model_files:
             logging.error(f"No PyTorch model files found in directory: {model_path}")
-            raise SystemExit(1)
+            raise CheckpointError(f'Unable to load checkpoint at {model_path}')
             
         models = []
         for model_file in model_files:
@@ -87,22 +139,22 @@ def load_pytorch_models(model_path, CL):
                 models.append(model)
             except Exception as e:
                 logging.error(f"Error loading PyTorch model from file {model_file}: {e}. Aborting ensemble load.")
-                raise SystemExit(1) from e
+                raise CheckpointError(f'Unable to load checkpoint at {model_path}: {e}') from e
                 
         if not models:
             logging.error(f"No valid PyTorch models found in directory: {model_path}")
-            raise SystemExit(1)
+            raise CheckpointError(f'Unable to load checkpoint at {model_path}')
     
     elif os.path.isfile(model_path):
         try:
             models = [torch.load(model_path, map_location=device, weights_only=True)]
         except Exception as e:
             logging.error(f"Error loading PyTorch model from file {model_path}: {e}.")
-            raise SystemExit(1)
+            raise CheckpointError(f'Unable to load checkpoint at {model_path}')
         
     else:
         logging.error(f"Invalid path: {model_path}")
-        raise SystemExit(1)
+        raise CheckpointError(f'Unable to load checkpoint at {model_path}')
     
     # Load state of model to device
     # NOTE: supplied model paths should be state dicts, not model files  
@@ -117,24 +169,27 @@ def load_pytorch_models(model_path, CL):
     for state_dict in models:
         model, params = load_model(device, CL)  # loads new SpliceAI model with correct hyperparams
         try:
+            state_dict, temperature = unpack_checkpoint(state_dict, CL)
             model.load_state_dict(state_dict)   # loads state dict
-        except RuntimeError as e:
+        except (RuntimeError, ValueError) as e:
             err_msg = str(e)
             if "size mismatch" in err_msg or "shape" in err_msg:
                 logging.warning("Cannot load model due to incompatible tensor shapes.")
                 logging.warning("This typically indicates a flanking-size mismatch between the model and CLI arguments.")
                 logging.warning(mismatch_hint)
-                raise SystemExit(1) from e
+                raise CheckpointError(f'Unable to load checkpoint at {model_path}: {e}') from e
             logging.error(f"Error processing model for device: {err_msg}. Aborting ensemble load.")
-            raise SystemExit(1) from e
+            raise CheckpointError(f'Unable to load checkpoint at {model_path}: {e}') from e
 
+        if temperature is not None:
+            model = CalibratedSpliceAI(model, temperature)
         model = model.to(device)                # puts model on device
         model.eval()                            # puts model in evaluation mode
         loaded_models.append(model)             # appends model to list of loaded models  
             
     if not loaded_models:
         logging.error("No models were successfully loaded to the device.")
-        raise SystemExit(1)
+        raise CheckpointError(f'Unable to load checkpoint at {model_path}')
         
     return loaded_models
 
@@ -154,7 +209,7 @@ def load_keras_models(model_path):
         model_files = glob.glob(os.path.join(model_path, '*.h5')) # get all Keras models from a directory
         if not model_files:
             logging.error(f"No Keras model files found in directory: {model_path}")
-            raise SystemExit(1)
+            raise CheckpointError(f'Unable to load Keras checkpoint at {model_path}')
             
         models = []
         for model_file in model_files:
@@ -163,11 +218,11 @@ def load_keras_models(model_path):
                 models.append(model)
             except Exception as e:
                 logging.error(f"Error loading Keras model from file {model_file}: {e}. Aborting ensemble load.")
-                raise SystemExit(1) from e
+                raise CheckpointError(f'Unable to load Keras checkpoint at {model_path}: {e}') from e
 
         if not models:
             logging.error(f"No valid Keras models found in directory: {model_path}")
-            raise SystemExit(1)
+            raise CheckpointError(f'Unable to load Keras checkpoint at {model_path}')
             
         return models
     
@@ -176,11 +231,11 @@ def load_keras_models(model_path):
             return [keras.models.load_model(model_path)]
         except Exception as e:
             logging.error(f"Error loading Keras model from file {model_path}: {e}")
-            raise SystemExit(1)
+            raise CheckpointError(f'Unable to load Keras checkpoint at {model_path}')
         
     else: # invalid path
         logging.error(f"Invalid path: {model_path}")
-        raise SystemExit(1)
+        raise CheckpointError(f'Unable to load Keras checkpoint at {model_path}')
 
 ##############################################
 ## FORMATTING INPUT DATA FOR PREDICTION
@@ -230,7 +285,7 @@ class Annotator:
     It initializes with the reference genome, annotation data, and optional model configuration.
     """
     
-    def __init__(self, ref_fasta, annotations, model_path='SpliceAI', model_type='keras', CL=80):
+    def __init__(self, ref_fasta, annotations, model_path='SpliceAI', model_type='keras', CL=10000):
         """
         Initializes the Annotator with reference genome, annotations, and model settings.
         
@@ -239,9 +294,15 @@ class Annotator:
             annotations (str): Path or name of the annotation file (e.g., 'grch37', 'grch38').
             model_path (str, optional): Path to the model file or type of model ('SpliceAI'). Defaults to SpliceAI.
             model_type (str, optional): Type of model ('keras' or 'pytorch'). Defaults to 'keras'.
-            CL (int, optional): Context length parameter for model conversion. Defaults to 80.
+            CL (int, optional): Context length parameter. The original SpliceAI preset requires 10000.
         """
 
+        if model_type not in ('keras', 'pytorch'):
+            raise ValueError('Model type must be keras or pytorch')
+        if CL not in (80, 400, 2000, 10000):
+            raise ValueError('Unsupported model context')
+        if model_path == 'SpliceAI' and (model_type != 'keras' or CL != 10000):
+            raise ValueError('The SpliceAI preset requires --model-type keras --flanking-size 10000')
         # Load annotation file based on provided annotations type
         if annotations == 'grch37':
             annotations = _resolve_builtin_annotation('grch37')
@@ -259,34 +320,35 @@ class Annotator:
             self.tx_ends = df['TX_END'].to_numpy()  # Transcription end sites
             
             # Extract and process exon start and end sites, convert into numpy array format
-            self.exon_starts = [np.asarray([int(i) for i in c.split(',') if i]) + 1
+            self.exon_starts = [np.asarray([int(i) for i in str(c).split(',') if i], dtype=int) + 1
                                 for c in df['EXON_START'].to_numpy()]
-            self.exon_ends = [np.asarray([int(i) for i in c.split(',') if i])
+            self.exon_ends = [np.asarray([int(i) for i in str(c).split(',') if i], dtype=int)
                               for c in df['EXON_END'].to_numpy()]
         except IOError as e:
             logging.error('{}'.format(e)) 
-            raise SystemExit(1)  # Exit if the file cannot be read
-        except (KeyError, pd.errors.ParserError) as e:
+            raise ValueError('Invalid reference, annotation or model configuration')  # Exit if the file cannot be read
+        except (KeyError, TypeError, ValueError, pd.errors.ParserError) as e:
             logging.error('Gene annotation file {} not formatted properly: {}'.format(annotations, e))
-            raise SystemExit(1)  # Exit if the file format is incorrect
+            raise ValueError('Invalid reference, annotation or model configuration')  # Exit if the file format is incorrect
 
-        # Load the reference genome fasta file
-        try:
-            self.ref_fasta = Fasta(ref_fasta, sequence_always_upper=True, rebuild=False)
-        except IOError as e:
-            logging.error('{}'.format(e))  # Log file read error
-            raise SystemExit(1)  # Exit if the file cannot be read
+        if (not df['STRAND'].isin(['+', '-']).all() or df[['#NAME', 'CHROM']].isna().any().any()
+                or np.any(self.tx_starts < 1) or np.any(self.tx_ends < self.tx_starts)):
+            raise ValueError('Invalid annotation names, strands or transcript coordinates')
+        for start, end, tx_start, tx_end in zip(self.exon_starts, self.exon_ends, self.tx_starts, self.tx_ends):
+            if (not len(start) or len(start) != len(end) or np.any(start > end)
+                    or np.any(start < tx_start) or np.any(end > tx_end)
+                    or np.any(start[1:] <= end[:-1])):
+                raise ValueError('Exons must be paired, ordered and within the transcript span')
 
         # Load models based on the specified model type or file
         if model_path == 'SpliceAI':
-            from tensorflow import keras
             paths = _resolve_default_spliceai_models()  # bundled original SpliceAI Keras models
             missing = [p for p in paths if not os.path.exists(p)]
             if missing:
                 logging.error('Default SpliceAI Keras models not found: {}. '
                               'Pass an explicit --model path/directory instead.'.format(missing))
-                raise SystemExit(1)
-            self.models = [keras.models.load_model(x) for x in paths]
+                raise ValueError('Invalid reference, annotation or model configuration')
+            self.models = load_keras_models(os.path.dirname(paths[0]))
             self.keras = True
         elif model_type == 'keras': # load models using keras
             self.models = load_keras_models(model_path)
@@ -296,9 +358,24 @@ class Annotator:
             self.keras = False
         else:
             logging.error('Model type {} not supported'.format(model_type))
-            raise SystemExit(1)
+            raise ValueError('Invalid reference, annotation or model configuration')
         
-        print(f'\t[INFO] {len(self.models)} model(s) loaded successfully')
+        # Open the reference only after validation/loading, so failed model loads
+        # cannot leak a FASTA descriptor. The public caller closes it via close().
+        self.ref_fasta = Fasta(ref_fasta, sequence_always_upper=True, rebuild=False)
+        print(f'\t[INFO] {len(self.models)} model(s) loaded successfully', file=sys.stderr)
+
+    def close(self):
+        """Close the reference FASTA; model tensors remain ordinary Python objects."""
+        self.ref_fasta.close()
+
+    def __enter__(self):
+        """Enter the resource scope and return this object."""
+        return self
+
+    def __exit__(self, *exc):
+        """Close owned resources when leaving the scope, including on failure."""
+        self.close()
 
     def get_name_and_strand(self, chrom, pos):
         """
@@ -313,7 +390,9 @@ class Annotator:
         """
 
         # Normalize chromosome identifier to match the annotation format
-        chrom = normalise_chrom(chrom, list(self.chroms)[0])
+        if not len(self.chroms):
+            return [], [], []
+        chrom = _resolve_chrom(chrom, self.chroms)
         # Find indices of annotations overlapping the given chromosome and position
         idxs = np.intersect1d(np.nonzero(self.chroms == chrom)[0],
                               np.intersect1d(np.nonzero(self.tx_starts <= pos)[0],
@@ -350,6 +429,14 @@ class Annotator:
 ## CALCULATING DELTA SCORES
 ##############################################
 
+def _resolve_chrom(source, contigs):
+    """Prefer an exact contig; apply a chr alias only when that alias exists."""
+    if source in contigs:
+        return source
+    alternate = source[3:] if source.startswith('chr') else 'chr'+source
+    return alternate if alternate in contigs else source
+
+
 def normalise_chrom(source, target):
     """
     Normalize chromosome identifiers to ensure consistency in format (with or without 'chr' prefix).
@@ -372,6 +459,7 @@ def normalise_chrom(source, target):
 
     return source  # Return source as is if both or neither have 'chr' prefix
 
+@inference_settings()
 def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision=2):
     """
     Calculate delta scores for variant impacts on splice sites.
@@ -388,6 +476,7 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision
     """
 
     # Define coverage and window size around the variant
+    validate_scoring_options(dist_var, mask, flanking_size, precision)
     cov = 2 * dist_var + 1
     wid = flanking_size + cov
     delta_scores = []
@@ -406,10 +495,10 @@ def get_delta_scores(record, ann, dist_var, mask, flanking_size=10000, precision
         return delta_scores  # Return empty list if no overlapping genes are found
 
     # Normalize chromosome and retrieve reference sequence around the variant
-    chrom = normalise_chrom(record.chrom, list(ann.ref_fasta.keys())[0])
+    chrom = _resolve_chrom(record.chrom, ann.ref_fasta.keys())
     try:
         seq = ann.ref_fasta[chrom][record.pos - wid // 2 - 1 : record.pos + wid // 2].seq
-    except (IndexError, ValueError):
+    except (KeyError, IndexError, ValueError):
         logging.warning('Skipping record (fasta issue): {}'.format(record))
         return delta_scores
 
@@ -579,6 +668,7 @@ def _ensemble_forward(models, xb):
     return y.permute(0, 2, 1).detach().to('cpu')
 
 
+@inference_settings()
 def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, precision=2, batch_size=64):
     """Batched re-implementation of :func:`get_delta_scores` over a LIST of records (PyTorch only).
 
@@ -592,26 +682,10 @@ def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, 
     Returns a list (same length and order as ``records``) of delta-score string
     lists — ready to assign to each record's ``OpenSpliceAI`` INFO field.
     """
+    validate_scoring_options(dist_var, mask, flanking_size, precision, batch_size)
     cov = 2 * dist_var + 1
     wid = flanking_size + cov
     device = setup_device()
-    # Precision/speed knobs (env-overridable). cuDNN autotune helps because all
-    # windows share one length. TF32 is the A100 fast path (~2x); it adds ~1e-3
-    # batched-vs-single noise on strong signals, far below the score resolution
-    # used downstream. Default: TF32 ON for speed. Set OSAI_TF32=0 for full fp32
-    # (reproducible across hardware, batched==single) at lower throughput.
-    _bench = os.environ.get('OSAI_CUDNN_BENCH', '1') == '1'
-    _tf32 = os.environ.get('OSAI_TF32', '1') == '1'
-    _deterministic = os.environ.get('OSAI_DETERMINISTIC', '0') == '1'
-    torch.backends.cudnn.benchmark = _bench
-    torch.backends.cudnn.allow_tf32 = _tf32
-    torch.backends.cuda.matmul.allow_tf32 = _tf32
-    torch.backends.cudnn.deterministic = _deterministic
-    if _deterministic:
-        # With CUBLAS_WORKSPACE_CONFIG set by the campaign runner, this fails
-        # closed if a model operation lacks a deterministic CUDA implementation.
-        torch.use_deterministic_algorithms(True)
-
     out_per_record = [[] for _ in records]   # ordered entries per record (strings or None placeholders)
     items = []                               # model work items (one per variant,alt,gene)
     ref_index = {}                           # (chrom,pos,gene_idx) -> index into ref_list (dedup)
@@ -629,10 +703,10 @@ def get_delta_scores_batched(records, ann, dist_var, mask, flanking_size=10000, 
         (genes, strands, idxs) = ann.get_name_and_strand(record.chrom, record.pos)
         if len(idxs) == 0:
             continue
-        chrom = normalise_chrom(record.chrom, list(ann.ref_fasta.keys())[0])
+        chrom = _resolve_chrom(record.chrom, ann.ref_fasta.keys())
         try:
             seq = ann.ref_fasta[chrom][record.pos - wid // 2 - 1 : record.pos + wid // 2].seq
-        except (IndexError, ValueError):
+        except (KeyError, IndexError, ValueError):
             logging.warning('Skipping record (fasta issue): {}'.format(record))
             continue
         if seq[wid // 2 : wid // 2 + len(record.ref)].upper() != record.ref:

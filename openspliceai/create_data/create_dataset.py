@@ -39,9 +39,11 @@ def create_dataset(args):
         if args.biotype =="non-coding":
             input_file = f"{args.output_dir}/datafile_{dataset_type}_ncRNA.h5"
             output_file = f"{args.output_dir}/dataset_{dataset_type}_ncRNA.h5"
-        elif args.biotype =="protein-coding":
+        elif args.biotype in ("protein-coding", "all"):
             input_file = f"{args.output_dir}/datafile_{dataset_type}.h5"
             output_file = f"{args.output_dir}/dataset_{dataset_type}.h5"
+        else:
+            raise ValueError('Unsupported data biotype')
 
         print(f"\tReading {input_file} ... ")
         with h5py.File(input_file, 'r') as h5f:
