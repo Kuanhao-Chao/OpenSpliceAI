@@ -35,6 +35,17 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_gpu)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _cpu_mps_backend():
+    """Keep CPU fixtures off MPS before module-scoped model loaders run."""
+    import torch
+    # Hosted macOS runners advertise MPS without usable GPU memory. Explicit
+    # device-selection tests can override this; CUDA availability is unchanged.
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(torch.backends.mps, "is_available", lambda: False)
+        yield
+
+
 @pytest.fixture(autouse=True)
 def _seed_everything():
     """Make every test deterministic."""

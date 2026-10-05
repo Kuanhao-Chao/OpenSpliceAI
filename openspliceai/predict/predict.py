@@ -603,7 +603,7 @@ def flush_predictions(predictions, file_path):
             dataset.resize((dataset.shape[0] + predictions.shape[0]), axis=0)
             dataset[-predictions.shape[0]:] = predictions.numpy()
         else:
-            maxshape = (None,) + predictions.shape[1:]
+            maxshape = (None,) + tuple(predictions.shape[1:])
             f.create_dataset('predictions', data=predictions.numpy(), maxshape=maxshape, chunks=True)
 
 def get_prediction(models, dataset_path, device, batch_size, output_dir, flush_predict_threshold=500, debug=False):

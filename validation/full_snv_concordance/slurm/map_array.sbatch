@@ -24,10 +24,10 @@ shift 9
 FSC_MAP_ARGS=("$@")
 
 exec >"$FSC_OUTPUT_DIR/logs/map-${SLURM_ARRAY_TASK_ID}.out" 2>"$FSC_OUTPUT_DIR/logs/map-${SLURM_ARRAY_TASK_ID}.err"
-[[ "$(/usr/bin/sha256sum "$FSC_PAIRS_FILE" | /usr/bin/awk '{print $1}')" == "$FSC_PAIRS_SHA256" ]] || { echo "pairs checksum changed" >&2; exit 1; }
 fingerprint_script="$FSC_PACKAGE_DIR/slurm/fingerprint.sh"
 [[ -x "$fingerprint_script" ]] || { echo "fingerprint helper missing: $fingerprint_script" >&2; exit 1; }
-[[ "$("$fingerprint_script" "$FSC_PACKAGE_DIR")" == "$FSC_EXPECTED_CODE_SHA256" ]] || { echo "analysis code changed after submission" >&2; exit 1; }
+[[ "$("$fingerprint_script" "$FSC_PAIRS_FILE" "$FSC_PYTHON")" == "$FSC_PAIRS_SHA256" ]] || { echo "pairs checksum changed" >&2; exit 1; }
+[[ "$("$fingerprint_script" "$FSC_PACKAGE_DIR" "$FSC_PYTHON")" == "$FSC_EXPECTED_CODE_SHA256" ]] || { echo "analysis code changed after submission" >&2; exit 1; }
 cd "$FSC_REPO_ROOT"
 if [[ "$FSC_KIND" == "concordance" ]]; then
     command_name="map-concordance"

@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# The digest must not depend on the caller's environment: `sort` collation is
-# locale-sensitive, so an interactive submitter and an --export=NONE batch job
-# would otherwise hash the same tree to different values.
-export LC_ALL=C
-
-package_dir="${1:?package directory is required}"
-/usr/bin/find "$package_dir" -type f ! -path '*/__pycache__/*' -print0 \
-    | /usr/bin/sort -z \
-    | /usr/bin/xargs -0 /usr/bin/sha256sum \
-    | /usr/bin/sha256sum \
-    | /usr/bin/awk '{print $1}'
+# Python provides the same locale-independent GNU SHA-256 manifest digest on
+# Linux and macOS. Supply the selected interpreter in --export=NONE jobs.
+target="${1:?file or package directory is required}"
+python_bin="${2:-python3}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$python_bin" "$script_dir/fingerprint.py" "$target"

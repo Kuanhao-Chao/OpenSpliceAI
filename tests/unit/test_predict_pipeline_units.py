@@ -58,6 +58,20 @@ def test_convert_sequences_pt_backend(tmp_path):
 
 # --- get_prediction: flush branch + ensemble averaging -------------------------------
 
+def test_flush_predictions_preserves_values_across_unequal_batches(tmp_path):
+    """HDF5 keeps one unlimited batch axis and appends every prediction exactly."""
+    path = tmp_path / "predictions.h5"
+    first = torch.arange(42, dtype=torch.float32).reshape(2, 3, 7)
+    second = -torch.arange(21, dtype=torch.float32).reshape(1, 3, 7)
+    pr.flush_predictions(first, path)
+    pr.flush_predictions(second, path)
+    with h5py.File(path, "r") as handle:
+        assert handle["predictions"].maxshape == (None, 3, 7)
+        np.testing.assert_array_equal(
+            handle["predictions"][:], torch.cat((first, second)).numpy()
+        )
+
+
 def _write_predict_dataset(path, n=4, seed=0):
     """dataset.h5 with one shard X0 = (n, SL+CL=5080, 4) int8 (load_shard transposes it)."""
     rng = np.random.default_rng(seed)

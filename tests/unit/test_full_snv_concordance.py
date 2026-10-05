@@ -603,7 +603,8 @@ def test_cli_exposes_all_workflow_commands():
     } <= set(choices)
 
 
-def test_launcher_cancels_only_registered_jobs_on_dependency_failure(tmp_path):
+@pytest.mark.parametrize("failed_call", [1, 2, 3])
+def test_launcher_cancels_only_registered_jobs_on_dependency_failure(tmp_path, failed_call):
     pairs = tmp_path / "launcher-pairs.tsv"
     pairs.write_text("chunk_id\n1\n", encoding="utf-8")
     mock_bin = tmp_path / "mock-bin"
@@ -619,8 +620,8 @@ if [[ -f "$count_file" ]]; then read -r count <"$count_file"; fi
 count=$((count + 1))
 printf '%s\n' "$count" >"$count_file"
 printf '%s\n' "$*" >>"$MOCK_SLURM_DIR/sbatch.calls"
-if [[ "$count" -eq 1 ]]; then printf '101;testcluster\n'; exit 0; fi
-exit 42
+if [[ "$count" -eq "$MOCK_FAILED_CALL" ]]; then exit 42; fi
+printf '%s;testcluster\n' "$((100 + count))"
 """,
         "scancel": """#!/usr/bin/env bash
 printf '%s\n' "$*" >"$MOCK_SLURM_DIR/scancel.args"
@@ -636,6 +637,7 @@ printf '%s\n' "$*" >"$MOCK_SLURM_DIR/scontrol.args"
     environment = dict(os.environ)
     environment["PATH"] = f"{mock_bin}:{environment['PATH']}"
     environment["MOCK_SLURM_DIR"] = str(state)
+    environment["MOCK_FAILED_CALL"] = str(failed_call)
     output_dir = tmp_path / "submitted-run"
     completed = subprocess.run(
         [
@@ -657,13 +659,23 @@ printf '%s\n' "$*" >"$MOCK_SLURM_DIR/scontrol.args"
         check=False,
     )
     assert completed.returncode == 42
-    assert (state / "scancel.args").read_text(encoding="utf-8").strip() == "101"
+    registered = [str(100 + index) for index in range(1, failed_call)]
+    if registered:
+        assert (state / "scancel.args").read_text(encoding="utf-8").strip() == " ".join(registered)
+    else:
+        assert not (state / "scancel.args").exists()
     assert not (state / "scontrol.args").exists()
     calls = (state / "sbatch.calls").read_text(encoding="utf-8")
-    assert "--dependency=afterok:101" in calls
+    if failed_call > 1:
+        assert "--dependency=afterok:101" in calls
+    if failed_call > 2:
+        assert "--dependency=afterok:102" in calls
     status = (output_dir / "submission_status.tsv").read_text(encoding="utf-8")
     assert "status\tfailed" in status
-    assert "submitted_jobs\t101" in status
+    assert "submitted_jobs\t" + ",".join(registered) + "\n" in status
+    assert "python\t" + os.path.abspath(sys.executable) + "\n" in (
+        output_dir / "launch.tsv"
+    ).read_text(encoding="utf-8")
 
 
 def test_chain_liftover_maps_forward_and_reverse_complements(tmp_path):

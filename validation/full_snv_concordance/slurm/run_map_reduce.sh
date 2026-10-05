@@ -68,16 +68,18 @@ if [[ ! -x "$python_bin" ]]; then
     echo "--python must name an executable Python interpreter" >&2
     exit 2
 fi
-python_bin="$(realpath "$python_bin")"
+# Preserve a virtual environment's interpreter symlink: resolving it would run
+# the base interpreter without the environment's installed dependencies.
+python_bin="$("$python_bin" -c 'import os, sys; print(os.path.abspath(sys.argv[1]))' "$python_bin")"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(realpath "$script_dir/../../..")"
+repo_root="$(cd "$script_dir/../../.." && pwd)"
 package_dir="$repo_root/validation/full_snv_concordance"
-pairs_file="$(realpath "$pairs_file")"
-output_dir="$(realpath -m "$output_dir")"
+pairs_file="$("$python_bin" -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())' "$pairs_file")"
+output_dir="$("$python_bin" -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())' "$output_dir")"
 frozen_pairs="$output_dir/pairs.tsv"
-pair_sha256="$(/usr/bin/sha256sum "$pairs_file" | /usr/bin/awk '{print $1}')"
-code_sha256="$("$script_dir/fingerprint.sh" "$package_dir")"
+pair_sha256="$("$script_dir/fingerprint.sh" "$pairs_file" "$python_bin")"
+code_sha256="$("$script_dir/fingerprint.sh" "$package_dir" "$python_bin")"
 pair_count="$(awk 'END { print (NR > 0 ? NR - 1 : 0) }' "$pairs_file")"
 if [[ "$pair_count" -lt 1 ]]; then
     echo "pairs file contains no data rows" >&2
@@ -102,13 +104,14 @@ fi
 mkdir -p "$output_dir/maps" "$output_dir/logs" "$output_dir/report"
 cp "$pairs_file" "$frozen_pairs"
 chmod 0444 "$frozen_pairs"
-if [[ "$(/usr/bin/sha256sum "$frozen_pairs" | /usr/bin/awk '{print $1}')" != "$pair_sha256" ]]; then
+if [[ "$("$script_dir/fingerprint.sh" "$frozen_pairs" "$python_bin")" != "$pair_sha256" ]]; then
     echo "frozen pairs checksum mismatch" >&2
     exit 1
 fi
 printf 'kind\t%s\nrun_label\t%s\nfinality\t%s\nexpected_total_chunks\t%s\nexpected_overlap_count\t%s\npairs_sha256\t%s\ncode_sha256\t%s\npython\t%s\ntask_count\t%s\nmap_concurrency\t%s\nmap_args\t%s\nsites_file\t%s\n' \
     "$kind" "$run_label" "$finality" "$expected_total_chunks" "$expected_overlap_count" "$pair_sha256" "$code_sha256" "$python_bin" "$task_count" "$map_concurrency" "$map_args" "$sites_file" >"$output_dir/launch.tsv"
 submitted_jobs=()
+submitted_job_count=0
 registered_job=""
 committed=0
 register_job_output() {
@@ -117,6 +120,7 @@ register_job_output() {
     local candidate="${raw_output%%;*}"
     if [[ "$candidate" =~ ^[0-9]+$ ]]; then
         submitted_jobs+=("$candidate")
+        submitted_job_count=$((submitted_job_count + 1))
     fi
     if [[ ! "$candidate" =~ ^[0-9]+$ ]] || \
        [[ "$raw_output" != "$candidate" && ! "$raw_output" =~ ^${candidate}\;[[:alnum:]_.-]+$ ]]; then
@@ -132,11 +136,11 @@ record_submission_failure() {
     local rollback_state="${3:-no_jobs_created}"
     local rollback_output="${4:-}"
     local rollback_rc="${5:-0}"
-    if [[ "${#submitted_jobs[@]}" -gt 0 ]]; then
+    if [[ "$submitted_job_count" -gt 0 ]]; then
         jobs="$(IFS=,; echo "${submitted_jobs[*]}")"
     fi
     printf 'status\tfailed\nfailed_at\t%s\nexit_code\t%s\nfailed_command\t%s\nsubmitted_jobs\t%s\nrollback_state\t%s\nrollback_rc\t%s\nrollback_output\t%s\n' \
-        "$(date --utc +%Y-%m-%dT%H:%M:%SZ)" "$exit_code" "$failed_command" "$jobs" \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$exit_code" "$failed_command" "$jobs" \
         "$rollback_state" "$rollback_rc" "$rollback_output" \
         >"$output_dir/submission_status.tsv"
 }
@@ -148,7 +152,7 @@ cancel_registered_jobs() {
     local rollback_state="no_jobs_created"
     trap - ERR INT TERM HUP EXIT
     set +e
-    if [[ "${#submitted_jobs[@]}" -gt 0 ]]; then
+    if [[ "$submitted_job_count" -gt 0 ]]; then
         rollback_state="rollback_requested"
         rollback_output="$(scancel "${submitted_jobs[@]}" 2>&1)"
         rollback_rc=$?
@@ -183,7 +187,7 @@ register_job_output "$report_submission" "report"
 report_job="$registered_job"
 scontrol release "$map_job"
 printf 'status\tsubmitted\nsubmitted_at\t%s\nmap_job\t%s\nreduce_job\t%s\nreport_job\t%s\n' \
-    "$(date --utc +%Y-%m-%dT%H:%M:%SZ)" "$map_job" "$reduce_job" "$report_job" \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$map_job" "$reduce_job" "$report_job" \
     >"$output_dir/submission_status.tsv"
 committed=1
 trap - ERR INT TERM HUP EXIT
