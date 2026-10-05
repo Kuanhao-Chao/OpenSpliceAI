@@ -1,0 +1,230 @@
+{
+  "qualification": "Checksums of recorded evidence. Text logs normalize trailing whitespace; numerical content is unchanged. Future backend/CI results require a new evidence commit.",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4185,
+      "sha256": "19a28813ff277d149d198520bed142b98effbfb484268343e2e0f21085a97b0b"
+    },
+    {
+      "path": "a100-partition.txt",
+      "bytes": 756,
+      "sha256": "e0fb6835861297a139d74988bf85486b1944e91e0a1554d5720fde4c3b42f700"
+    },
+    {
+      "path": "account-balances-20261005.tsv",
+      "bytes": 1862,
+      "sha256": "b40d3a7b59a31af1562cb89bf53ebf2ba9c426438e10e5db912dce667c029503"
+    },
+    {
+      "path": "account-balances-summary.json",
+      "bytes": 1353,
+      "sha256": "02932e5a9742d6b5c8a086989edf24fa248dadd9331fd2afc8b44d2bb471a182"
+    },
+    {
+      "path": "audit-allocation-31606547.tsv",
+      "bytes": 194,
+      "sha256": "b6024b7c6879754ca4f9d250e26ec3ee91e641eb57d326bda189731ea270c4ec"
+    },
+    {
+      "path": "audit-allocations-final.tsv",
+      "bytes": 501,
+      "sha256": "0753eb947ebd0abac4dea30e4841f96e9ed58a8c79c6c9118ec0e279cf017826"
+    },
+    {
+      "path": "backend-manifest.json",
+      "bytes": 27558,
+      "sha256": "57e3b693c99e9b0eed01c1a25e01dd21203bd50596bdea8a6cabecd6e492226a"
+    },
+    {
+      "path": "backend-source-comparison.json",
+      "bytes": 2014,
+      "sha256": "cbbd1adbd5b2944b23e371366882e9d39aa193a543cc9687a92f89e8d0a94c97"
+    },
+    {
+      "path": "browser-summary.json",
+      "bytes": 4936,
+      "sha256": "a437b088f2034455e9562475207fc8601447152f435538b7e58abf09e4ff0212"
+    },
+    {
+      "path": "build-output.txt",
+      "bytes": 50159,
+      "sha256": "b0670b12b4917f326bd314f43e9ea32d2dc1d0b9651320aebd3b49f0795ca528"
+    },
+    {
+      "path": "cpu-test-output.txt",
+      "bytes": 9601,
+      "sha256": "41b33d924dd12fd33cf2f20c5b73c53063c3979ca30c2d8380f25f1550072b4a"
+    },
+    {
+      "path": "cpu-tests.xml",
+      "bytes": 94857,
+      "sha256": "402c99dc02c1ed990cbe205e6627b3e62ed4553649c92518212ca93e29fc6abc"
+    },
+    {
+      "path": "cuda-job-31628943.txt",
+      "bytes": 1529,
+      "sha256": "7b1364182b20c44a84c5485b995e40f403f0f1af5c264f5297e9b141ea4e6255"
+    },
+    {
+      "path": "distributions.json",
+      "bytes": 633,
+      "sha256": "7cc74d5ac33b4b79597a0802a39a2525789be8f5e152c09023f57ee8293aba33"
+    },
+    {
+      "path": "docs-desktop-light.png",
+      "bytes": 172642,
+      "sha256": "db01886109f3340af79b3188e963a8bfdf3d2ef8b1ec1a5f8088e4d6c19acfbf"
+    },
+    {
+      "path": "docs-mobile-dark.png",
+      "bytes": 148874,
+      "sha256": "a0942806d6426548c91b0bfd63ded16ab0696a1bed3cb3fbc9da4f76e932f6cb"
+    },
+    {
+      "path": "environment-baseline.json",
+      "bytes": 603,
+      "sha256": "68452795ee5c747a43b063f0772ceb25265c9e87e982c74635f9335ee9b3ddb3"
+    },
+    {
+      "path": "environment-minimum.json",
+      "bytes": 310,
+      "sha256": "f4f3cae01d0fbc1cb4f7a3ccbaef0accd612d5cc26ca72652e40001d16deb8ef"
+    },
+    {
+      "path": "feature-matrix.md",
+      "bytes": 8831,
+      "sha256": "0a23e78897b414e5c53907844cfd975ba8fd02a12d504f9c879e80ab281b8a81"
+    },
+    {
+      "path": "function-coverage.json",
+      "bytes": 669553,
+      "sha256": "e3b9d2342cde14e804818ff34fe8ab5977b1eb2d83376ea9de8f4a47b717003c"
+    },
+    {
+      "path": "keras-final-output.txt",
+      "bytes": 2264,
+      "sha256": "c617d30a03150f1ff53d977a2665b85c413ebe88af0916ebe83784200261a936"
+    },
+    {
+      "path": "keras-final-summary.json",
+      "bytes": 390,
+      "sha256": "3e816dd1c169b6e558906ac225f60c00dc2a86e338cf12a290783957a80806cc"
+    },
+    {
+      "path": "keras-final-tests.xml",
+      "bytes": 864,
+      "sha256": "bebbc220f17c6bdea2125f2c93ef9fc096173bc61fcfe0ee54bc252f02b087bb"
+    },
+    {
+      "path": "keras-initial-output.txt",
+      "bytes": 2238,
+      "sha256": "22a4cf20416036d6dc63527bca40de450c9a92bf62e2b5d7d2d9974c0dec2092"
+    },
+    {
+      "path": "keras-initial-summary.json",
+      "bytes": 390,
+      "sha256": "4049971b3080b78cf70de4e75326b0633dcb7ede10ef7bdb7f126ab797550586"
+    },
+    {
+      "path": "keras-initial-tests.xml",
+      "bytes": 865,
+      "sha256": "4bf49edc05959ad40714e95cc6b0f4c7d27cba9542bbbba255c1f3d5290470b0"
+    },
+    {
+      "path": "minimum-test-output.txt",
+      "bytes": 9556,
+      "sha256": "eb18b54e5ed21b71a825f21f86ec6068dbc5a63ad7f54ad6095521e43d833f8a"
+    },
+    {
+      "path": "minimum-tests.xml",
+      "bytes": 94854,
+      "sha256": "2e511dd3f1823b0d84220e619eb158f30d6f74ac7e2c6ccd44dc59ab26790ead"
+    },
+    {
+      "path": "package-coverage.json",
+      "bytes": 263370,
+      "sha256": "841d6d45f504c346b4e44e8eb3c1be154c642db5b26cc4b230d0f7bcdced52b2"
+    },
+    {
+      "path": "production-boundary.json",
+      "bytes": 765,
+      "sha256": "0487b75b546679fa2a00818e9ee437212b861ce0b67ce70db7362ad56cc6c845"
+    },
+    {
+      "path": "r13-allocation-samples.tsv",
+      "bytes": 382,
+      "sha256": "7c4fa81fbfb0b0e80f8bb58d76fc438d5420e0819d69cc8ae59571e5c7596e0c"
+    },
+    {
+      "path": "research-coverage.json",
+      "bytes": 649441,
+      "sha256": "a4aa3be688be6e0b10137c1f20c494d05c1ae2794289a957df4574d2bab9077e"
+    },
+    {
+      "path": "scheduler-20261005.tsv",
+      "bytes": 9552,
+      "sha256": "1489af9ed04e594c3d0402b1a80f36ad2a68e9b4553174b5f72c626c1c821e8d"
+    },
+    {
+      "path": "scheduler-latest-20261005.tsv",
+      "bytes": 10023,
+      "sha256": "3e4902c9d4ff4f7b597f5c4eb2c3c70ed7110257a4c3a3979e325220a7f2e361"
+    },
+    {
+      "path": "sdist-install.txt",
+      "bytes": 1267,
+      "sha256": "02fa705d5eed5d0b56a4cc1d51c0d4805c1c460611bcfdcf33c073ef57892527"
+    },
+    {
+      "path": "sdist-pip-check.txt",
+      "bytes": 296,
+      "sha256": "39c9e5021fd45e9e58cfe8f3456627a372d6490d84631bd108b5d5fa7be06231"
+    },
+    {
+      "path": "sdist-smoke.txt",
+      "bytes": 385,
+      "sha256": "f2fe9850d9d6ba528fd5b6e183a7acf0910ce6e20a655f7ea24de9ea1fcb6cd9"
+    },
+    {
+      "path": "source-inventory.json",
+      "bytes": 416710,
+      "sha256": "e75262f703296cdb1e88fb625cf3cc917ad32839e0c24a96b67eb651b9af2d5f"
+    },
+    {
+      "path": "sphinx-output.txt",
+      "bytes": 3877,
+      "sha256": "aac0a1e6c3e7db722e8ec2de55c0586f7b6725b37964b7e6a874d92341f315a6"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 5520,
+      "sha256": "cab93d37b673b9e56b9cf94f5bed686aa40d2cc683297b840f700d6910ca436a"
+    },
+    {
+      "path": "tutorial-commands.json",
+      "bytes": 3911,
+      "sha256": "fe5a72cac457861ab5e50dade1c4884d3f777a76e2ef1bf8b5747835761804b4"
+    },
+    {
+      "path": "tutorial-summary.json",
+      "bytes": 136,
+      "sha256": "5ed67ef8d03a5e70dd7c56d5b4de806ffc3cbf1720ff2d47bd84e4145e9f35b7"
+    },
+    {
+      "path": "wheel-install.txt",
+      "bytes": 643,
+      "sha256": "22943cd09991f326d06ae8ed987199ebf17e1df49c8132d5b7145b2ab5ac9bab"
+    },
+    {
+      "path": "wheel-pip-check.txt",
+      "bytes": 296,
+      "sha256": "39c9e5021fd45e9e58cfe8f3456627a372d6490d84631bd108b5d5fa7be06231"
+    },
+    {
+      "path": "wheel-smoke.txt",
+      "bytes": 385,
+      "sha256": "20cd3cbf342eb4805414c04c6b5658c3bfb27f2732f556abfc24f1a44022e700"
+    }
+  ]
+}

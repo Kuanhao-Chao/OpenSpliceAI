@@ -1,0 +1,27 @@
+JobId=31628943 JobName=osai_audit_cuda_final_20261005
+   UserId=kchao10(1239) GroupId=ssalzbe1(1018) MCS_label=N/A
+   Priority=20233 Nice=0 Account=ssalzbe1_gpu QOS=qos_gpu
+   JobState=PENDING Reason=Dependency Dependency=afterok:31628903(unfulfilled),afterany:31494759_*(unfulfilled)
+   Requeue=0 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   RunTime=00:00:00 TimeLimit=00:45:00 TimeMin=N/A
+   SubmitTime=2026-10-05T02:09:03 EligibleTime=Unknown
+   AccrueTime=Unknown
+   StartTime=Unknown EndTime=Unknown Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-05T02:09:03 Scheduler=Main
+   Partition=a100 AllocNode:Sid=login03:3719085
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=
+   NumNodes=1 NumCPUs=12 NumTasks=1 CPUs/Task=12 ReqB:S:C:T=0:0:*:*
+   ReqTRES=cpu=12,mem=32G,node=1,billing=12,gres/gpu=1,gres/gpu:a100=1
+   AllocTRES=(null)
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+   MinCPUsNode=12 MinMemoryNode=32G MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=/data/ssalzbe1/khchao/OpenSpliceAI/.audit/comprehensive-20261004/source-v3/ci/audit_backend.sbatch
+   WorkDir=/data/ssalzbe1/khchao/OpenSpliceAI/.audit/comprehensive-20261004/source-v3
+   StdErr=/data/ssalzbe1/khchao/OpenSpliceAI/.audit/comprehensive-20261004/cuda-final-31628943.log
+   StdIn=/dev/null
+   StdOut=/data/ssalzbe1/khchao/OpenSpliceAI/.audit/comprehensive-20261004/cuda-final-31628943.log
+   Power=
+   TresPerNode=gres:gpu:a100:1

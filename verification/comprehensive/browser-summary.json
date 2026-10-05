@@ -1,0 +1,234 @@
+{
+  "pages": 39,
+  "browsers": [
+    "chromium",
+    "firefox"
+  ],
+  "search_passed": true,
+  "checks": [
+    {
+      "browser": "chromium",
+      "page": "index.html",
+      "width": 1440,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "index.html",
+      "width": 1440,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "index.html",
+      "width": 390,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "index.html",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/openspliceai_variant.html",
+      "width": 1440,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/openspliceai_variant.html",
+      "width": 1440,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/openspliceai_variant.html",
+      "width": 390,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/openspliceai_variant.html",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/migration.html",
+      "width": 1440,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/migration.html",
+      "width": 1440,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/migration.html",
+      "width": 390,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/migration.html",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/function_manual.html",
+      "width": 1440,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/function_manual.html",
+      "width": 1440,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/function_manual.html",
+      "width": 390,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "chromium",
+      "page": "content/function_manual.html",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "index.html",
+      "width": 1440,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "index.html",
+      "width": 1440,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "index.html",
+      "width": 390,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "index.html",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/openspliceai_variant.html",
+      "width": 1440,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/openspliceai_variant.html",
+      "width": 1440,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/openspliceai_variant.html",
+      "width": 390,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/openspliceai_variant.html",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/migration.html",
+      "width": 1440,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/migration.html",
+      "width": 1440,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/migration.html",
+      "width": 390,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/migration.html",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/function_manual.html",
+      "width": 1440,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/function_manual.html",
+      "width": 1440,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/function_manual.html",
+      "width": 390,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "browser": "firefox",
+      "page": "content/function_manual.html",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false
+    }
+  ]
+}

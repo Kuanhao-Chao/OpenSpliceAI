@@ -1,0 +1,9 @@
+{
+  "commands_passed": 6,
+  "bed_rows": 1999,
+  "calibrated_inference": [
+    "predict",
+    "variant"
+  ],
+  "synthetic_model": true
+}

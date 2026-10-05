@@ -1,0 +1,608 @@
+* Getting build dependencies for sdist...
+running egg_info
+writing openspliceai.egg-info/PKG-INFO
+writing dependency_links to openspliceai.egg-info/dependency_links.txt
+writing entry points to openspliceai.egg-info/entry_points.txt
+writing requirements to openspliceai.egg-info/requires.txt
+writing top-level names to openspliceai.egg-info/top_level.txt
+reading manifest file 'openspliceai.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.svg' under directory 'docs/source'
+warning: no previously-included files found matching 'verification/comprehensive/artifacts.json'
+adding license file 'LICENSE'
+writing manifest file 'openspliceai.egg-info/SOURCES.txt'
+* Building sdist...
+running sdist
+running egg_info
+writing openspliceai.egg-info/PKG-INFO
+writing dependency_links to openspliceai.egg-info/dependency_links.txt
+writing entry points to openspliceai.egg-info/entry_points.txt
+writing requirements to openspliceai.egg-info/requires.txt
+writing top-level names to openspliceai.egg-info/top_level.txt
+reading manifest file 'openspliceai.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.svg' under directory 'docs/source'
+warning: no previously-included files found matching 'verification/comprehensive/artifacts.json'
+adding license file 'LICENSE'
+writing manifest file 'openspliceai.egg-info/SOURCES.txt'
+running check
+creating openspliceai-0.1.0.dev0
+creating openspliceai-0.1.0.dev0/ci
+creating openspliceai-0.1.0.dev0/conda-recipe
+creating openspliceai-0.1.0.dev0/docs
+creating openspliceai-0.1.0.dev0/docs/development
+creating openspliceai-0.1.0.dev0/docs/development/verification
+creating openspliceai-0.1.0.dev0/docs/source
+creating openspliceai-0.1.0.dev0/docs/source/_images
+creating openspliceai-0.1.0.dev0/docs/source/_static
+creating openspliceai-0.1.0.dev0/docs/source/_templates
+creating openspliceai-0.1.0.dev0/docs/source/_templates/sidebar
+creating openspliceai-0.1.0.dev0/docs/source/content
+creating openspliceai-0.1.0.dev0/docs/source/content/pretrained_models
+creating openspliceai-0.1.0.dev0/docs/source/content/quick_start_guide
+creating openspliceai-0.1.0.dev0/docs/source/content/train_your_own_model
+creating openspliceai-0.1.0.dev0/docs/source/content/usage
+creating openspliceai-0.1.0.dev0/examples
+creating openspliceai-0.1.0.dev0/examples/tutorial
+creating openspliceai-0.1.0.dev0/logo
+creating openspliceai-0.1.0.dev0/openspliceai
+creating openspliceai-0.1.0.dev0/openspliceai.egg-info
+creating openspliceai-0.1.0.dev0/openspliceai/calibrate
+creating openspliceai-0.1.0.dev0/openspliceai/create_data
+creating openspliceai-0.1.0.dev0/openspliceai/merge_data
+creating openspliceai-0.1.0.dev0/openspliceai/predict
+creating openspliceai-0.1.0.dev0/openspliceai/test
+creating openspliceai-0.1.0.dev0/openspliceai/train
+creating openspliceai-0.1.0.dev0/openspliceai/train_base
+creating openspliceai-0.1.0.dev0/openspliceai/transfer
+creating openspliceai-0.1.0.dev0/openspliceai/variant
+creating openspliceai-0.1.0.dev0/openspliceai/variant/annotations
+creating openspliceai-0.1.0.dev0/tests
+creating openspliceai-0.1.0.dev0/tests/equivalence
+creating openspliceai-0.1.0.dev0/tests/fixtures
+creating openspliceai-0.1.0.dev0/tests/integration
+creating openspliceai-0.1.0.dev0/tests/regression
+creating openspliceai-0.1.0.dev0/tests/unit
+creating openspliceai-0.1.0.dev0/validation
+creating openspliceai-0.1.0.dev0/validation/concordance_study
+creating openspliceai-0.1.0.dev0/validation/concordance_study/depth
+creating openspliceai-0.1.0.dev0/validation/concordance_study/templates
+creating openspliceai-0.1.0.dev0/validation/concordance_study/templates/archive
+creating openspliceai-0.1.0.dev0/validation/concordance_study/templates/archive/20260909
+creating openspliceai-0.1.0.dev0/validation/concordance_study/templates/archive/20260911-full-prose
+creating openspliceai-0.1.0.dev0/validation/full_snv_concordance
+creating openspliceai-0.1.0.dev0/validation/full_snv_concordance/automation
+creating openspliceai-0.1.0.dev0/validation/full_snv_concordance/slurm
+creating openspliceai-0.1.0.dev0/verification
+creating openspliceai-0.1.0.dev0/verification/comprehensive
+copying files to openspliceai-0.1.0.dev0...
+copying .coveragerc -> openspliceai-0.1.0.dev0
+copying KNOWN_ISSUES.md -> openspliceai-0.1.0.dev0
+copying LICENSE -> openspliceai-0.1.0.dev0
+copying MANIFEST.in -> openspliceai-0.1.0.dev0
+copying Makefile -> openspliceai-0.1.0.dev0
+copying README.md -> openspliceai-0.1.0.dev0
+copying pyproject.toml -> openspliceai-0.1.0.dev0
+copying pytest.ini -> openspliceai-0.1.0.dev0
+copying ruff.toml -> openspliceai-0.1.0.dev0
+copying setup.py -> openspliceai-0.1.0.dev0
+copying ci/audit_backend.sbatch -> openspliceai-0.1.0.dev0/ci
+copying ci/check_coverage.py -> openspliceai-0.1.0.dev0/ci
+copying ci/check_docs_browser.py -> openspliceai-0.1.0.dev0/ci
+copying ci/freeze_backend.py -> openspliceai-0.1.0.dev0/ci
+copying ci/minimum-scientific.constraints -> openspliceai-0.1.0.dev0/ci
+copying ci/prepare_reference_weights.py -> openspliceai-0.1.0.dev0/ci
+copying ci/required_backend.py -> openspliceai-0.1.0.dev0/ci
+copying ci/smoke_distribution.py -> openspliceai-0.1.0.dev0/ci
+copying ci/source_inventory.py -> openspliceai-0.1.0.dev0/ci
+copying conda-recipe/meta.yaml -> openspliceai-0.1.0.dev0/conda-recipe
+copying docs/check_links.py -> openspliceai-0.1.0.dev0/docs
+copying docs/generate_reference.py -> openspliceai-0.1.0.dev0/docs
+copying docs/legacy_anchors.json -> openspliceai-0.1.0.dev0/docs
+copying docs/requirements.txt -> openspliceai-0.1.0.dev0/docs
+copying docs/development/comprehensive-audit.md -> openspliceai-0.1.0.dev0/docs/development
+copying docs/development/documentation-labels.json -> openspliceai-0.1.0.dev0/docs/development
+copying docs/development/feature-matrix.md -> openspliceai-0.1.0.dev0/docs/development
+copying docs/development/repository-audit.md -> openspliceai-0.1.0.dev0/docs/development
+copying docs/development/verification/scoring-comparison.json -> openspliceai-0.1.0.dev0/docs/development/verification
+copying docs/development/verification/summary.json -> openspliceai-0.1.0.dev0/docs/development/verification
+copying docs/source/conf.py -> openspliceai-0.1.0.dev0/docs/source
+copying docs/source/index.rst -> openspliceai-0.1.0.dev0/docs/source
+copying docs/source/_images/jhu-logo-dark.png -> openspliceai-0.1.0.dev0/docs/source/_images
+copying docs/source/_images/jhu-logo-white.png -> openspliceai-0.1.0.dev0/docs/source/_images
+copying docs/source/_images/predict_workflow.png -> openspliceai-0.1.0.dev0/docs/source/_images
+copying docs/source/_images/variant_workflow.png -> openspliceai-0.1.0.dev0/docs/source/_images
+copying docs/source/_static/JHU_ccb-dark.png -> openspliceai-0.1.0.dev0/docs/source/_static
+copying docs/source/_static/JHU_ccb-white.png -> openspliceai-0.1.0.dev0/docs/source/_static
+copying docs/source/_static/JHU_wse-dark.png -> openspliceai-0.1.0.dev0/docs/source/_static
+copying docs/source/_static/JHU_wse-white.png -> openspliceai-0.1.0.dev0/docs/source/_static
+copying docs/source/_static/custom.css -> openspliceai-0.1.0.dev0/docs/source/_static
+copying docs/source/_static/logo_black.png -> openspliceai-0.1.0.dev0/docs/source/_static
+copying docs/source/_static/logo_white.png -> openspliceai-0.1.0.dev0/docs/source/_static
+copying docs/source/_templates/test.html -> openspliceai-0.1.0.dev0/docs/source/_templates
+copying docs/source/_templates/test_page.html -> openspliceai-0.1.0.dev0/docs/source/_templates
+copying docs/source/_templates/sidebar/initial.html -> openspliceai-0.1.0.dev0/docs/source/_templates/sidebar
+copying docs/source/_templates/sidebar/sidebarlogo.html -> openspliceai-0.1.0.dev0/docs/source/_templates/sidebar
+copying docs/source/content/behind_scenes.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/changelog.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/contact.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/development.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/function_manual.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/how_to_page.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/installation.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/license.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/migration.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/openspliceai_calibrate.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/openspliceai_create-data.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/openspliceai_predict.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/openspliceai_train.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/openspliceai_transfer.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/openspliceai_variant.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/openspliceai_vs_spliceai.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/output_explanation.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/repository.rst -> openspliceai-0.1.0.dev0/docs/source/content
+copying docs/source/content/pretrained_models/GRCh38_MANE.rst -> openspliceai-0.1.0.dev0/docs/source/content/pretrained_models
+copying docs/source/content/pretrained_models/GRCh38_RefSeq.rst -> openspliceai-0.1.0.dev0/docs/source/content/pretrained_models
+copying docs/source/content/pretrained_models/arabidopsis_plant.rst -> openspliceai-0.1.0.dev0/docs/source/content/pretrained_models
+copying docs/source/content/pretrained_models/bee_insect.rst -> openspliceai-0.1.0.dev0/docs/source/content/pretrained_models
+copying docs/source/content/pretrained_models/index.rst -> openspliceai-0.1.0.dev0/docs/source/content/pretrained_models
+copying docs/source/content/pretrained_models/mouse.rst -> openspliceai-0.1.0.dev0/docs/source/content/pretrained_models
+copying docs/source/content/pretrained_models/zebrafish.rst -> openspliceai-0.1.0.dev0/docs/source/content/pretrained_models
+copying docs/source/content/quick_start_guide/index.rst -> openspliceai-0.1.0.dev0/docs/source/content/quick_start_guide
+copying docs/source/content/quick_start_guide/quickstart_calibrate.rst -> openspliceai-0.1.0.dev0/docs/source/content/quick_start_guide
+copying docs/source/content/quick_start_guide/quickstart_create-data.rst -> openspliceai-0.1.0.dev0/docs/source/content/quick_start_guide
+copying docs/source/content/quick_start_guide/quickstart_predict.rst -> openspliceai-0.1.0.dev0/docs/source/content/quick_start_guide
+copying docs/source/content/quick_start_guide/quickstart_train.rst -> openspliceai-0.1.0.dev0/docs/source/content/quick_start_guide
+copying docs/source/content/quick_start_guide/quickstart_transfer.rst -> openspliceai-0.1.0.dev0/docs/source/content/quick_start_guide
+copying docs/source/content/quick_start_guide/quickstart_variant.rst -> openspliceai-0.1.0.dev0/docs/source/content/quick_start_guide
+copying docs/source/content/train_your_own_model/index.rst -> openspliceai-0.1.0.dev0/docs/source/content/train_your_own_model
+copying docs/source/content/train_your_own_model/train_human_mane.rst -> openspliceai-0.1.0.dev0/docs/source/content/train_your_own_model
+copying docs/source/content/train_your_own_model/train_mouse.rst -> openspliceai-0.1.0.dev0/docs/source/content/train_your_own_model
+copying docs/source/content/usage/index.rst -> openspliceai-0.1.0.dev0/docs/source/content/usage
+copying examples/tutorial/run.py -> openspliceai-0.1.0.dev0/examples/tutorial
+copying logo/jhu-logo-dark.png -> openspliceai-0.1.0.dev0/logo
+copying logo/logo_black.png -> openspliceai-0.1.0.dev0/logo
+copying logo/logo_white.png -> openspliceai-0.1.0.dev0/logo
+copying openspliceai/__init__.py -> openspliceai-0.1.0.dev0/openspliceai
+copying openspliceai/checkpoints.py -> openspliceai-0.1.0.dev0/openspliceai
+copying openspliceai/constants.py -> openspliceai-0.1.0.dev0/openspliceai
+copying openspliceai/data_schema.py -> openspliceai-0.1.0.dev0/openspliceai
+copying openspliceai/header.py -> openspliceai-0.1.0.dev0/openspliceai
+copying openspliceai/model_config.py -> openspliceai-0.1.0.dev0/openspliceai
+copying openspliceai/openspliceai.py -> openspliceai-0.1.0.dev0/openspliceai
+copying openspliceai.egg-info/PKG-INFO -> openspliceai-0.1.0.dev0/openspliceai.egg-info
+copying openspliceai.egg-info/SOURCES.txt -> openspliceai-0.1.0.dev0/openspliceai.egg-info
+copying openspliceai.egg-info/dependency_links.txt -> openspliceai-0.1.0.dev0/openspliceai.egg-info
+copying openspliceai.egg-info/entry_points.txt -> openspliceai-0.1.0.dev0/openspliceai.egg-info
+copying openspliceai.egg-info/requires.txt -> openspliceai-0.1.0.dev0/openspliceai.egg-info
+copying openspliceai.egg-info/top_level.txt -> openspliceai-0.1.0.dev0/openspliceai.egg-info
+copying openspliceai/calibrate/__init__.py -> openspliceai-0.1.0.dev0/openspliceai/calibrate
+copying openspliceai/calibrate/calibrate.py -> openspliceai-0.1.0.dev0/openspliceai/calibrate
+copying openspliceai/calibrate/calibrate_utils.py -> openspliceai-0.1.0.dev0/openspliceai/calibrate
+copying openspliceai/calibrate/model_utils.py -> openspliceai-0.1.0.dev0/openspliceai/calibrate
+copying openspliceai/calibrate/streaming.py -> openspliceai-0.1.0.dev0/openspliceai/calibrate
+copying openspliceai/calibrate/temperature_scaling.py -> openspliceai-0.1.0.dev0/openspliceai/calibrate
+copying openspliceai/calibrate/temperature_scaling_site_only.py -> openspliceai-0.1.0.dev0/openspliceai/calibrate
+copying openspliceai/calibrate/visualization.py -> openspliceai-0.1.0.dev0/openspliceai/calibrate
+copying openspliceai/create_data/__init__.py -> openspliceai-0.1.0.dev0/openspliceai/create_data
+copying openspliceai/create_data/create_datafile.py -> openspliceai-0.1.0.dev0/openspliceai/create_data
+copying openspliceai/create_data/create_dataset.py -> openspliceai-0.1.0.dev0/openspliceai/create_data
+copying openspliceai/create_data/gff_to_tsv.py -> openspliceai-0.1.0.dev0/openspliceai/create_data
+copying openspliceai/create_data/paralogs.py -> openspliceai-0.1.0.dev0/openspliceai/create_data
+copying openspliceai/create_data/utils.py -> openspliceai-0.1.0.dev0/openspliceai/create_data
+copying openspliceai/create_data/verify_h5_file.py -> openspliceai-0.1.0.dev0/openspliceai/create_data
+copying openspliceai/merge_data/__init__.py -> openspliceai-0.1.0.dev0/openspliceai/merge_data
+copying openspliceai/merge_data/merge_dataset.py -> openspliceai-0.1.0.dev0/openspliceai/merge_data
+copying openspliceai/predict/__init__.py -> openspliceai-0.1.0.dev0/openspliceai/predict
+copying openspliceai/predict/predict.py -> openspliceai-0.1.0.dev0/openspliceai/predict
+copying openspliceai/predict/utils.py -> openspliceai-0.1.0.dev0/openspliceai/predict
+copying openspliceai/test/__init__.py -> openspliceai-0.1.0.dev0/openspliceai/test
+copying openspliceai/test/test.py -> openspliceai-0.1.0.dev0/openspliceai/test
+copying openspliceai/train/__init__.py -> openspliceai-0.1.0.dev0/openspliceai/train
+copying openspliceai/train/train.py -> openspliceai-0.1.0.dev0/openspliceai/train
+copying openspliceai/train_base/__init__.py -> openspliceai-0.1.0.dev0/openspliceai/train_base
+copying openspliceai/train_base/openspliceai.py -> openspliceai-0.1.0.dev0/openspliceai/train_base
+copying openspliceai/train_base/utils.py -> openspliceai-0.1.0.dev0/openspliceai/train_base
+copying openspliceai/transfer/__init__.py -> openspliceai-0.1.0.dev0/openspliceai/transfer
+copying openspliceai/transfer/transfer.py -> openspliceai-0.1.0.dev0/openspliceai/transfer
+copying openspliceai/variant/__init__.py -> openspliceai-0.1.0.dev0/openspliceai/variant
+copying openspliceai/variant/get_anno.py -> openspliceai-0.1.0.dev0/openspliceai/variant
+copying openspliceai/variant/utils.py -> openspliceai-0.1.0.dev0/openspliceai/variant
+copying openspliceai/variant/variant.py -> openspliceai-0.1.0.dev0/openspliceai/variant
+copying openspliceai/variant/annotations/grch37.txt -> openspliceai-0.1.0.dev0/openspliceai/variant/annotations
+copying openspliceai/variant/annotations/grch38.txt -> openspliceai-0.1.0.dev0/openspliceai/variant/annotations
+copying tests/README.md -> openspliceai-0.1.0.dev0/tests
+copying tests/__init__.py -> openspliceai-0.1.0.dev0/tests
+copying tests/conftest.py -> openspliceai-0.1.0.dev0/tests
+copying tests/equivalence/__init__.py -> openspliceai-0.1.0.dev0/tests/equivalence
+copying tests/equivalence/test_gpu_equivalence.py -> openspliceai-0.1.0.dev0/tests/equivalence
+copying tests/equivalence/test_keras_equivalence.py -> openspliceai-0.1.0.dev0/tests/equivalence
+copying tests/fixtures/__init__.py -> openspliceai-0.1.0.dev0/tests/fixtures
+copying tests/fixtures/synthetic.py -> openspliceai-0.1.0.dev0/tests/fixtures
+copying tests/integration/__init__.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_calibrate_smoke.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_create_data_pipeline.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_merge_data.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_predict_mode_equivalence.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_predict_modes.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_predict_pt_path.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_split_prediction_equivalence.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_train_smoke.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_transfer_smoke.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_variant_batched_cli.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_variant_modes.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_variant_output_dir.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/integration/test_variant_smoke.py -> openspliceai-0.1.0.dev0/tests/integration
+copying tests/regression/__init__.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_annotation_and_merge_edges.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_calibration_bin_alignment.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_calibration_public_helpers.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_checkpoint_failures.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_clip_datapoints_invariant.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_correct_scientific_defaults.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_data_integrity.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_dataset_boundaries.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_encode_decode_roundtrip.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_evaluation_resources.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_hyperparam_table_sync.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_invalid_training_inputs.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_lazy_cli_imports.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_minus_strand_labeling.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_mixed_contig_scoring.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_portable_calibration.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_prediction_ownership.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_public_contract_guards.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_scientific_boundaries.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_variant_batched_equivalence.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_variant_event_semantics.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_variant_library_contract.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/regression/test_variant_mnv_boundary.py -> openspliceai-0.1.0.dev0/tests/regression
+copying tests/unit/__init__.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_calibrate_model_utils.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_calibrate_visualization.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_campaign_automation.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_campaign_reliability.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_cli_argparse.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_cli_dispatch.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_concise_release.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_concise_report.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_concordance_depth_pass.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_concordance_progress.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_concordance_study.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_create_data_utils.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_create_datafile.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_crosscheck_depth.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_external_evaluate.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_external_score_plan.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_full_snv_concordance.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_full_snv_concordance_depth.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_keras_loader_contract.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_model_forward.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_paralogs.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_predict_internals.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_predict_pipeline_units.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_predict_turbo_and_debug.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_predict_utils.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_predict_variant_hardening.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_site_distance.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_temperature_scaling.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_temperature_scaling_extra.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_train_base_utils.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_train_base_utils_extra.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_train_init.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_train_loop.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_transfer_forgetting.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_transfer_freeze.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_transfer_table.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_validation_invariants.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_variant_delta.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_variant_output_atomic.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_variant_utils.py -> openspliceai-0.1.0.dev0/tests/unit
+copying tests/unit/test_variant_utils_extra.py -> openspliceai-0.1.0.dev0/tests/unit
+copying validation/ALGORITHM.md -> openspliceai-0.1.0.dev0/validation
+copying validation/README.md -> openspliceai-0.1.0.dev0/validation
+copying validation/VALIDATION_REPORT.md -> openspliceai-0.1.0.dev0/validation
+copying validation/__init__.py -> openspliceai-0.1.0.dev0/validation
+copying validation/benchmark_test_accuracy.py -> openspliceai-0.1.0.dev0/validation
+copying validation/build_equiv_vcf.py -> openspliceai-0.1.0.dev0/validation
+copying validation/build_predict_region.py -> openspliceai-0.1.0.dev0/validation
+copying validation/compare_equiv.py -> openspliceai-0.1.0.dev0/validation
+copying validation/compare_predict_recovery.py -> openspliceai-0.1.0.dev0/validation
+copying validation/dedup_predictions.py -> openspliceai-0.1.0.dev0/validation
+copying validation/make_report_figs.py -> openspliceai-0.1.0.dev0/validation
+copying validation/concordance_study/CONTINUATION.md -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/RELEASE_READY.md -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/__init__.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/__main__.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/cli.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/concise_figures.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/concise_release.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/concise_supplement.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/crosscheck.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/crosscheck_depth.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/deeper.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/depth_figures.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/derive.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/figures.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/loading.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/markdown_tables.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/prepare_release.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/progress.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/report.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/revision_checks.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/style.py -> openspliceai-0.1.0.dev0/validation/concordance_study
+copying validation/concordance_study/depth/__init__.py -> openspliceai-0.1.0.dev0/validation/concordance_study/depth
+copying validation/concordance_study/depth/__main__.py -> openspliceai-0.1.0.dev0/validation/concordance_study/depth
+copying validation/concordance_study/depth/aggregate.py -> openspliceai-0.1.0.dev0/validation/concordance_study/depth
+copying validation/concordance_study/depth/launch.py -> openspliceai-0.1.0.dev0/validation/concordance_study/depth
+copying validation/concordance_study/templates/OpenSpliceAI_vs_SpliceAI_genome_wide.md -> openspliceai-0.1.0.dev0/validation/concordance_study/templates
+copying validation/concordance_study/templates/concise-figures.json -> openspliceai-0.1.0.dev0/validation/concordance_study/templates
+copying validation/concordance_study/templates/depth-discussion.fragment.md -> openspliceai-0.1.0.dev0/validation/concordance_study/templates
+copying validation/concordance_study/templates/depth-limitations.fragment.md -> openspliceai-0.1.0.dev0/validation/concordance_study/templates
+copying validation/concordance_study/templates/depth-results.fragment.md -> openspliceai-0.1.0.dev0/validation/concordance_study/templates
+copying validation/concordance_study/templates/full-snv-scoring-supplement.mdx -> openspliceai-0.1.0.dev0/validation/concordance_study/templates
+copying validation/concordance_study/templates/full-snv-scoring-technical-report.mdx -> openspliceai-0.1.0.dev0/validation/concordance_study/templates
+copying validation/concordance_study/templates/openspliceai-technical-report.mdx -> openspliceai-0.1.0.dev0/validation/concordance_study/templates
+copying validation/concordance_study/templates/scientific-review.md -> openspliceai-0.1.0.dev0/validation/concordance_study/templates
+copying validation/concordance_study/templates/archive/20260909/OpenSpliceAI_vs_SpliceAI_genome_wide.md -> openspliceai-0.1.0.dev0/validation/concordance_study/templates/archive/20260909
+copying validation/concordance_study/templates/archive/20260909/full-snv-scoring-technical-report.mdx -> openspliceai-0.1.0.dev0/validation/concordance_study/templates/archive/20260909
+copying validation/concordance_study/templates/archive/20260909/openspliceai-technical-report.mdx -> openspliceai-0.1.0.dev0/validation/concordance_study/templates/archive/20260909
+copying validation/concordance_study/templates/archive/20260911-full-prose/full-snv-scoring-supplement.mdx -> openspliceai-0.1.0.dev0/validation/concordance_study/templates/archive/20260911-full-prose
+copying validation/concordance_study/templates/archive/20260911-full-prose/full-snv-scoring-technical-report.mdx -> openspliceai-0.1.0.dev0/validation/concordance_study/templates/archive/20260911-full-prose
+copying validation/concordance_study/templates/archive/20260911-full-prose/openspliceai-technical-report.mdx -> openspliceai-0.1.0.dev0/validation/concordance_study/templates/archive/20260911-full-prose
+copying validation/full_snv_concordance/FORMAT_AND_ANALYSIS.html -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/FORMAT_AND_ANALYSIS.md -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/README.md -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/STUDY_PROTOCOL.md -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/__init__.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/__main__.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/aggregate.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/cli.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/external.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/external_evaluate.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/external_score_plan.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/external_sources.json -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/reporting.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/sites.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/vcf.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/workflows.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance
+copying validation/full_snv_concordance/automation/__init__.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/automation
+copying validation/full_snv_concordance/automation/bootstrap.sh -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/automation
+copying validation/full_snv_concordance/automation/reliable.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/automation
+copying validation/full_snv_concordance/automation/status.sh -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/automation
+copying validation/full_snv_concordance/automation/supervisor.py -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/automation
+copying validation/full_snv_concordance/automation/supervisor.sbatch -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/automation
+copying validation/full_snv_concordance/slurm/external_evaluate.sbatch -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/slurm
+copying validation/full_snv_concordance/slurm/external_score_array.sbatch -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/slurm
+copying validation/full_snv_concordance/slurm/fingerprint.sh -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/slurm
+copying validation/full_snv_concordance/slurm/map_array.sbatch -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/slurm
+copying validation/full_snv_concordance/slurm/reduce.sbatch -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/slurm
+copying validation/full_snv_concordance/slurm/render.sbatch -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/slurm
+copying validation/full_snv_concordance/slurm/run_external_scoring.sh -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/slurm
+copying validation/full_snv_concordance/slurm/run_map_reduce.sh -> openspliceai-0.1.0.dev0/validation/full_snv_concordance/slurm
+copying verification/comprehensive/README.md -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/account-balances-20261005.tsv -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/account-balances-summary.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/audit-allocation-31606547.tsv -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/audit-allocations-final.tsv -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/backend-manifest.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/browser-summary.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/environment-baseline.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/environment-minimum.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/feature-matrix.md -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/function-coverage.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/keras-final-summary.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/keras-initial-summary.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/package-coverage.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/production-boundary.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/r13-allocation-samples.tsv -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/research-coverage.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/scheduler-20261005.tsv -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/scheduler-latest-20261005.tsv -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/source-inventory.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/summary.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/tutorial-commands.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+copying verification/comprehensive/tutorial-summary.json -> openspliceai-0.1.0.dev0/verification/comprehensive
+Writing openspliceai-0.1.0.dev0/setup.cfg
+Creating tar archive
+removing 'openspliceai-0.1.0.dev0' (and everything under it)
+* Building wheel from sdist
+* Getting build dependencies for wheel...
+running egg_info
+writing openspliceai.egg-info/PKG-INFO
+writing dependency_links to openspliceai.egg-info/dependency_links.txt
+writing entry points to openspliceai.egg-info/entry_points.txt
+writing requirements to openspliceai.egg-info/requires.txt
+writing top-level names to openspliceai.egg-info/top_level.txt
+reading manifest file 'openspliceai.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.svg' under directory 'docs/source'
+warning: no previously-included files found matching 'verification/comprehensive/artifacts.json'
+warning: no previously-included files found matching 'verification/comprehensive/distributions.json'
+adding license file 'LICENSE'
+writing manifest file 'openspliceai.egg-info/SOURCES.txt'
+* Building wheel...
+running bdist_wheel
+running build
+running build_py
+creating build
+creating build/lib
+creating build/lib/openspliceai
+copying openspliceai/constants.py -> build/lib/openspliceai
+copying openspliceai/__init__.py -> build/lib/openspliceai
+copying openspliceai/model_config.py -> build/lib/openspliceai
+copying openspliceai/checkpoints.py -> build/lib/openspliceai
+copying openspliceai/openspliceai.py -> build/lib/openspliceai
+copying openspliceai/header.py -> build/lib/openspliceai
+copying openspliceai/data_schema.py -> build/lib/openspliceai
+creating build/lib/openspliceai/variant
+copying openspliceai/variant/__init__.py -> build/lib/openspliceai/variant
+copying openspliceai/variant/utils.py -> build/lib/openspliceai/variant
+copying openspliceai/variant/get_anno.py -> build/lib/openspliceai/variant
+copying openspliceai/variant/variant.py -> build/lib/openspliceai/variant
+creating build/lib/openspliceai/train
+copying openspliceai/train/__init__.py -> build/lib/openspliceai/train
+copying openspliceai/train/train.py -> build/lib/openspliceai/train
+creating build/lib/openspliceai/train_base
+copying openspliceai/train_base/__init__.py -> build/lib/openspliceai/train_base
+copying openspliceai/train_base/openspliceai.py -> build/lib/openspliceai/train_base
+copying openspliceai/train_base/utils.py -> build/lib/openspliceai/train_base
+creating build/lib/openspliceai/create_data
+copying openspliceai/create_data/__init__.py -> build/lib/openspliceai/create_data
+copying openspliceai/create_data/create_datafile.py -> build/lib/openspliceai/create_data
+copying openspliceai/create_data/create_dataset.py -> build/lib/openspliceai/create_data
+copying openspliceai/create_data/paralogs.py -> build/lib/openspliceai/create_data
+copying openspliceai/create_data/gff_to_tsv.py -> build/lib/openspliceai/create_data
+copying openspliceai/create_data/utils.py -> build/lib/openspliceai/create_data
+copying openspliceai/create_data/verify_h5_file.py -> build/lib/openspliceai/create_data
+creating build/lib/openspliceai/calibrate
+copying openspliceai/calibrate/__init__.py -> build/lib/openspliceai/calibrate
+copying openspliceai/calibrate/visualization.py -> build/lib/openspliceai/calibrate
+copying openspliceai/calibrate/calibrate_utils.py -> build/lib/openspliceai/calibrate
+copying openspliceai/calibrate/streaming.py -> build/lib/openspliceai/calibrate
+copying openspliceai/calibrate/model_utils.py -> build/lib/openspliceai/calibrate
+copying openspliceai/calibrate/temperature_scaling_site_only.py -> build/lib/openspliceai/calibrate
+copying openspliceai/calibrate/temperature_scaling.py -> build/lib/openspliceai/calibrate
+copying openspliceai/calibrate/calibrate.py -> build/lib/openspliceai/calibrate
+creating build/lib/openspliceai/transfer
+copying openspliceai/transfer/__init__.py -> build/lib/openspliceai/transfer
+copying openspliceai/transfer/transfer.py -> build/lib/openspliceai/transfer
+creating build/lib/openspliceai/predict
+copying openspliceai/predict/__init__.py -> build/lib/openspliceai/predict
+copying openspliceai/predict/predict.py -> build/lib/openspliceai/predict
+copying openspliceai/predict/utils.py -> build/lib/openspliceai/predict
+creating build/lib/openspliceai/merge_data
+copying openspliceai/merge_data/__init__.py -> build/lib/openspliceai/merge_data
+copying openspliceai/merge_data/merge_dataset.py -> build/lib/openspliceai/merge_data
+creating build/lib/openspliceai/test
+copying openspliceai/test/__init__.py -> build/lib/openspliceai/test
+copying openspliceai/test/test.py -> build/lib/openspliceai/test
+running egg_info
+writing openspliceai.egg-info/PKG-INFO
+writing dependency_links to openspliceai.egg-info/dependency_links.txt
+writing entry points to openspliceai.egg-info/entry_points.txt
+writing requirements to openspliceai.egg-info/requires.txt
+writing top-level names to openspliceai.egg-info/top_level.txt
+reading manifest file 'openspliceai.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.svg' under directory 'docs/source'
+warning: no previously-included files found matching 'verification/comprehensive/artifacts.json'
+warning: no previously-included files found matching 'verification/comprehensive/distributions.json'
+adding license file 'LICENSE'
+writing manifest file 'openspliceai.egg-info/SOURCES.txt'
+creating build/lib/openspliceai/variant/annotations
+copying openspliceai/variant/annotations/grch37.txt -> build/lib/openspliceai/variant/annotations
+copying openspliceai/variant/annotations/grch38.txt -> build/lib/openspliceai/variant/annotations
+installing to build/bdist.linux-x86_64/wheel
+running install
+running install_lib
+creating build/bdist.linux-x86_64
+creating build/bdist.linux-x86_64/wheel
+creating build/bdist.linux-x86_64/wheel/openspliceai
+copying build/lib/openspliceai/constants.py -> build/bdist.linux-x86_64/wheel/openspliceai
+copying build/lib/openspliceai/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai
+creating build/bdist.linux-x86_64/wheel/openspliceai/variant
+copying build/lib/openspliceai/variant/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai/variant
+creating build/bdist.linux-x86_64/wheel/openspliceai/variant/annotations
+copying build/lib/openspliceai/variant/annotations/grch37.txt -> build/bdist.linux-x86_64/wheel/openspliceai/variant/annotations
+copying build/lib/openspliceai/variant/annotations/grch38.txt -> build/bdist.linux-x86_64/wheel/openspliceai/variant/annotations
+copying build/lib/openspliceai/variant/utils.py -> build/bdist.linux-x86_64/wheel/openspliceai/variant
+copying build/lib/openspliceai/variant/get_anno.py -> build/bdist.linux-x86_64/wheel/openspliceai/variant
+copying build/lib/openspliceai/variant/variant.py -> build/bdist.linux-x86_64/wheel/openspliceai/variant
+copying build/lib/openspliceai/model_config.py -> build/bdist.linux-x86_64/wheel/openspliceai
+creating build/bdist.linux-x86_64/wheel/openspliceai/train
+copying build/lib/openspliceai/train/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai/train
+copying build/lib/openspliceai/train/train.py -> build/bdist.linux-x86_64/wheel/openspliceai/train
+copying build/lib/openspliceai/checkpoints.py -> build/bdist.linux-x86_64/wheel/openspliceai
+creating build/bdist.linux-x86_64/wheel/openspliceai/train_base
+copying build/lib/openspliceai/train_base/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai/train_base
+copying build/lib/openspliceai/train_base/openspliceai.py -> build/bdist.linux-x86_64/wheel/openspliceai/train_base
+copying build/lib/openspliceai/train_base/utils.py -> build/bdist.linux-x86_64/wheel/openspliceai/train_base
+creating build/bdist.linux-x86_64/wheel/openspliceai/create_data
+copying build/lib/openspliceai/create_data/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai/create_data
+copying build/lib/openspliceai/create_data/create_datafile.py -> build/bdist.linux-x86_64/wheel/openspliceai/create_data
+copying build/lib/openspliceai/create_data/create_dataset.py -> build/bdist.linux-x86_64/wheel/openspliceai/create_data
+copying build/lib/openspliceai/create_data/paralogs.py -> build/bdist.linux-x86_64/wheel/openspliceai/create_data
+copying build/lib/openspliceai/create_data/gff_to_tsv.py -> build/bdist.linux-x86_64/wheel/openspliceai/create_data
+copying build/lib/openspliceai/create_data/utils.py -> build/bdist.linux-x86_64/wheel/openspliceai/create_data
+copying build/lib/openspliceai/create_data/verify_h5_file.py -> build/bdist.linux-x86_64/wheel/openspliceai/create_data
+copying build/lib/openspliceai/openspliceai.py -> build/bdist.linux-x86_64/wheel/openspliceai
+copying build/lib/openspliceai/header.py -> build/bdist.linux-x86_64/wheel/openspliceai
+copying build/lib/openspliceai/data_schema.py -> build/bdist.linux-x86_64/wheel/openspliceai
+creating build/bdist.linux-x86_64/wheel/openspliceai/calibrate
+copying build/lib/openspliceai/calibrate/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai/calibrate
+copying build/lib/openspliceai/calibrate/visualization.py -> build/bdist.linux-x86_64/wheel/openspliceai/calibrate
+copying build/lib/openspliceai/calibrate/calibrate_utils.py -> build/bdist.linux-x86_64/wheel/openspliceai/calibrate
+copying build/lib/openspliceai/calibrate/streaming.py -> build/bdist.linux-x86_64/wheel/openspliceai/calibrate
+copying build/lib/openspliceai/calibrate/model_utils.py -> build/bdist.linux-x86_64/wheel/openspliceai/calibrate
+copying build/lib/openspliceai/calibrate/temperature_scaling_site_only.py -> build/bdist.linux-x86_64/wheel/openspliceai/calibrate
+copying build/lib/openspliceai/calibrate/temperature_scaling.py -> build/bdist.linux-x86_64/wheel/openspliceai/calibrate
+copying build/lib/openspliceai/calibrate/calibrate.py -> build/bdist.linux-x86_64/wheel/openspliceai/calibrate
+creating build/bdist.linux-x86_64/wheel/openspliceai/transfer
+copying build/lib/openspliceai/transfer/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai/transfer
+copying build/lib/openspliceai/transfer/transfer.py -> build/bdist.linux-x86_64/wheel/openspliceai/transfer
+creating build/bdist.linux-x86_64/wheel/openspliceai/predict
+copying build/lib/openspliceai/predict/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai/predict
+copying build/lib/openspliceai/predict/predict.py -> build/bdist.linux-x86_64/wheel/openspliceai/predict
+copying build/lib/openspliceai/predict/utils.py -> build/bdist.linux-x86_64/wheel/openspliceai/predict
+creating build/bdist.linux-x86_64/wheel/openspliceai/merge_data
+copying build/lib/openspliceai/merge_data/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai/merge_data
+copying build/lib/openspliceai/merge_data/merge_dataset.py -> build/bdist.linux-x86_64/wheel/openspliceai/merge_data
+creating build/bdist.linux-x86_64/wheel/openspliceai/test
+copying build/lib/openspliceai/test/__init__.py -> build/bdist.linux-x86_64/wheel/openspliceai/test
+copying build/lib/openspliceai/test/test.py -> build/bdist.linux-x86_64/wheel/openspliceai/test
+running install_egg_info
+Copying openspliceai.egg-info to build/bdist.linux-x86_64/wheel/openspliceai-0.1.0.dev0-py3.11.egg-info
+running install_scripts
+creating build/bdist.linux-x86_64/wheel/openspliceai-0.1.0.dev0.dist-info/WHEEL
+creating '/tmp/openspliceai-comprehensive-20261004/dist/tmp7npn1k4w/openspliceai-0.1.0.dev0-py3-none-any.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'openspliceai/__init__.py'
+adding 'openspliceai/checkpoints.py'
+adding 'openspliceai/constants.py'
+adding 'openspliceai/data_schema.py'
+adding 'openspliceai/header.py'
+adding 'openspliceai/model_config.py'
+adding 'openspliceai/openspliceai.py'
+adding 'openspliceai/calibrate/__init__.py'
+adding 'openspliceai/calibrate/calibrate.py'
+adding 'openspliceai/calibrate/calibrate_utils.py'
+adding 'openspliceai/calibrate/model_utils.py'
+adding 'openspliceai/calibrate/streaming.py'
+adding 'openspliceai/calibrate/temperature_scaling.py'
+adding 'openspliceai/calibrate/temperature_scaling_site_only.py'
+adding 'openspliceai/calibrate/visualization.py'
+adding 'openspliceai/create_data/__init__.py'
+adding 'openspliceai/create_data/create_datafile.py'
+adding 'openspliceai/create_data/create_dataset.py'
+adding 'openspliceai/create_data/gff_to_tsv.py'
+adding 'openspliceai/create_data/paralogs.py'
+adding 'openspliceai/create_data/utils.py'
+adding 'openspliceai/create_data/verify_h5_file.py'
+adding 'openspliceai/merge_data/__init__.py'
+adding 'openspliceai/merge_data/merge_dataset.py'
+adding 'openspliceai/predict/__init__.py'
+adding 'openspliceai/predict/predict.py'
+adding 'openspliceai/predict/utils.py'
+adding 'openspliceai/test/__init__.py'
+adding 'openspliceai/test/test.py'
+adding 'openspliceai/train/__init__.py'
+adding 'openspliceai/train/train.py'
+adding 'openspliceai/train_base/__init__.py'
+adding 'openspliceai/train_base/openspliceai.py'
+adding 'openspliceai/train_base/utils.py'
+adding 'openspliceai/transfer/__init__.py'
+adding 'openspliceai/transfer/transfer.py'
+adding 'openspliceai/variant/__init__.py'
+adding 'openspliceai/variant/get_anno.py'
+adding 'openspliceai/variant/utils.py'
+adding 'openspliceai/variant/variant.py'
+adding 'openspliceai/variant/annotations/grch37.txt'
+adding 'openspliceai/variant/annotations/grch38.txt'
+adding 'openspliceai-0.1.0.dev0.dist-info/LICENSE'
+adding 'openspliceai-0.1.0.dev0.dist-info/METADATA'
+adding 'openspliceai-0.1.0.dev0.dist-info/WHEEL'
+adding 'openspliceai-0.1.0.dev0.dist-info/entry_points.txt'
+adding 'openspliceai-0.1.0.dev0.dist-info/top_level.txt'
+adding 'openspliceai-0.1.0.dev0.dist-info/RECORD'
+removing build/bdist.linux-x86_64/wheel
+Successfully built openspliceai-0.1.0.dev0.tar.gz and openspliceai-0.1.0.dev0-py3-none-any.whl

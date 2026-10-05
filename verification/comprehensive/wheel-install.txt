@@ -1,0 +1,8 @@
+WARNING: The directory '/home/kchao10/.cache/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+Processing ./openspliceai-comprehensive-20261004/dist/openspliceai-0.1.0.dev0-py3-none-any.whl
+Installing collected packages: openspliceai
+  Attempting uninstall: openspliceai
+    Found existing installation: openspliceai 0.1.0.dev0
+    Uninstalling openspliceai-0.1.0.dev0:
+      Successfully uninstalled openspliceai-0.1.0.dev0
+Successfully installed openspliceai-0.1.0.dev0

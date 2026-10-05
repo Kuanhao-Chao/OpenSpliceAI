@@ -1,0 +1,16 @@
+WARNING: The directory '/home/kchao10/.cache/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+Processing ./openspliceai-comprehensive-20261004/dist/openspliceai-0.1.0.dev0.tar.gz
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: openspliceai
+  Building wheel for openspliceai (pyproject.toml): started
+  Building wheel for openspliceai (pyproject.toml): finished with status 'done'
+  Created wheel for openspliceai: filename=openspliceai-0.1.0.dev0-py3-none-any.whl size=3602483 sha256=144b371acf8885c40ebba8150bb106728fcd2b8cb0ea44f855039252ea2a4e84
+  Stored in directory: /tmp/pip-ephem-wheel-cache-nuln43gz/wheels/68/a0/b9/f505569661cc4cdd405c4484df0facbf6b5288dbe7e40e5392
+Successfully built openspliceai
+Installing collected packages: openspliceai
+  Attempting uninstall: openspliceai
+    Found existing installation: openspliceai 0.1.0.dev0
+    Uninstalling openspliceai-0.1.0.dev0:
+      Successfully uninstalled openspliceai-0.1.0.dev0
+Successfully installed openspliceai-0.1.0.dev0
