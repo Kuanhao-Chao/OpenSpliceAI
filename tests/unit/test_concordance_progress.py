@@ -219,7 +219,8 @@ def test_query_scheduler_reports_unavailable_instead_of_no_jobs():
     assert raw is None
 
 
-def test_query_scheduler_filters_uid_and_exact_seed_job_prefixes():
+def test_query_scheduler_filters_uid_and_exact_seed_job_prefixes(monkeypatch):
+    monkeypatch.setattr(progress.os, 'getuid', lambda: 1239)
     raw = "\n".join(
         [
             "29611225|osai_rs10|RUNNING|None|1239",
@@ -249,7 +250,8 @@ def test_query_scheduler_filters_uid_and_exact_seed_job_prefixes():
     assert captured == raw
 
 
-def test_cli_writes_schema_and_groups_scheduler_jobs_by_seed(tmp_path):
+def test_cli_writes_schema_and_groups_scheduler_jobs_by_seed(tmp_path, monkeypatch):
+    monkeypatch.setattr(progress.os, 'getuid', lambda: 1239)
     for seed in ("rs10", "rs13"):
         source = _file(tmp_path / f"{seed}-source.vcf", "source")
         output = _file(tmp_path / f"{seed}-output.vcf", "output")
