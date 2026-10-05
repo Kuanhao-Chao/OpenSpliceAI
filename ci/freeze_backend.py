@@ -40,7 +40,7 @@ def freeze(root, destination, weights_root):
     for name, source in sorted(inputs.items()):
         target = destination/name
         target.parent.mkdir(parents=True,exist_ok=True)
-        shutil.copyfile(source,target)
+        shutil.copy2(source,target)
         hashes[name] = digest(target)
         if hashes[name] != digest(source):
             raise ValueError(f'Input changed during snapshot: {name}')
