@@ -11,8 +11,9 @@
         "version": "146.0.1"
       },
       "webkit": {
-        "ci": "configured on Ubuntu",
-        "local": "unavailable: host libraries missing"
+        "ci": "passed on Ubuntu",
+        "local": "unavailable: host libraries missing",
+        "passed": 9
       }
     },
     "frontendUnit": {
@@ -43,6 +44,13 @@
     },
     "sphinxWarningsAsErrors": {
       "passed": true
+    },
+    "ubuntuCi": {
+      "browserChecks": 27,
+      "headCommit": "e4954af672730450c3e24aca8ca198c787ace78d",
+      "passed": true,
+      "url": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/runs/38078875077",
+      "verifiedImplementationSourceSha256": "551340b7d92ac3f65467a0a1365a0091f09c249bc5e144397cd30914024c184e"
     }
   },
   "defaultEncodedDataDownloadBytes": {
@@ -126,6 +134,15 @@
     "maximumCpuBillingHours": 338,
     "partition": "bigmem",
     "previewAcceptedChunks": 92294,
+    "referenceCompleted": {
+      "contigs": 705,
+      "cpuBillingHours": 0.6483333333333333,
+      "elapsedSeconds": 1167,
+      "maxRssKiB": 3546188,
+      "passed": true,
+      "publicBytes": 2671966163,
+      "publicFiles": 2820
+    },
     "scoreConversionEstimatedWallHours": [
       30,
       65
@@ -140,7 +157,7 @@
     "index.html": 10444,
     "settings.json": 35
   },
-  "recordedUtc": "2026-10-10T19:01:31.322150+00:00",
+  "recordedUtc": "2026-10-10T19:17:24.515630+00:00",
   "reviewDataset": {
     "acceptedR13Occurrences": 39568,
     "id": "grch38-scored-review-20261010",

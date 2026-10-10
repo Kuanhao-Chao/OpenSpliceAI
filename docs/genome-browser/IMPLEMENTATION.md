@@ -37,7 +37,7 @@ no additional inference is performed.
 - [x] Bounded cache, workers, range validation, explicit failures and retry
 - [x] Sphinx integration, CI, documentation and publication checks
 - [x] Chromium/Firefox audits and captured validation evidence
-- [ ] WebKit acceptance on the Ubuntu CI host
+- [x] WebKit acceptance on the Ubuntu CI host
 - [ ] Completed genome-wide score/reference packaging and final content verification
 - [ ] Institutional upload, endpoint probe and genome-wide catalog activation
 
@@ -63,6 +63,10 @@ All use `ssalzbe1_bigmem`/`bigmem` and zero GPUs. The concurrent request is
 4 CPUs and 24 GiB RAM. Slurm reports billing=2 for each two-CPU job. The
 configured maximum is 338 CPU billing hours across all five jobs; completed
 score continuations exit immediately, so this ceiling is not a cost forecast.
+Reference/search preparation completed successfully for all 705 contigs in
+19m27s, producing 2,671,966,163 public data bytes. It used 0.6483 CPU billing
+hours and peaked at 3.38 GiB RAM. Score preparation continues with 2 CPUs and
+8 GiB; checkpoint continuations and final verification remain dependent jobs.
 The measured small-sample estimate is 30–65 score-conversion wall hours with
 two workers, approximately 50 GB of score packs, plus reference/search data
 and verification. Queue time and source I/O remain uncertain.
