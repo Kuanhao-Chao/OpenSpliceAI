@@ -56,3 +56,10 @@ browser range responses. HTTP gzip transformations are disabled: compression
 is internal to the file and offsets refer to stored bytes. The host returns
 206, exact Content-Range, CORS and exposed Content-Range. Missing/invalid bytes
 raise an error and disable stable exports; they never become empty data.
+
+The bundled `review-subset` on the application's own origin uses whole-file
+reads for indexed artifacts at most 1 MiB each. GitHub Pages may recompress
+ranged representations for Firefox. These bounded reads authenticate the
+complete stored-file SHA-256 before slicing and checking the block/page bytes.
+Genome-wide datasets and external origins always retain the strict range
+contract; they never fall back to downloading a complete packed file.

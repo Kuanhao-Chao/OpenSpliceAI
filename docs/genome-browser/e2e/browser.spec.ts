@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 
 const scriptErrors = new WeakMap<Page, string[]>();
 
@@ -40,6 +40,16 @@ test('state, navigation, filters, empty track selection and themes', async ({ pa
   for (const theme of ['light', 'dark', 'nord', 'monokai', 'cyberdeck', 'parchment']) { await page.locator('#theme').selectOption(theme); await expect(page.locator('body')).toHaveAttribute('data-theme', theme); }
   await page.locator('#zoom-in').click(); await expect(page.locator('#load-status')).toContainText('Exact');
   await page.locator('#back').click(); await expect(page.locator('#load-status')).toContainText('Exact');
+  await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+    writeText: async (value: string) => { (window as unknown as { sharedUrl: string }).sharedUrl = value; },
+  } }));
+  await page.locator('#share').click(); await expect(page.locator('#load-status')).toContainText('copied');
+  const shared = await page.evaluate(() => (window as unknown as { sharedUrl: string }).sharedUrl);
+  expect(new URL(shared).searchParams.get('manifest')).toContain('/data/review/manifest.json');
+  await page.route('**/settings.json', route => route.fulfill({ status: 503 }));
+  await page.route('**/catalog.json', route => route.fulfill({ status: 503 }));
+  await page.goto(shared); await expect(page.locator('#load-status')).toContainText('Exact');
+  await expect(page.locator('#track-list input[type=checkbox]:checked')).toHaveCount(0);
 });
 
 test('PNG, vector SVG, exact CSV and summary CSV download', async ({ page }) => {
@@ -63,13 +73,29 @@ test('sequence search, cancellation and honest unavailable genome index', async 
   await page.locator('#cancel-search').click(); await expect(page.locator('#sequence-status')).toContainText('cancelled');
 });
 
-test('failed ranges are visible and prevent exports, then retry succeeds', async ({ page }) => {
+test('failed score requests are visible and prevent exports, then retry succeeds', async ({ page }) => {
   await page.route('**/*.pack', route => route.fulfill({ status: 503, body: 'unavailable' }));
   await page.locator('#locus').fill('chr2_KI270773v1_alt:18694:C>A'); await page.locator('#locus-form button[type=submit]').click();
   await expect(page.locator('#retry')).toBeVisible();
   await expect(page.locator('#load-status')).toContainText('failed');
+  await expect(page.locator('#gene-details')).not.toContainText('SAMD11');
+  await expect(page.locator('#stats')).toContainText('Waiting for current-view');
   await page.locator('#svg').click(); await expect(page.locator('#load-status')).toContainText('successfully loaded');
   await page.unroute('**/*.pack'); await page.locator('#retry').click(); await expect(page.locator('#load-status')).toContainText('Exact');
+});
+
+test('genome-wide mode rejects whole-file responses to a byte-range request', async ({ page }) => {
+  const manifest = JSON.parse(await readFile(new URL('../public/data/review/manifest.json', import.meta.url), 'utf8'));
+  manifest.scope = 'source-collection';
+  await page.route(url => url.pathname.endsWith('/manifest.json') && url.searchParams.has('strict'),
+    route => route.fulfill({ contentType: 'application/json', body: JSON.stringify(manifest) }));
+  const fullFile = await readFile(new URL('../public/data/review/scores-0000.pack', import.meta.url));
+  await page.route('**/scores-0000.pack', route => route.fulfill({ status: 200, contentType: 'application/octet-stream', body: fullFile }));
+  const manifestUrl = new URL('data/review/manifest.json?strict=1', page.url()).href;
+  await page.goto(`./?manifest=${encodeURIComponent(manifestUrl)}`);
+  await expect(page.locator('#load-status')).toContainText('HTTP 206');
+  await expect(page.locator('#retry')).toBeVisible();
+  await page.locator('#svg').click(); await expect(page.locator('#load-status')).toContainText('successfully loaded');
 });
 
 test('responsive layouts have no overflow and retain accessible controls', async ({ page }, testInfo) => {

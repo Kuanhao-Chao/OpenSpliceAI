@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampView, DEFAULT_STATE, History, orderedContigs, parseLocus, restoreState, serializeState } from './state';
+import { clampView, DEFAULT_STATE, History, orderedContigs, parseLocus, restoreState, serializeState, snapshotLink } from './state';
 import type { Contig } from './types';
 const contigs: Contig[] = ['chr1', 'chr2', 'chr10', 'chrX', 'chrY', 'chrM'].map(name => ({ name, length: 1000000, indexes: {}, overview: [] }));
 describe('human browser state', () => {
@@ -11,4 +11,5 @@ describe('human browser state', () => {
   it('drops unsafe or invalid settings', () => { const s = restoreState('v=1&chr=chr1&start=0&end=200&heights=%7B%22AG%22%3A99999%7D&threshold=9&alt=<script>', DEFAULT_STATE, contigs); expect(s.threshold).toBe(1); expect(s.heights).toEqual({}); expect(s.alt).toBe('*'); });
   it('restores history with a new branch', () => { const h = new History(); h.push(DEFAULT_STATE); h.push({ ...DEFAULT_STATE, start: 200, end: 500 }); expect(h.back()?.start).toBe(DEFAULT_STATE.start); h.push({ ...DEFAULT_STATE, start: 400 }); expect(h.forward()).toBeNull(); });
   it('restores a one-base ROI without expanding it to the view minimum', () => { const s = { ...DEFAULT_STATE, roi: { chrom: 'chr1', start: 100, end: 101 } }; expect(restoreState(serializeState(s), DEFAULT_STATE, contigs).roi).toEqual(s.roi); });
+  it('pins an immutable manifest independently of the current catalog', () => { const s = { ...DEFAULT_STATE, snapshot: 'frozen', model: 'r13' as const }; const url = new URL(snapshotLink('https://site.example/OpenSpliceAI/genome/?keep=value', 'https://data.example/frozen/manifest.json', s)); expect(url.searchParams.get('manifest')).toBe('https://data.example/frozen/manifest.json'); expect(url.searchParams.get('keep')).toBe('value'); expect(restoreState(url.hash, DEFAULT_STATE, contigs)).toEqual(s); });
 });
