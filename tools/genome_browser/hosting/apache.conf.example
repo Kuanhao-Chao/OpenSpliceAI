@@ -1,0 +1,12 @@
+# Place inside the institutional HTTPS virtual host with mod_headers enabled.
+Alias /OpenSpliceAI/browser-data/ /srv/public/OpenSpliceAI/browser-data/
+<Directory /srv/public/OpenSpliceAI/browser-data/>
+    Require all granted
+    Options -Indexes
+    SetEnv no-gzip 1
+    Header always set Access-Control-Allow-Origin "https://khchao.com"
+    Header always set Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Range"
+    Header always set Access-Control-Expose-Headers "Content-Range, Content-Length, ETag, Accept-Ranges"
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</Directory>
