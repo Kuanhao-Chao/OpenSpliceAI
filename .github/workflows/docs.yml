@@ -11,10 +11,12 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'tools/genome_browser/**'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'docs/**'
+      - 'tools/genome_browser/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -37,6 +39,33 @@ jobs:
 
       - name: Install documentation dependencies
         run: pip install -r docs/requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: docs/genome-browser/package-lock.json
+
+      - name: Install and test genome browser
+        working-directory: docs/genome-browser
+        run: |
+          npm ci
+          npm test
+          npx playwright install --with-deps chromium firefox webkit
+          npm run audit
+
+      - name: Test browser data preparation
+        run: |
+          pip install -r tools/genome_browser/requirements.txt
+          OMP_NUM_THREADS=2 python -m unittest discover -s tools/genome_browser/tests -v
+
+      - name: Preserve browser audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: genome-browser-audit
+          path: docs/genome-browser/test-results
 
       - name: Build documentation (warnings are errors)
         run: make -C docs html SPHINXOPTS="-W"
