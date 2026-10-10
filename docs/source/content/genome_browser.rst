@@ -20,6 +20,8 @@ Enter a gene symbol, a 1-based inclusive region such as
 Use the chromosome overview, minimap, gene navigation, zoom buttons, or drag
 to move through the genome. Shift-drag marks a region of interest. The share
 button captures the dataset snapshot and every view setting.
+Shared links also pin the immutable manifest URL, so changing the default
+catalog does not redirect an existing shared view to a different snapshot.
 
 Track settings control order, height, density, score threshold, ALT and gene
 filters. Six themes and mobile track controls follow the existing yeast
@@ -126,3 +128,6 @@ resumption, expected resources and publication. ``FORMAT.md`` describes the
 lossless binary format; ``hosting/`` provides Apache and Nginx examples.
 The small application belongs on GitHub Pages; the large data stay on the
 institutional host. No paid hosting or GPU inference is needed for the browser.
+The bundled review subset authenticates small same-origin files before slicing
+them, which accommodates GitHub Pages recompression. This exception is limited
+to files at most 1 MiB; genome-wide data always require unchanged range bytes.
