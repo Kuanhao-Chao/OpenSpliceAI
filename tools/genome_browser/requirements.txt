@@ -1,0 +1,3 @@
+# Optional native sequence-index builder, isolated from the scoring environment.
+numpy==2.4.6
+pydivsufsort==0.0.18

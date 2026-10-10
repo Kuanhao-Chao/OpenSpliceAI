@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Explore precomputed human OpenSpliceAI SNV delta scores, gene annotations, model comparisons and scoring coverage on GRCh38." />
+  <title>Human genome browser · OpenSpliceAI</title>
+  <link rel="canonical" href="https://khchao.com/OpenSpliceAI/genome/" />
+</head>
+<body data-theme="light">
+  <a class="skip" href="#browser">Skip to genome browser</a>
+  <header class="masthead">
+    <a href="https://khchao.com/OpenSpliceAI/" class="brand">OpenSpliceAI <span>/ HUMAN GENOME</span></a>
+    <nav aria-label="Documentation"><a href="https://khchao.com/OpenSpliceAI/content/genome_browser.html">Guide &amp; methods ↗</a><a href="https://khchao.com/shorkie-lab/genome/">Yeast browser ↗</a></nav>
+  </header>
+  <main>
+    <div class="intro"><div><p class="eyebrow">GRCh38 · PRECOMPUTED VARIANT SCORES</p><h1>Every scored variant, in context.</h1><p>Explore splice acceptor and donor gains and losses. Inspect exact alleles, compare model seeds, and see where scoring is available.</p></div>
+      <label class="theme-control">Appearance<select id="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="nord">Nord</option><option value="monokai">Monokai</option><option value="cyberdeck">Cyberdeck</option><option value="parchment">Parchment</option></select></label></div>
+    <div id="dataset-note" class="notice" role="status">Loading dataset information…</div>
+    <section class="controls" aria-label="Genome navigation">
+      <div class="control-row">
+        <label>Dataset<select id="dataset"></select></label><label>Model<select id="model"><option value="r10">OpenSpliceAI r10</option><option value="r13">OpenSpliceAI r13 preview</option><option value="baseline">Original SpliceAI</option></select></label>
+        <label class="check"><input type="checkbox" id="compare" checked />Compare r10 / r13</label>
+        <label class="chrom">Contig<select id="chromosome"></select></label>
+      </div>
+      <form id="locus-form" class="control-row"><label class="locus">Gene, region or allele<input id="locus" placeholder="CFTR · chr7:117504153-117504464 · chr1:925922:G&gt;A" list="gene-list" autocomplete="off" /><datalist id="gene-list"></datalist></label><button type="submit" class="primary">Go</button>
+        <button type="button" id="back" aria-label="Previous view">←</button><button type="button" id="forward" aria-label="Next view">→</button><button type="button" id="pan-left" aria-label="Pan left">‹</button><button type="button" id="pan-right" aria-label="Pan right">›</button><button type="button" id="zoom-in" aria-label="Zoom in">+</button><button type="button" id="zoom-out" aria-label="Zoom out">−</button><button type="button" id="whole">Contig</button><button type="button" id="share">Copy link</button><button type="button" id="tracks-open" aria-expanded="false">Tracks</button>
+      </form>
+      <div class="control-row presets" aria-label="Example loci"><span>Explore</span><button data-gene="CFTR">CFTR</button><button data-gene="BRCA1">BRCA1</button><button data-gene="SCN1A">SCN1A</button><button data-gene="HBB">HBB</button><button data-gene="SAMD11">SAMD11</button><button id="prev-gene">Previous gene</button><button id="next-gene">Next gene</button><button id="mark-roi">Mark region</button><button id="clear-roi">Clear region</button></div>
+    </section>
+    <section class="overview" aria-label="Genome and chromosome overview"><canvas id="genome-overview" aria-label="Chromosome overview: select a chromosome" role="img"></canvas><canvas id="minimap" aria-label="Current chromosome overview: click to navigate" role="img"></canvas></section>
+    <div class="browser-grid">
+      <aside id="track-panel" aria-label="Track settings"><div class="panel-title"><h2>Tracks</h2><button id="tracks-close" aria-label="Close track settings">×</button></div><label>Find track<input id="track-filter" type="search" placeholder="Name or measure" /></label><div id="track-list"></div>
+        <div class="small-controls"><label>Density<select id="density"><option value="comfortable">Comfortable</option><option value="compact">Compact</option><option value="dense">Dense</option></select></label><label class="check"><input type="checkbox" id="autoscale" />Autoscale DS</label><label>Minimum DS<input id="threshold" type="number" min="0" max="1" step="0.01" value="0" /></label><label>ALT allele<select id="alt"><option value="*">All alleles</option><option>A</option><option>C</option><option>G</option><option>T</option><option>N</option></select></label><label>Gene filter<input id="gene-filter" placeholder="All annotations" list="gene-list" /></label></div>
+        <p class="caption">Tracks show the largest delta across visible gene annotations and ALT alleles. Click a variant for every original annotation.</p></aside>
+      <section id="browser" tabindex="0" aria-label="Interactive genome browser"><div class="view-header"><span id="view-label"></span><span id="load-status" role="status" aria-live="polite"></span><button id="retry" hidden>Retry data</button></div>
+        <canvas id="track-canvas" role="img" aria-label="Genome tracks; use variant selector below for an accessible exact-score view"></canvas><div id="tooltip" role="status" hidden></div>
+        <p id="filter-note" class="caption" hidden>Wide summaries combine all ALT alleles and gene annotations. Exact allele, gene and score filters resume when you zoom in.</p>
+        <div class="figure-controls"><button id="png">PNG figure</button><button id="svg">SVG figure</button><button id="csv">Exact CSV</button><button id="summary-csv">Summary CSV</button><span id="resource-status" class="caption"></span></div>
+        <p class="caption">Drag to pan. Shift-drag marks a region. Click selects an allele. Use + / − to zoom; arrows to pan; R marks the view. Native page scroll and pinch zoom remain available.</p>
+      </section>
+      <aside id="inspector" aria-label="Variant inspector"><h2>Variant inspector</h2><label>Visible alleles<select id="variant-select"><option value="">Select an exact allele</option></select></label><div id="variant-details"><p class="caption">Zoom in and select an allele to inspect all four delta scores and affected splice-site positions.</p></div><details><summary>Visible gene features</summary><div id="gene-details"></div></details></aside>
+    </div>
+    <section class="below-grid">
+      <div class="card"><h2>Sequence search</h2><form id="sequence-form"><label>IUPAC motif<input id="motif" placeholder="CAGGTAAGT" autocomplete="off" /></label><label>Scope<select id="sequence-scope"><option value="visible">Visible region</option><option value="gene">Selected gene</option><option value="chromosome">Current chromosome</option><option value="genome">Whole reference genome</option></select></label><button class="primary">Search both strands</button><button type="button" id="cancel-search">Cancel</button></form><p id="sequence-status" role="status" aria-live="polite">N matches A/C/G/T; ambiguous reference bases are not assumed to be known bases.</p><div id="search-navigation"><button id="prev-hit">Previous hit</button><button id="next-hit">Next hit</button><span id="hit-position"></span></div><ol id="sequence-results"></ol></div>
+      <div class="card"><h2>Model comparison</h2><label>Event<select id="stats-event"><option value="0">Acceptor gain</option><option value="1">Acceptor loss</option><option value="2">Donor gain</option><option value="3">Donor loss</option></select></label><canvas id="scatter" width="360" height="230" role="img" aria-label="r10 and r13 score comparison"></canvas><p id="stats" class="caption"></p><p class="caption">Matches require the same allele and gene and an unambiguous annotation. REF mismatches are excluded. Seed differences are not calibrated uncertainty or a clinical classification.</p></div>
+    </section>
+    <section class="methods card"><h2>Read the tracks</h2><details open><summary>Scores, offsets and coverage</summary><p>DS_AG and DS_AL describe acceptor gain and loss; DS_DG and DS_DL describe donor gain and loss. Scores range from 0 to 1. A recorded zero is different from an absent prediction. The affected genomic position is variant POS + DP on either gene strand. Offsets attached to zero scores remain available as source values; they do not identify a nonzero predicted event.</p><p>At close zoom, the browser fetches exact five-decimal OpenSpliceAI values. Wide views show maxima over annotations in fixed genomic bins. r13 coverage shows accepted source occurrences, rather than predicted variant counts. Unfinished chunks remain visibly pending. Source records can contain repeated alleles, conflicting annotations or a REF mismatch; the inspector preserves those details.</p></details><details><summary>Models and reference</summary><div id="provenance"></div><p>r10 and r13 are individual MANE-trained model seeds with a 10,000 nt flank, ±50 bp event search and M1 masking. The original SpliceAI baseline has two-decimal scores and a different annotation set. Exons and strand come from the scoring annotation; transcript IDs and CDS are not present in that table.</p></details><details><summary>Navigation and exports</summary><p>Coordinates in the address field and inspector are 1-based inclusive. Internal intervals and CSV start/end columns are 0-based half-open. Shared links capture the immutable dataset, view, model, track order, heights, filters, appearance and selected allele. Figures use the same drawing routine as the visible tracks. Exact CSV preserves all annotations and missing values; summary CSV contains bin statistics and is labelled separately. Exports wait for a successfully loaded, stable view.</p></details></section>
+    <noscript>This genome browser needs JavaScript. The data format, download instructions and methods are available in the documentation guide.</noscript>
+  </main>
+  <footer><span>OpenSpliceAI · GRCh38 human variant atlas</span><a href="https://github.com/Kuanhao-Chao/OpenSpliceAI">Source &amp; data preparation ↗</a></footer>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

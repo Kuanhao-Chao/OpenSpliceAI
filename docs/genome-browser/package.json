@@ -1,0 +1,21 @@
+{
+  "name": "openspliceai-genome-browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "audit": "playwright test"
+  },
+  "engines": { "node": ">=22.12" },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "22.19.7",
+    "typescript": "5.9.3",
+    "vite": "6.4.4",
+    "vitest": "4.1.11"
+  }
+}

@@ -24,6 +24,7 @@ ATTR_RE = re.compile(r"""\b(?:href|src|srcset)\s*=\s*(["'])(.*?)\1""", re.I | re
 SCRIPT_ASSET_RE = re.compile(r"""(["'])((?:\.{1,2}/)*_(?:static|images)/[^"']+?)\1""")
 
 SKIP_SCHEMES = {"http", "https", "mailto", "javascript", "data", "ftp", "tel"}
+SITE_PREFIX = "/OpenSpliceAI/"
 
 
 def candidates(html: str) -> set[str]:
@@ -55,11 +56,13 @@ def main() -> int:
                 path = unquote(parsed.path)
                 if not path:
                     continue
+                if path.startswith(SITE_PREFIX):
+                    path = "/" + path[len(SITE_PREFIX):]
                 base = root if path.startswith("/") else page.parent
                 target = (base / path.lstrip("/")).resolve()
                 checked += 1
                 # Stay inside the output tree; a reference escaping it is broken by definition.
-                if not target.is_file() and not (target.is_dir() and (target / "index.html").is_file()):
+                if not target.is_relative_to(root) or (not target.is_file() and not (target.is_dir() and (target / "index.html").is_file())):
                     missing.append((page.relative_to(root), ref, target))
 
     print(f"scanned {len(pages)} pages, resolved {checked} local references")

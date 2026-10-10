@@ -1,0 +1,13 @@
+# Substitute the institutional data directory and server name.
+# The same configuration covers score, reference, index and FM-search files.
+location /OpenSpliceAI/browser-data/ {
+    alias /srv/public/OpenSpliceAI/browser-data/;
+    gzip off;
+    add_header Access-Control-Allow-Origin "https://khchao.com" always;
+    add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Range" always;
+    add_header Access-Control-Expose-Headers "Content-Range, Content-Length, ETag, Accept-Ranges" always;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    if ($request_method = OPTIONS) { return 204; }
+    # Serve immutable snapshot directories. Publish manifest/catalog last.
+}
