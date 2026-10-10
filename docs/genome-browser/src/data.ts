@@ -7,7 +7,10 @@ export class DataSource {
   readonly resources: Resources;
   constructor(readonly manifest: Manifest, readonly manifestUrl: string) {
     if (manifest.format !== 'OSGB1' || manifest.scoreScale !== 100000) throw new Error('Unsupported dataset schema');
-    this.resources = new Resources(manifest.baseUrl ? new URL(manifest.baseUrl, manifestUrl).href : new URL('.', manifestUrl).href);
+    const base = manifest.baseUrl ? new URL(manifest.baseUrl, manifestUrl).href : new URL('.', manifestUrl).href;
+    const review = manifest.scope === 'review-subset' && new URL(base).origin === location.origin
+      ? new Map(manifest.files.filter(f => /\.(pack|idx)$/.test(f.path) && f.bytes <= 1048576).map(f => [f.path, f])) : undefined;
+    this.resources = new Resources(base, review);
   }
   genes(signal?: AbortSignal) { return this.resources.json<Gene[]>(this.manifest.genes.path, this.manifest.genes, signal); }
   async overview(signal?: AbortSignal) {

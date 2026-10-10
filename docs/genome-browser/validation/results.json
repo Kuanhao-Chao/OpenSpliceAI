@@ -3,21 +3,20 @@
   "checks": {
     "browser": {
       "chromium": {
-        "passed": 9,
+        "passed": 10,
         "version": "145.0.7632.6"
       },
       "firefox": {
-        "passed": 9,
+        "passed": 10,
         "version": "146.0.1"
       },
       "webkit": {
-        "ci": "passed on Ubuntu",
-        "local": "unavailable: host libraries missing",
-        "passed": 9
+        "currentSourceCi": "pending; workflow runs all three engines",
+        "local": "unavailable: host libraries missing"
       }
     },
     "frontendUnit": {
-      "passed": 24
+      "passed": 27
     },
     "localDocumentationLinks": {
       "pages": 39,
@@ -32,6 +31,13 @@
       "moderate": 0,
       "total": 0
     },
+    "previousUbuntuCi": {
+      "browserChecks": 27,
+      "headCommit": "e4954af672730450c3e24aca8ca198c787ace78d",
+      "passed": true,
+      "url": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/runs/38078875077",
+      "verifiedImplementationSourceSha256": "551340b7d92ac3f65467a0a1365a0091f09c249bc5e144397cd30914024c184e"
+    },
     "productionBuild": {
       "passed": true
     },
@@ -45,21 +51,25 @@
     "sphinxWarningsAsErrors": {
       "passed": true
     },
-    "ubuntuCi": {
-      "browserChecks": 27,
-      "headCommit": "e4954af672730450c3e24aca8ca198c787ace78d",
-      "passed": true,
-      "url": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/runs/38078875077",
-      "verifiedImplementationSourceSha256": "551340b7d92ac3f65467a0a1365a0091f09c249bc5e144397cd30914024c184e"
+    "stalePanelsRegression": {
+      "engine": "chromium",
+      "passed": true
     }
   },
   "defaultEncodedDataDownloadBytes": {
-    "chromium": 1034055,
-    "firefox": 1034055
+    "chromium": 1846912,
+    "firefox": 1846912
+  },
+  "hostingCorrection": {
+    "failedViewPolicy": "Clear variant, gene and comparison panels before loading another view",
+    "fullGenomePolicy": "HTTP 206 and unchanged indexed bytes are mandatory; whole-file fallback is disabled",
+    "reason": "GitHub Pages gzip transformation invalidated Firefox range offsets",
+    "reviewPolicy": "Same-origin review files at most 1 MiB are downloaded with a body-size cap and whole-file SHA-256 verification before slicing",
+    "sharePolicy": "Shared links include the immutable manifest URL and complete state"
   },
   "implementationSourceHashMethod": "SHA-256 of sorted relative-path/SHA-256 JSON for app source/config/review data and tools/genome_browser; excludes generated builds and validation records",
-  "implementationSourceSha256": "551340b7d92ac3f65467a0a1365a0091f09c249bc5e144397cd30914024c184e",
-  "localEvidenceDirectory": "docs/genome-browser/validation/final",
+  "implementationSourceSha256": "3338185afb8dd081c905b9ad9f53d5d160b43d5ea22e0dff2d68a3dd3b686899",
+  "localEvidenceDirectory": "docs/genome-browser/validation/hosting-fix",
   "pending": [
     "genome-wide preparation and final file verification",
     "institutional HTTPS URL and upload target",
@@ -143,6 +153,19 @@
       "publicBytes": 2671966163,
       "publicFiles": 2820
     },
+    "scoreCheckpoints": {
+      "classification": "Actual committed progress; extrapolation from early chr1 shards remains an estimate",
+      "completedShards": 6,
+      "estimatedWholeConversionWallHours": 36,
+      "estimatedWholePackedBytes": 60846372816.666664,
+      "expectedShards": 100,
+      "packedBytes": 3650782369,
+      "planningWallHours": [
+        30,
+        65
+      ],
+      "sourceOccurrences": 206004000
+    },
     "scoreConversionEstimatedWallHours": [
       30,
       65
@@ -150,14 +173,14 @@
     "snapshot": "grch38-r10-r13preview-20261010T184032Z"
   },
   "productionBundles": {
-    "assets/index-C0gs5OL4.js": 50982,
     "assets/index-CGK9BZVE.css": 8142,
+    "assets/index-skgG1RYm.js": 52710,
     "assets/worker-A6tuPVEc.js": 2255,
     "catalog.json": 143,
     "index.html": 10444,
     "settings.json": 35
   },
-  "recordedUtc": "2026-10-10T19:17:24.515630+00:00",
+  "recordedUtc": "2026-10-10T21:07:31.444790+00:00",
   "reviewDataset": {
     "acceptedR13Occurrences": 39568,
     "id": "grch38-scored-review-20261010",

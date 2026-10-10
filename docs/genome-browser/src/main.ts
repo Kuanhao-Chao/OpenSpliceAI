@@ -4,7 +4,7 @@ import { DataSource, summaryTotals } from './data';
 import { CHANNEL_COLORS, draw, layout, margin, type Palette } from './paint';
 import { comparisonStatistics, csvCell, exactCsv, predictionStatus, visibleVariants } from './science';
 import { searchSequence } from './search';
-import { clampView, DEFAULT_STATE, EXACT_BP, formatView, History, orderedContigs, parseLocus, restoreState, serializeState, TRACKS, variantKey } from './state';
+import { clampView, DEFAULT_STATE, EXACT_BP, formatView, History, orderedContigs, parseLocus, restoreState, serializeState, snapshotLink, TRACKS, variantKey } from './state';
 import type { BrowserState, Gene, LoadedView, Manifest, SearchHit, Variant, View } from './types';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id)! as T;
@@ -71,12 +71,19 @@ async function navigate(view: View, changes: Partial<BrowserState> = {}, push = 
   state = { ...state, ...changes, ...clampView(view, source.manifest.contigs) };
   syncControls(); updateHash(push); await refresh();
 }
+function clearLoadedView() {
+  loaded = null; successfulEpoch = -1;
+  ctx.clearRect(0, 0, canvas.width, canvas.height); renderInspector();
+  select('variant-select').innerHTML = '<option>Loading exact alleles…</option>';
+  $('gene-details').textContent = 'Waiting for current-view data.';
+  $('stats').textContent = 'Waiting for current-view data.';
+  const scatter = $<HTMLCanvasElement>('scatter'); scatter.getContext('2d')!.clearRect(0, 0, scatter.width, scatter.height);
+}
 function refresh(): Promise<void> {
   viewRequest?.abort(); viewRequest = new AbortController(); const signal = viewRequest.signal, local = ++epoch;
   successfulEpoch = -1; $('retry').hidden = true; $('browser').classList.add('loading'); $('load-status').textContent = 'Loading data…';
-  loaded = null;
-  // Clear old pixels and inspection immediately: an old locus must not look like new data.
-  ctx.clearRect(0, 0, canvas.width, canvas.height); renderInspector(); select('variant-select').innerHTML = '<option>Loading exact alleles…</option>';
+  // Clear every locus-specific panel before loading, including failed requests.
+  clearLoadedView(); paintOverview();
   loading = source.load({ chrom: state.chrom, start: state.start, end: state.end }, signal).then(result => {
     if (local !== epoch || signal.aborted) return;
     loaded = result; successfulEpoch = local;
@@ -147,9 +154,10 @@ async function loadDataset(url: string, restore = true) {
   datasetRequest?.abort(); datasetRequest = new AbortController();
   const datasetSignal = datasetRequest.signal, thisDataset = ++datasetEpoch;
   datasetReady = false;
-  history.clear(); loaded = null; successfulEpoch = -1;
-  ctx.clearRect(0, 0, canvas.width, canvas.height); renderInspector();
+  history.clear(); clearLoadedView();
   viewRequest?.abort(); searchRequest?.abort(); epoch++; source?.destroy();
+  $('load-status').textContent = 'Loading dataset…'; $('retry').hidden = true;
+  $('dataset-note').classList.remove('error');
   $('dataset-note').textContent = 'Loading dataset information…';
   const manifestUrl = new URL(url, location.href).href;
   const response = await fetch(manifestUrl, { signal: datasetSignal }); if (!response.ok) throw new Error(`Dataset manifest failed (${response.status})`);
@@ -201,7 +209,7 @@ const shift = (fraction: number) => navigate({ ...state, start: state.start + (s
 const zoom = (factor: number) => { const center = (state.start + state.end) / 2, half = (state.end - state.start) * factor / 2; return navigate({ ...state, start: center - half, end: center + half }); };
 on('pan-left', () => shift(-0.5)); on('pan-right', () => shift(0.5)); on('zoom-in', () => zoom(0.5)); on('zoom-out', () => zoom(2));
 on('whole', () => navigate({ chrom: state.chrom, start: 0, end: source.manifest.contigs.find(c => c.name === state.chrom)!.length }));
-on('share', async () => { await navigator.clipboard.writeText(location.href); $('load-status').textContent = 'Snapshot and complete view link copied'; });
+on('share', async () => { if (!source || !datasetReady) throw new Error('Load a dataset before sharing its snapshot'); await navigator.clipboard.writeText(snapshotLink(location.href, source.manifestUrl, state)); $('load-status').textContent = 'Snapshot and complete view link copied'; });
 on('mark-roi', () => { state.roi = { chrom: state.chrom, start: state.start, end: state.end }; updateHash(); paint(); });
 on('clear-roi', () => { state.roi = null; updateHash(); paint(); });
 for (const direction of ['prev', 'next']) on(`${direction}-gene`, () => { const list = genes.filter(g => g.chrom === state.chrom).sort((a, b) => a.start - b.start); const center = (state.start + state.end) / 2; const gene = direction === 'next' ? list.find(g => g.start > center) : [...list].reverse().find(g => g.end < center); if (gene) return goTo(gene.name); });

@@ -37,6 +37,12 @@ export function serializeState(state: BrowserState): string {
   if (state.roi) p.set('roi', JSON.stringify(state.roi));
   return p.toString();
 }
+export function snapshotLink(pageUrl: string, manifestUrl: string, state: BrowserState): string {
+  const url = new URL(pageUrl);
+  url.searchParams.set('manifest', new URL(manifestUrl, url).href);
+  url.hash = serializeState(state);
+  return url.href;
+}
 export function restoreState(hash: string, fallback: BrowserState, contigs: Contig[]): BrowserState {
   const p = new URLSearchParams(hash.replace(/^#/, ''));
   if (!p.has('v')) return { ...fallback };

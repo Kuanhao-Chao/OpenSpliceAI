@@ -31,6 +31,24 @@ export class Semaphore {
 }
 export const checksum = async (data: ArrayBuffer) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', data))].map(v => v.toString(16).padStart(2, '0')).join('');
 
+export async function boundedBody(response: Response, limit?: number): Promise<ArrayBuffer> {
+  if (limit === undefined || !response.body) return response.arrayBuffer();
+  if (!Number.isSafeInteger(limit) || limit < 0) throw new Error('Invalid response byte budget');
+  const reader = response.body.getReader(), chunks: Uint8Array[] = [];
+  let length = 0;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read(); if (done) break;
+      length += value.byteLength;
+      if (length > limit) { await reader.cancel(); throw new Error('Data response exceeds its byte budget'); }
+      chunks.push(value);
+    }
+  } finally { reader.releaseLock(); }
+  const result = new Uint8Array(length); let offset = 0;
+  for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.byteLength; }
+  return result.buffer;
+}
+
 export class Decoder {
   private worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
   private serial = 0;
@@ -61,10 +79,26 @@ export class Resources {
   readonly cache = new ByteCache<unknown>(matchMedia('(max-width: 700px)').matches ? 32 * 1048576 : 64 * 1048576);
   readonly decoder = new Decoder();
   transferred = 0; requests = 0;
-  constructor(private base: string) {}
+  constructor(private base: string, private reviewFiles?: Map<string, { bytes: number; sha256: string }>) {}
   url(path: string) { return new URL(path, this.base).href; }
   async bytes(path: string, options: { offset?: number; bytes?: number; sha256?: string; decodedBytes?: number; decodedSha256?: string; signal?: AbortSignal } = {}): Promise<ArrayBuffer> {
     const { offset, bytes, sha256, signal } = options;
+    const review = offset === undefined ? undefined : this.reviewFiles?.get(path);
+    if (review && review.bytes <= 1048576) {
+      // Pages can recompress ranged responses in Firefox. Only small,
+      // same-origin review artifacts may use authenticated whole-file reads.
+      if (!Number.isSafeInteger(offset) || offset! < 0 || !Number.isSafeInteger(bytes) || bytes! < 1 || offset! + bytes! > review.bytes) throw new Error('Invalid review-file byte range');
+      const key = `review-file:${path}`;
+      let whole = this.cache.get(key) as ArrayBuffer | undefined;
+      if (!whole) {
+        whole = await this.bytes(path, { bytes: review.bytes, sha256: review.sha256, signal });
+        this.cache.set(key, whole, whole.byteLength);
+      }
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      const data = whole.slice(offset!, offset! + bytes!);
+      if (sha256 && await checksum(data) !== sha256) throw new Error(`Data integrity check failed: ${path}`);
+      return data;
+    }
     return this.semaphore.run(async () => {
       const response = await fetch(this.url(path), { headers: offset === undefined ? {} : { Range: `bytes=${offset}-${offset + bytes! - 1}` }, signal, cache: 'default' });
       if (!response.ok) throw new Error(`Data request failed (${response.status}): ${path}`);
@@ -75,7 +109,7 @@ export class Resources {
         }
         if (response.headers.get('Content-Encoding') && response.headers.get('Content-Encoding') !== 'identity') { await response.body?.cancel(); throw new Error('Packed data must be served without HTTP content compression'); }
       }
-      const data = await response.arrayBuffer();
+      const data = await boundedBody(response, bytes === undefined ? options.decodedBytes : Math.max(bytes, options.decodedBytes || 0));
       // Static hosts may apply Content-Encoding to JSON metadata. Browsers then
       // transparently inflate it; authenticate that representation separately.
       // Indexed ranges always require the original stored bytes.
