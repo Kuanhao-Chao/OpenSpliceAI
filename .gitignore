@@ -122,6 +122,12 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/genome-browser/node_modules/
+docs/genome-browser/test-results/
+docs/genome-browser/playwright-report/
+docs/genome-browser/validation/*
+!docs/genome-browser/validation/README.md
+!docs/genome-browser/validation/results.json
 
 # PyBuilder
 .pybuilder/

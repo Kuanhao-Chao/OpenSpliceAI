@@ -1,0 +1,153 @@
+{
+  "baseCommit": "074d3e27d9950f48e7276ed69f0f0205f10ef223",
+  "checks": {
+    "browser": {
+      "chromium": {
+        "passed": 9,
+        "version": "145.0.7632.6"
+      },
+      "firefox": {
+        "passed": 9,
+        "version": "146.0.1"
+      },
+      "webkit": {
+        "ci": "configured on Ubuntu",
+        "local": "unavailable: host libraries missing"
+      }
+    },
+    "frontendUnit": {
+      "passed": 24
+    },
+    "localDocumentationLinks": {
+      "pages": 39,
+      "passed": true,
+      "references": 2112
+    },
+    "npmAudit": {
+      "critical": 0,
+      "high": 0,
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "total": 0
+    },
+    "productionBuild": {
+      "passed": true
+    },
+    "pythonDataUnit": {
+      "numpy": "2.4.6",
+      "passed": 23,
+      "pydivsufsort": "0.0.18",
+      "python": "3.11.9",
+      "skipped": 0
+    },
+    "sphinxWarningsAsErrors": {
+      "passed": true
+    }
+  },
+  "defaultEncodedDataDownloadBytes": {
+    "chromium": 1034055,
+    "firefox": 1034055
+  },
+  "implementationSourceHashMethod": "SHA-256 of sorted relative-path/SHA-256 JSON for app source/config/review data and tools/genome_browser; excludes generated builds and validation records",
+  "implementationSourceSha256": "551340b7d92ac3f65467a0a1365a0091f09c249bc5e144397cd30914024c184e",
+  "localEvidenceDirectory": "docs/genome-browser/validation/final",
+  "pending": [
+    "genome-wide preparation and final file verification",
+    "institutional HTTPS URL and upload target",
+    "institutional endpoint probe, genome-wide catalog activation and live publication"
+  ],
+  "preparation": {
+    "GPUs": 0,
+    "account": "ssalzbe1_bigmem",
+    "concurrentCpus": 4,
+    "concurrentRamGiB": 24,
+    "estimateExcludes": [
+      "queue time",
+      "final verification"
+    ],
+    "existingScoringJobsUnchanged": [
+      31832345,
+      "31831815_1"
+    ],
+    "freshlyAcceptedPreviewChunks": 390,
+    "frozenBuilderSha256": "3f0651e127405b549f2d254242273652513f88edf90e6d1309860a13f199aefe",
+    "initialQuota": {
+      "existingPreparationFiles": 0,
+      "freeBytes": 2444588010700.8003,
+      "freeFiles": 38238,
+      "pendingPreparationFiles": 4000,
+      "preparationFileBudget": 4000,
+      "reservedScoringChunks": 7689,
+      "retainedFileMargin": 10000
+    },
+    "jobs": [
+      {
+        "cpus": 2,
+        "dependency": null,
+        "id": 31847915,
+        "limitHours": 48,
+        "ramGiB": 8,
+        "role": "scores"
+      },
+      {
+        "cpus": 2,
+        "dependency": null,
+        "id": 31847916,
+        "limitHours": 24,
+        "ramGiB": 16,
+        "role": "reference"
+      },
+      {
+        "cpus": 2,
+        "dependency": "afterany:31847915",
+        "id": 31847939,
+        "limitHours": 48,
+        "ramGiB": 8,
+        "role": "scores"
+      },
+      {
+        "cpus": 2,
+        "dependency": "afterany:31847939",
+        "id": 31847942,
+        "limitHours": 48,
+        "ramGiB": 8,
+        "role": "scores"
+      },
+      {
+        "cpus": 1,
+        "dependency": "afterok:31847942:31847916",
+        "id": 31847952,
+        "limitHours": 2,
+        "ramGiB": 4,
+        "role": "finalize"
+      }
+    ],
+    "maximumCpuBillingHours": 338,
+    "partition": "bigmem",
+    "previewAcceptedChunks": 92294,
+    "scoreConversionEstimatedWallHours": [
+      30,
+      65
+    ],
+    "snapshot": "grch38-r10-r13preview-20261010T184032Z"
+  },
+  "productionBundles": {
+    "assets/index-C0gs5OL4.js": 50982,
+    "assets/index-CGK9BZVE.css": 8142,
+    "assets/worker-A6tuPVEc.js": 2255,
+    "catalog.json": 143,
+    "index.html": 10444,
+    "settings.json": 35
+  },
+  "recordedUtc": "2026-10-10T19:01:31.322150+00:00",
+  "reviewDataset": {
+    "acceptedR13Occurrences": 39568,
+    "id": "grch38-scored-review-20261010",
+    "manifestSha256": "293d48221d545da3ee968983d9c243f75c87c6d0636406bac5d5e0ea39cda7bb",
+    "sourceOccurrences": 39568,
+    "verifiedBytes": 3511569,
+    "verifiedFiles": 38
+  },
+  "sourceFiles": 90
+}

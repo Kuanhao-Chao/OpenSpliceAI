@@ -212,6 +212,7 @@ Table of Contents
    content/openspliceai_calibrate
    content/openspliceai_predict
    content/openspliceai_variant
+   content/genome_browser
    content/train_your_own_model/index
    content/pretrained_models/index
    content/openspliceai_vs_spliceai

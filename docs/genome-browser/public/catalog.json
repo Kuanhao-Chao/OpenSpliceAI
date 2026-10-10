@@ -1,0 +1,1 @@
+{ "datasets": [{ "id": "grch38-scored-review-20261010", "label": "GRCh38 scored review subset", "manifest": "./data/review/manifest.json" }] }
