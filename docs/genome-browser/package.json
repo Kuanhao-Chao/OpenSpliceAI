@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "preview": "vite preview --host 127.0.0.1 --strictPort",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run",
+    "test": "vitest run src/codec.test.ts src/science.test.ts src/query.test.ts src/coverage.test.ts",
+    "test:all": "vitest run",
     "typecheck": "tsc --noEmit",
-    "audit": "playwright test"
+    "audit": "playwright test --config playwright.release.config.ts",
+    "audit:all": "playwright test --config playwright.config.ts"
   },
   "engines": {
     "node": ">=22.12"

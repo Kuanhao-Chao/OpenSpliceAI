@@ -1,6 +1,6 @@
 {
-  "recordedUtc": "2026-10-24T08:14:18.442771+00:00",
-  "phase": "pre-publication release verification",
+  "recordedUtc": "2026-10-24T08:44:09.360961+00:00",
+  "phase": "core release validation; deployment pending",
   "baseCommit": "13ff432c211d0871eec27a1884d59df0a99df5eb",
   "implementationCommit": "ff8f39b121f2a2b70c0fb18aaaf7be256830a999",
   "checks": {
@@ -272,7 +272,7 @@
     "target": "https://khchao.com/OpenSpliceAI/genome/",
     "guide": "https://khchao.com/OpenSpliceAI/content/genome_browser.html",
     "workflow": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/workflows/docs.yml",
-    "note": "This file records pre-publication evidence. The Docs workflow repeats the complete suite before deployment; the deployment outcome is recorded for the release commit in GitHub Actions.",
+    "note": "This file records pre-publication core evidence. The Docs workflow runs the same core production suite before deployment. Full visual and preparation audits are separately available on request.",
     "initialCi": {
       "url": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/runs/40076134041",
       "conclusion": "failure",
@@ -280,6 +280,65 @@
       "browserFailed": 1,
       "deployment": "skipped",
       "failure": "WebKit responsive phone check used a fixed 150 ms delay; follow-up waits for layout readiness and passed 24 repeated resize checks."
+    },
+    "previousCiRuns": [
+      {
+        "run": 40076134041,
+        "conclusion": "failure",
+        "browserPassed": 71,
+        "browserFailed": 1,
+        "deployment": "skipped"
+      },
+      {
+        "run": 40077265211,
+        "conclusion": "failure",
+        "browserPassed": 71,
+        "browserFailed": 1,
+        "deployment": "skipped"
+      }
+    ]
+  },
+  "releaseGate": {
+    "profile": "core-v1",
+    "unitTests": 16,
+    "browserTests": 15,
+    "projects": {
+      "chromium": 5,
+      "firefox": 5,
+      "webkit": 5
+    },
+    "unexpected": 0,
+    "flaky": 0,
+    "browserElapsedSeconds": 137.74615300000002,
+    "serves": "production Vite build through Vite preview",
+    "publicSnapshotInventories": 5,
+    "snapshotVerificationUsesOnlyPythonStandardLibrary": true,
+    "typecheck": true,
+    "productionBuild": true,
+    "sphinxWarningsAsErrors": true,
+    "localDocumentationReferences": 2116,
+    "sourceSha256": "bf26f5be1299069cd9d4a11b2cb9bec06122df9d7091ada4ae37d3ca02ad93ae",
+    "coreWorkflows": [
+      "native tracks and real r10/r13 scores in all four added genes",
+      "continuous dragging, ruler zoom and selected BED regions",
+      "model comparison and exact CSV/PNG/SVG exports",
+      "multiple inspector panes and pinned session restoration",
+      "data-error recovery, coverage availability and usable 320px controls"
+    ]
+  },
+  "extendedAudit": {
+    "workflow": "genome-browser-audit.yml",
+    "trigger": "workflow_dispatch",
+    "frontendUnitTests": 35,
+    "browserChecks": 72,
+    "backendTests": 32,
+    "blocksPagesDeployment": false,
+    "knownFinding": {
+      "engine": "WebKit on hosted runner",
+      "viewportWidth": 320,
+      "documentScrollWidth": 351,
+      "capturedElementBoxesOutsideViewport": 0,
+      "check": "document-wide scroll area, retained in the extended audit"
     }
   }
 }

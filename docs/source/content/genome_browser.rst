@@ -149,6 +149,22 @@ Then open ``http://127.0.0.1:8765/``. The data server serves the snapshot's
 manifest-listed files; preparation databases and private configuration are
 excluded. The legacy viewer preserves version-1 snapshot links.
 
+Core release checks
+-------------------
+
+``npm test`` runs 16 core checks for score precision, missing values, complete
+queries and published coverage. After ``npm run build``, ``npm run audit`` runs
+five production-browser workflows in each of Chromium, Firefox and WebKit.
+These cover navigation, selection, exports, sessions, data errors and usable
+phone controls. Install their runtimes with
+``npx playwright install --with-deps chromium firefox webkit`` first.
+
+The complete frontend and visual suites remain available as
+``npm run test:all`` and ``npm run audit:all``. The separate **Genome browser
+extended audit** workflow runs those checks and the full data-preparation tests
+on request. Pages deployment requires core functionality and public-file
+integrity; broad appearance and document scroll-area audits run separately.
+
 Prepare and host full data
 --------------------------
 

@@ -40,3 +40,15 @@ full data remain outside Git/GitHub Pages and require an indexed HTTPS host.
 
 `validation/results.json` records measured release checks and immutable dataset
 identities. `LOCAL_REVIEW.md` describes feature checks and local validation.
+
+## Focused release validation
+
+Pages uses 16 scientific/query/coverage unit checks, all public snapshot hashes,
+TypeScript and production/Sphinx builds, local links, and five core workflows
+per browser (15 checks across Chromium, Firefox and WebKit). The browser gate
+serves the production bundle with Vite preview. Core phone checks verify usable
+controls at 320 px; global scroll-area geometry stays in the extended audit.
+
+All 35 frontend tests, 72 broader browser checks and 32 data-preparation tests
+remain available through the separate manual extended-audit workflow. That
+workflow has no deployment dependency or Pages publication permission.

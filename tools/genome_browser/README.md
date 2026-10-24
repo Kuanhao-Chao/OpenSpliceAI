@@ -88,12 +88,16 @@ is separate from the small demonstration served by GitHub Pages.
 
 ## Validation
 
+Pages verifies the published file inventory and runs the frontend core release
+suite. Full preparation tests run separately in the manually triggered **Genome
+browser extended audit** workflow. They remain available locally:
+
 ```bash
 OMP_NUM_THREADS=1 python -m unittest discover -s tools/genome_browser/tests -v
 cd docs/genome-browser
-npm test
+npm run test:all
 npm run build
-npm run audit
+npm run audit:all
 ```
 
 Tests cover exact numeric preservation, duplicates, missing/zero states, corrupt

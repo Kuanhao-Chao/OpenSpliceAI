@@ -54,6 +54,23 @@ http://127.0.0.1:4173/OpenSpliceAI/genome/.
 `BROWSER_CACHE_DIR` isolates a shared dependency cache. `BROWSER_BASE_URL` lets
 Playwright target an already served build instead of starting its own server.
 
+## Release and extended checks
+
+`npm test` runs the 16 score/coverage/query unit checks. `npm run build` creates
+the production application; `npm run audit` then runs five essential workflows
+in Chromium, Firefox and WebKit (15 checks). The browser gate uses Vite preview
+of the built files. Phone checks exercise actual controls at 320 px.
+
+Use `npm run test:all` for all 35 frontend tests and `npm run audit:all` for the
+72-check audit, including themes, all viewport widths and advanced features.
+The manually triggered **Genome browser extended audit** workflow also runs
+the 32 backend tests. It is independent of Pages deployment.
+
+The WebKit hosted-runner scroll-area finding is retained in the extended
+audit: a 351 px document scroll width at a 320 px viewport, with no captured
+element bounding box outside the viewport. Release checks require visible,
+operable core controls rather than that document-wide geometry measurement.
+
 ## Full collection preparation
 
 Both final models completed source processing. Among 3,339,752,304 distinct
