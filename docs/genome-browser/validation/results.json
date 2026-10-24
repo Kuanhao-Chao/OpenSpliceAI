@@ -1,5 +1,5 @@
 {
-  "recordedUtc": "2026-10-24T07:51:22.045476+00:00",
+  "recordedUtc": "2026-10-24T08:14:18.442771+00:00",
   "phase": "pre-publication release verification",
   "baseCommit": "13ff432c211d0871eec27a1884d59df0a99df5eb",
   "implementationCommit": "ff8f39b121f2a2b70c0fb18aaaf7be256830a999",
@@ -102,6 +102,16 @@
     "publicSnapshotInventories": {
       "verified": 5,
       "allPassed": true
+    },
+    "responsiveFollowUp": {
+      "passed": 24,
+      "chromium": 8,
+      "firefox": 8,
+      "webkit": 8,
+      "unexpected": 0,
+      "flaky": 0,
+      "sourceSha256": "2a9e670148665846a4e0e1463baa147a337cc14a25863158209abd28da76a2b4",
+      "reason": "Wait for fonts and asynchronous responsive layout to fit the viewport; retain the original width limit and attach element bounds on persistent overflow."
     }
   },
   "runtime": {
@@ -262,6 +272,14 @@
     "target": "https://khchao.com/OpenSpliceAI/genome/",
     "guide": "https://khchao.com/OpenSpliceAI/content/genome_browser.html",
     "workflow": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/workflows/docs.yml",
-    "note": "This file records pre-publication evidence. The Docs workflow repeats the complete suite before deployment; the deployment outcome is recorded for the release commit in GitHub Actions."
+    "note": "This file records pre-publication evidence. The Docs workflow repeats the complete suite before deployment; the deployment outcome is recorded for the release commit in GitHub Actions.",
+    "initialCi": {
+      "url": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/runs/40076134041",
+      "conclusion": "failure",
+      "browserPassed": 71,
+      "browserFailed": 1,
+      "deployment": "skipped",
+      "failure": "WebKit responsive phone check used a fixed 150 ms delay; follow-up waits for layout readiness and passed 24 repeated resize checks."
+    }
   }
 }

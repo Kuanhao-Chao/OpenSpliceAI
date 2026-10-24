@@ -103,8 +103,16 @@ test('genome-wide mode rejects whole-file responses to a byte-range request', as
 test('responsive layouts have no overflow and retain accessible controls', async ({ page }, testInfo) => {
   for (const [name, width, height] of [['phone', 320, 812], ['tablet', 768, 1024], ['laptop', 1440, 900]] as const) {
     await page.setViewportSize({ width, height });
-    await page.waitForTimeout(150);
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); expect(overflow, name).toBe(false);
+    // IGV resizes its canvases asynchronously; wait for layout, not a fixed frame.
+    await page.evaluate(() => document.fonts.ready);
+    try {
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), { message: name, timeout: 5000 }).toBe(false);
+    } catch (error) {
+      const bounds = await page.evaluate(() => ({ viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+        elements: [...document.querySelectorAll('body *')].map(el => { const r = el.getBoundingClientRect(); return { tag: el.tagName, id: el.id, class: el.className?.toString(), left: r.left, right: r.right, width: r.width }; }).filter(r => r.width && (r.right > innerWidth + 1 || r.left < -1)) }));
+      await testInfo.attach(`${name}-overflow.json`, { body: JSON.stringify(bounds, null, 2), contentType: 'application/json' });
+      throw error;
+    }
     if (width < 1024) { await page.locator('#tracks-open').click(); await expect(page.locator('#track-panel')).toBeVisible(); await page.locator('#tracks-close').click(); }
     await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: true });
   }
