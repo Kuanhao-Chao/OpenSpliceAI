@@ -1,8 +1,9 @@
 data/GRCh38_chr21_chr22.fna filter=lfs diff=lfs merge=lfs -text
-<<<<<<< HEAD
 examples/data/human/GCF_000001405.40_GRCh38.p14_genomic_10_sample.fna filter=lfs diff=lfs merge=lfs -text
 examples/data/human/MANE.GRCh38.v1.3.refseq_genomic.gff filter=lfs diff=lfs merge=lfs -text
 *.fna filter=lfs diff=lfs merge=lfs -text
 *.h5 filter=lfs diff=lfs merge=lfs -text
 *.fa filter=lfs diff=lfs merge=lfs -text
 examples/data/honeybee/HAv3.1_genomic_10_sample.fna filter=lfs diff=lfs merge=lfs -text
+# Pages checks out small, authenticated reference excerpts as ordinary Git blobs.
+docs/genome-browser/public/**/*.fa -filter -diff -merge -text

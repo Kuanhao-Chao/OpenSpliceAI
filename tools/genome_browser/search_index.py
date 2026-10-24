@@ -121,6 +121,7 @@ def build_reference(config_path, output, *, with_search=False, contig_names=None
 def attach_reference(output):
     output = Path(output)
     manifest = json.loads((output / "manifest.json").read_text())
+    files={f["path"]:f for f in manifest["files"]}
     for contig in manifest["contigs"]:
         path = output / f"reference-{contig['name']}.receipt.json"
         if not path.exists():
@@ -132,6 +133,9 @@ def attach_reference(output):
         if "search" in receipt:
             contig["search"] = receipt["search"]
         for descriptor in receipt["files"]:
-            if not any(f["path"] == descriptor["path"] for f in manifest["files"]):
-                manifest["files"].append(descriptor)
+            file=output/descriptor["path"]
+            if file.stat().st_size!=descriptor["bytes"] or file_sha(file)!=descriptor["sha256"]:
+                raise ValueError("reference attachment content hash differs")
+            files[descriptor["path"]]=descriptor
+    manifest["files"]=list(files.values())
     atomic(output / "manifest.json", canonical_json(manifest))

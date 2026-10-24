@@ -63,9 +63,31 @@ class RangeHandler(http.server.SimpleHTTPRequestHandler):
             remaining -= len(data)
 
 
-def serve(directory, port=8765):
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), partial(RangeHandler, directory=str(Path(directory).resolve())))
-    print(f"Browser data: http://127.0.0.1:{port}/manifest.json", flush=True)
+def serve(directory, port=8765, browser=None):
+    directory=Path(directory).resolve()
+    manifest=json.loads((directory/'manifest.json').read_text())
+    allowed={entry['path'] for entry in manifest['files']}|{'manifest.json'}
+    application=Path(browser).resolve() if browser else None
+    class SnapshotHandler(RangeHandler):
+        def translate_path(self, path):
+            from urllib.parse import unquote, urlsplit
+            route=unquote(urlsplit(path).path)
+            if application and route.startswith('/OpenSpliceAI/genome/'):
+                relative=Path(route[len('/OpenSpliceAI/genome/'):])
+                candidate=(application/relative).resolve()
+                if candidate.is_relative_to(application):
+                    if candidate.is_dir(): candidate=candidate/'index.html'
+                    return str(candidate)
+            key=route.removeprefix('/data/').lstrip('/')
+            if key in allowed: return str(directory/key)
+            return str(directory/'__unpublished__')
+        def do_GET(self):
+            if application and self.path in ('/','/OpenSpliceAI/genome/'):
+                if self.path=='/':
+                    self.send_response(302);self.send_header('Location','/OpenSpliceAI/genome/?manifest=/data/manifest.json');self.end_headers();return
+            return super().do_GET()
+    server=http.server.ThreadingHTTPServer(('127.0.0.1',port),partial(SnapshotHandler,directory=str(directory)))
+    print(f'Browser: http://127.0.0.1:{port}/' if browser else f'Browser data: http://127.0.0.1:{port}/manifest.json',flush=True)
     server.serve_forever()
 
 

@@ -1,4 +1,3 @@
-import { collectVariants } from './codec';
 import { Resources } from './resources';
 import { EXACT_BP } from './state';
 import type { Gene, LoadedView, Manifest, RegionIndex, Summary, View } from './types';
@@ -8,11 +7,14 @@ export class DataSource {
   constructor(readonly manifest: Manifest, readonly manifestUrl: string) {
     if (manifest.format !== 'OSGB1' || manifest.scoreScale !== 100000) throw new Error('Unsupported dataset schema');
     const base = manifest.baseUrl ? new URL(manifest.baseUrl, manifestUrl).href : new URL('.', manifestUrl).href;
-    const review = manifest.scope === 'review-subset' && new URL(base).origin === location.origin
+    const review = ['review-subset','demonstration'].includes(manifest.scope) && new URL(base).origin === location.origin
       ? new Map(manifest.files.filter(f => /\.(pack|idx)$/.test(f.path) && f.bytes <= 1048576).map(f => [f.path, f])) : undefined;
     this.resources = new Resources(base, review);
   }
-  genes(signal?: AbortSignal) { return this.resources.json<Gene[]>(this.manifest.genes.path, this.manifest.genes, signal); }
+  async genes(signal?: AbortSignal): Promise<Gene[]> {
+    const raw = await this.resources.json<Gene[] | [string,string,number,number,'+'|'-'][]>(this.manifest.genes.path,this.manifest.genes,signal);
+    return this.manifest.geneFormat === 'tuples-v1' ? (raw as [string,string,number,number,'+'|'-'][]).map(([name,chrom,start,end,strand])=>({name,chrom,start,end,strand,exons:[]})) : raw as Gene[];
+  }
   async overview(signal?: AbortSignal) {
     const descriptor = this.manifest.overview;
     if (!descriptor) return;
@@ -47,14 +49,25 @@ export class DataSource {
     if (!exact) return { view, exact, variants: [], summaries, sequence: null, genes: featureGenes };
     const descriptors = data.flatMap(i => i.blocks.filter(b => b.start < view.end && b.end > view.start));
     const mobile = matchMedia('(max-width: 700px)').matches;
-    if (descriptors.reduce((n, d) => n + d.rawBytes, 0) > (mobile ? 8 : 16) * 1048576) throw new Error('Dense locus exceeds the exact-view memory budget; zoom in');
+    if (descriptors.reduce((n, d) => n + d.rawBytes, 0) > (mobile ? 16 : 32) * 1048576) return { view, exact: false, variants: [], summaries, sequence: null, genes: featureGenes };
     const blocks = await Promise.all(descriptors.map(d => this.resources.block(d, signal)));
     let occurrences = 0;
     for (const block of blocks) for (const pos of block.columns.pos) if (pos >= view.start && pos < view.end) occurrences++;
-    if (occurrences > (mobile ? 30000 : 100000)) throw new Error('Dense locus exceeds the visible-allele memory budget; zoom in');
+    if (occurrences > 50000) return { view, exact: false, variants: [], summaries, sequence: null, genes: featureGenes };
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-    const sequence = view.end - view.start <= 4096 ? await this.sequence(view, signal) : null;
-    return { view, exact, variants: collectVariants(blocks, view.start, view.end), summaries, sequence, genes: featureGenes };
+    // IGV supplies visible reference bases. Packed DNA is loaded only for motif search.
+    const sequence = null;
+    const queryToken = await this.resources.decoder.collect(blocks, view.start, view.end, signal);
+    const adjacent = data.flatMap(i => i.blocks).filter(b => b.end <= view.start && b.end >= view.start - this.manifest.blockBp || b.start >= view.end && b.start <= view.end + this.manifest.blockBp).slice(0, 2);
+    void Promise.allSettled(adjacent.map(d => this.resources.block(d)));
+    return { view, exact, variants: [], queryToken, summaries, sequence, genes: featureGenes };
+  }
+  async provenance(chunks: number[]): Promise<Record<string, Record<string, {state:string;outputSha256:string;receiptSha256:string}>>> {
+    const result = {};
+    for(const page of new Set(chunks.map(c=>String(Math.floor((c-1)/1000))))) {
+      const d=this.manifest.provenance?.[page]; if(d) Object.assign(result,await this.resources.json(d.path,d));
+    }
+    return result;
   }
   destroy() { this.resources.destroy(); }
 }

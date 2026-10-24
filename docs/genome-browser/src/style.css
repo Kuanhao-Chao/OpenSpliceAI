@@ -10,3 +10,19 @@ body[data-theme=parchment]{--bg:#f4eddb;--panel:#fbf5e7;--ink:#3e3425;--muted:#7
 @media(max-width:1023px){.browser-grid{grid-template-columns:minmax(280px,1fr) 260px}#track-panel{display:none;position:fixed;z-index:20;left:12px;top:65px;width:260px;max-height:85vh;overflow:auto;box-shadow:var(--shadow)}#track-panel.open{display:block}#tracks-open,#tracks-close{display:inline-block}}
 @media(max-width:760px){main{padding:20px 12px}.masthead{padding:15px 12px}.masthead nav{display:none}.brand span{font-size:8px}.intro{gap:14px;flex-wrap:wrap}.theme-control{min-width:115px}.browser-grid{grid-template-columns:1fr}.below-grid{grid-template-columns:1fr}.control-row{gap:6px}.control-row button{min-height:32px}.control-row>label:not(.locus):not(.check){flex:1;min-width:130px}.control-row label.check{width:100%;margin-top:3px}.locus{flex-basis:75%;min-width:180px}.chrom{max-width:100%}.notice{padding:10px 12px}.figure-controls{gap:6px}#inspector{padding:14px}#scatter{width:100%;height:auto;aspect-ratio:36/23}footer{margin:24px 12px;flex-wrap:wrap}.methods p{font-size:12px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+#igv-browser{width:100%;min-width:0;min-height:420px;background:white;border:1px solid var(--line);border-radius:8px;overflow:hidden;color-scheme:light;color:#263547}
+#igv-browser .igv-container{width:100%}
+#igv-browser .igv-navbar{max-width:100%;flex-wrap:wrap;height:auto;min-height:48px}
+#igv-browser input,#igv-browser button,#igv-browser select{color:#263547;background:white;min-height:24px}
+#igv-browser .igv-search-container{min-width:0;max-width:100%}
+.exact-detail{margin-top:18px}.exact-detail summary{margin-bottom:10px}.session-tools,.allele-table{margin-top:24px}
+.session-tools .control-row{margin-top:12px}.session-tools form{min-width:0}.session-tools input{min-width:0}.session-tools label{min-width:0}
+.file-label{margin:12px 0}.table-scroll{overflow:auto;max-height:360px}.allele-table table{width:100%;font-size:11px;border-collapse:collapse}
+.allele-table th,.allele-table td{padding:8px;text-align:left;border-bottom:1px solid var(--line)}.allele-table th{position:sticky;top:0;background:var(--panel)}
+.allele-table button{min-height:24px;font-size:11px}.loading #igv-browser canvas{opacity:1}
+@media(max-width:760px){#igv-browser .igv-search-container{display:none}#igv-browser .igv-navbar{gap:0}#igv-browser .igv-navbar>*{max-width:100%}.session-tools .control-row form{width:100%}.session-tools input{width:100%}}
+/* Grid children and long assembly names must shrink on narrow screens. */
+main,.controls,.control-row,.control-row>*,.below-grid>*,.browser-grid>*,.card{min-width:0}
+#dataset,#chromosome{max-width:100%;width:100%}
+@media(max-width:760px){.control-row>label:not(.check){flex-basis:100%}.locus{min-width:0}.brand span{display:block;margin:5px 0 0}.intro{max-width:100%}.card form label{min-width:0}#igv-browser .igv-navbar{overflow:hidden}.file-label input{width:100%}}
+.loading #allele-rows,.loading #variant-details,.loading .exact-detail{pointer-events:none;opacity:.5}

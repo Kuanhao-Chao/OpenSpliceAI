@@ -4,7 +4,8 @@ import json
 from .build import finalize, prepare_parallel
 from .hosting import probe, serve, verify
 from .search_index import attach_reference, build_reference
-from .publication import publication_plan
+from .publication import publication_plan, export_snapshot
+from .status import campaign_status
 
 
 def main():
@@ -33,6 +34,13 @@ def main():
     p = subs.add_parser("serve")
     p.add_argument("output")
     p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--browser", help="built application directory served on the same origin")
+    p = subs.add_parser("export")
+    p.add_argument("output")
+    p.add_argument("destination")
+    p = subs.add_parser("status")
+    p.add_argument("directory")
+    p.add_argument("--job",type=int)
     p = subs.add_parser("probe")
     p.add_argument("manifest_url")
     p = subs.add_parser("publication-plan")
@@ -51,7 +59,11 @@ def main():
     elif args.command == "attach-reference":
         attach_reference(args.output)
     elif args.command == "serve":
-        serve(args.output, args.port)
+        serve(args.output, args.port, args.browser)
+    elif args.command == "export":
+        print(json.dumps(export_snapshot(args.output,args.destination)))
+    elif args.command == "status":
+        print(json.dumps(campaign_status(args.directory,args.job),indent=2))
     elif args.command == "verify":
         print(json.dumps(verify(args.output)))
     elif args.command == "probe":

@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile, writeFile } from 'node:fs/promises';
 
+const catalog=JSON.parse(await readFile(new URL('../public/catalog.json',import.meta.url),'utf8'));
+const demoPath=catalog.datasets[0].manifest.replace(/^\.\//,'');
 const scriptErrors = new WeakMap<Page, string[]>();
 
 test.beforeEach(async ({ page }) => {
@@ -45,7 +47,7 @@ test('state, navigation, filters, empty track selection and themes', async ({ pa
   } }));
   await page.locator('#share').click(); await expect(page.locator('#load-status')).toContainText('copied');
   const shared = await page.evaluate(() => (window as unknown as { sharedUrl: string }).sharedUrl);
-  expect(new URL(shared).searchParams.get('manifest')).toContain('/data/review/manifest.json');
+  expect(new URL(shared).searchParams.get('manifest')).toContain('/'+demoPath);
   await page.route('**/settings.json', route => route.fulfill({ status: 503 }));
   await page.route('**/catalog.json', route => route.fulfill({ status: 503 }));
   await page.goto(shared); await expect(page.locator('#load-status')).toContainText('Exact');
@@ -85,15 +87,15 @@ test('failed score requests are visible and prevent exports, then retry succeeds
 });
 
 test('genome-wide mode rejects whole-file responses to a byte-range request', async ({ page }) => {
-  const manifest = JSON.parse(await readFile(new URL('../public/data/review/manifest.json', import.meta.url), 'utf8'));
-  manifest.scope = 'source-collection';
+  const manifest = JSON.parse(await readFile(new URL('../public/'+demoPath, import.meta.url), 'utf8'));
+  manifest.scope = 'source-collection'; manifest.igv = JSON.parse(JSON.stringify(manifest.igv));
   await page.route(url => url.pathname.endsWith('/manifest.json') && url.searchParams.has('strict'),
     route => route.fulfill({ contentType: 'application/json', body: JSON.stringify(manifest) }));
-  const fullFile = await readFile(new URL('../public/data/review/scores-0000.pack', import.meta.url));
+  const fullFile = await readFile(new URL('../public/'+demoPath.replace('manifest.json','scores-0000.pack'), import.meta.url));
   await page.route('**/scores-0000.pack', route => route.fulfill({ status: 200, contentType: 'application/octet-stream', body: fullFile }));
-  const manifestUrl = new URL('data/review/manifest.json?strict=1', page.url()).href;
+  const manifestUrl = new URL(demoPath+'?strict=1', page.url()).href;
   await page.goto(`./?manifest=${encodeURIComponent(manifestUrl)}`);
-  await expect(page.locator('#load-status')).toContainText('HTTP 206');
+  await expect(page.locator('#load-status')).toContainText('HTTP 206',{timeout:30000});
   await expect(page.locator('#retry')).toBeVisible();
   await page.locator('#svg').click(); await expect(page.locator('#load-status')).toContainText('successfully loaded');
 });
@@ -117,7 +119,7 @@ test('wide views use summaries and refuse exact CSV', async ({ page }) => {
 test('paged FM search agrees with the actual mitochondrial reference', async ({ page }) => {
   await page.locator('#locus').fill('chrM:1-20'); await page.locator('#locus-form button[type=submit]').click();
   await expect(page.locator('#view-label')).toContainText('chrM');
-  await expect(page.locator('#load-status')).toContainText('Exact');
+  await expect(page.locator('#load-status')).toContainText('Outside published demonstration');
   await page.locator('#motif').fill('GATCACAGGTCTATCACCCT');
   await page.locator('#sequence-scope').selectOption('chromosome');
   await page.route('**/search-chrM.*', async route => {

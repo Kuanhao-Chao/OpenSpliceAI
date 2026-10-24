@@ -41,3 +41,21 @@ data rosei GRP none rockfish.storage
 
 if __name__ == '__main__':
     unittest.main()
+
+class AccountingTests(unittest.TestCase):
+    def test_billing_uses_allocated_units_and_elapsed_not_requested_workers(self):
+        from tools.genome_browser.status import parse_accounting
+        result=parse_accounting('123|RUNNING|3600|8|32G|cpu=8,mem=32G,billing=8|ssalzbe1|shared|\n')
+        self.assertEqual(result['billedUnitHours'],8)
+        self.assertEqual(result['allocatedGpus'],0)
+        self.assertEqual(result['allocatedCpus'],8)
+
+    def test_status_rejects_other_snapshot_marker_and_does_not_create_database(self):
+        import json,tempfile
+        from pathlib import Path
+        from tools.genome_browser.status import campaign_status
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);data=root/'data';(root/'config.json').write_text(json.dumps({'id':'current','snapshot_directory':str(data),'chunks':[1],'shard_size':1}))
+            (root/'review-ready.json').write_text(json.dumps({'verification':{'passed':True,'dataset':'other'}}))
+            result=campaign_status(root)
+            self.assertFalse(result['releaseReady']);self.assertEqual(result['scorePacks']['completed'],0);self.assertFalse(data.exists())

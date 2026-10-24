@@ -13,6 +13,14 @@ export interface SearchDescriptor { path: string; index: string; length: number;
 export interface Contig { name: string; length: number; indexes: Record<string, Descriptor>; overview: Summary[]; genes?: Descriptor; reference?: ReferenceDescriptor; search?: SearchDescriptor }
 export interface ModelMetadata { label: string; precision: number; seed?: number; sha256?: string; annotation?: string }
 export interface Manifest {
+  manifestVersion?: number;
+  geneFormat?: 'tuples-v1';
+  provenance?: Record<string, Descriptor>;
+  publishedIntervals?: View[] | null;
+  bookmarks?: (View & { label: string })[];
+  processing?: Record<string, { complete: boolean }>;
+  coverage?: { global: Census; published: Census };
+  igv?: { reference: { kind: 'excerpts' | 'indexed'; fasta: Descriptor; index?: Descriptor; compressedIndex?: Descriptor }; genes: Descriptor & { index: Descriptor }; tracks: (Descriptor & { model: Model; event: string; aggregation: string })[]; coverageTracks: (Descriptor & { model: string })[] };
   format: string; id: string; label: string; created: string; assembly: string; baseUrl: string;
   scope: string; defaultModel: Model; r13Final: boolean; r13Evidence: string; models: Record<Model, ModelMetadata>;
   scoreScale: number; blockBp: number; indexBp: number; summaryBp: number; genes: Descriptor;
@@ -20,11 +28,17 @@ export interface Manifest {
   defaultView: View; referenceSha256: string; annotationSha256: string; methods: Record<string, unknown>;
   overview?: Descriptor;
 }
+export interface Census { sourceOccurrences: number; uniqueCanonicalInput: number; models: Record<string, { uniqueCanonicalPredicted: number; predictionOccurrences: number; annotationEntries: number; missingCanonical?: number; provenance?: Record<string, number> }> }
 export interface RegionIndex { blocks: BlockDescriptor[]; summaries: Summary[] }
 export interface Annotation { gene: string; ds: number[]; dp: number[]; occurrences: string[] }
 export interface Variant { chrom: string; pos: number; ref: string; alt: string; refMismatch: boolean; r13Accepted: boolean; occurrences: string[]; models: Record<Model, Annotation[]> }
 export interface DecodedBlock { chrom: string; rows: number; genes: string[]; columns: Record<string, Uint32Array | Uint8Array | Int16Array>; bytes: number }
-export interface LoadedView { view: View; exact: boolean; variants: Variant[]; summaries: Summary[]; sequence: string | null; genes?: Gene[]; failed?: string }
+export interface ExactQuery {
+  total: number; page: number; rows: Variant[]; top: Variant[]; selected?: Variant; atPosition: Variant[];
+  plot: { pos: Uint32Array; alt: Uint8Array; score: Float32Array; mismatch: Uint8Array; differencePos: Uint32Array; difference: Float32Array };
+  stats: { n: number; meanDifference: number | null; correlation: number | null; pixels: Uint32Array };
+}
+export interface LoadedView { view: View; exact: boolean; variants: Variant[]; queryToken?: number; query?: ExactQuery; summaries: Summary[]; sequence: string | null; genes?: Gene[]; failed?: string }
 export interface BrowserState extends View {
   snapshot: string; model: Model; compare: boolean; theme: Theme; density: 'comfortable' | 'compact' | 'dense';
   autoscale: boolean; tracks: string[]; heights: Record<string, number>; threshold: number; gene: string;

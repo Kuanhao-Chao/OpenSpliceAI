@@ -1,4 +1,4 @@
-import type { DecodedBlock } from './types';
+import type { DecodedBlock, Variant } from './types';
 
 /** Byte-accounted LRU; pending network work is separately bounded to six requests. */
 export class ByteCache<T> {
@@ -60,6 +60,19 @@ export class Decoder {
   decode<T>(data: ArrayBuffer, kind: 'block' | 'json' | 'plain-json' | 'raw'): Promise<T> {
     return new Promise((resolve, reject) => { const id = ++this.serial; this.pending.set(id, { resolve: resolve as (v: unknown) => void, reject }); this.worker.postMessage({ id, data, kind }, [data]); });
   }
+  collect(blocks: DecodedBlock[], start: number, end: number, signal?: AbortSignal): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (signal?.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
+      const id = ++this.serial;
+      const abort = () => { this.pending.delete(id); reject(new DOMException('Aborted', 'AbortError')); };
+      signal?.addEventListener('abort', abort, { once: true });
+      this.pending.set(id, { resolve: value => { signal?.removeEventListener('abort', abort); resolve(value as number); }, reject: e => { signal?.removeEventListener('abort', abort); reject(e); } });
+      this.worker.postMessage({ id, kind: 'collect', blocks, start, end });
+    });
+  }
+  query<T>(token: number, state: import('./types').BrowserState, page = 0, channel = 0, position?: number, kind = 'query'): Promise<T> {
+    return new Promise((resolve,reject) => { const id = ++this.serial; this.pending.set(id,{resolve:resolve as (v:unknown)=>void,reject}); this.worker.postMessage({id,kind,token,state,page,channel,position}); });
+  }
   scan(sequence: string, query: string, offset: number, maxHits: number, signal: AbortSignal): Promise<{ positions: number[]; count: number }> {
     return new Promise((resolve, reject) => {
       if (signal.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
@@ -76,10 +89,22 @@ export class Decoder {
 export class Resources {
   private semaphore = new Semaphore(6);
   // Reserve additional space for the visible variants and the rendering arrays.
-  readonly cache = new ByteCache<unknown>(matchMedia('(max-width: 700px)').matches ? 32 * 1048576 : 64 * 1048576);
+  readonly cache = new ByteCache<unknown>(matchMedia('(max-width: 700px)').matches ? 64 * 1048576 : 128 * 1048576);
+  private inFlight = new Map<string, Promise<unknown>>();
+  private lifetime = new AbortController();
   readonly decoder = new Decoder();
   transferred = 0; requests = 0;
   constructor(private base: string, private reviewFiles?: Map<string, { bytes: number; sha256: string }>) {}
+  private shared<T>(key: string, action: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+    let pending = this.inFlight.get(key) as Promise<T> | undefined;
+    if (!pending) { pending = action(); this.inFlight.set(key, pending); pending.finally(() => this.inFlight.delete(key)).catch(() => {}); }
+    return new Promise((resolve, reject) => {
+      const abort = () => reject(new DOMException('Aborted', 'AbortError'));
+      signal?.addEventListener('abort', abort, { once: true });
+      pending!.then(v => { if (!signal?.aborted) resolve(v); }, reject).finally(() => signal?.removeEventListener('abort', abort));
+    });
+  }
   url(path: string) { return new URL(path, this.base).href; }
   async bytes(path: string, options: { offset?: number; bytes?: number; sha256?: string; decodedBytes?: number; decodedSha256?: string; signal?: AbortSignal } = {}): Promise<ArrayBuffer> {
     const { offset, bytes, sha256, signal } = options;
@@ -89,11 +114,12 @@ export class Resources {
       // same-origin review artifacts may use authenticated whole-file reads.
       if (!Number.isSafeInteger(offset) || offset! < 0 || !Number.isSafeInteger(bytes) || bytes! < 1 || offset! + bytes! > review.bytes) throw new Error('Invalid review-file byte range');
       const key = `review-file:${path}`;
-      let whole = this.cache.get(key) as ArrayBuffer | undefined;
-      if (!whole) {
-        whole = await this.bytes(path, { bytes: review.bytes, sha256: review.sha256, signal });
-        this.cache.set(key, whole, whole.byteLength);
-      }
+      const whole = await this.shared(key, async () => {
+        const cached = this.cache.get(key) as ArrayBuffer | undefined;
+        if (cached) return cached;
+        const data = await this.bytes(path,{bytes:review.bytes,sha256:review.sha256,signal:this.lifetime.signal});
+        this.cache.set(key,data,data.byteLength);return data;
+      },signal);
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
       const data = whole.slice(offset!, offset! + bytes!);
       if (sha256 && await checksum(data) !== sha256) throw new Error(`Data integrity check failed: ${path}`);
@@ -126,19 +152,23 @@ export class Resources {
   async json<T>(path: string, descriptor?: { bytes: number; sha256: string; decodedBytes?: number; decodedSha256?: string }, signal?: AbortSignal): Promise<T> {
     const key = `json:${path}`;
     const cached = this.cache.get(key); if (cached !== undefined) return cached as T;
-    const data = await this.bytes(path, { ...descriptor, signal });
+    return this.shared(key, async () => {
+    const data = await this.bytes(path, { ...descriptor, signal: this.lifetime.signal });
     const prefix = new Uint8Array(data, 0, Math.min(2, data.byteLength));
     const decoded = await this.decoder.decode<{ value: T; decodedBytes: number }>(data, prefix[0] === 31 && prefix[1] === 139 ? 'json' : 'plain-json');
     const value = decoded.value;
     this.cache.set(key, value, decoded.decodedBytes * 4);
     return value;
+    }, signal);
   }
   async block(descriptor: { path: string; offset: number; bytes: number; rawBytes: number; sha256: string }, signal?: AbortSignal): Promise<DecodedBlock> {
     const key = `block:${descriptor.path}:${descriptor.offset}`;
     const old = this.cache.get(key); if (old) return old as DecodedBlock;
-    const block = await this.decoder.decode<DecodedBlock>(await this.bytes(descriptor.path, { ...descriptor, signal }), 'block');
+    return this.shared(key, async () => {
+    const block = await this.decoder.decode<DecodedBlock>(await this.bytes(descriptor.path, { ...descriptor, signal: this.lifetime.signal }), 'block');
     if (block.bytes !== descriptor.rawBytes) throw new Error('Decoded score block length differs from manifest');
     this.cache.set(key, block, block.bytes); return block;
+    }, signal);
   }
   async page(index: string, path: string, page: number, signal?: AbortSignal): Promise<ArrayBuffer> {
     const key = `page:${path}:${page}`; const cached = this.cache.get(key); if (cached) return cached as ArrayBuffer;
@@ -149,5 +179,5 @@ export class Resources {
     const raw = await this.decoder.decode<ArrayBuffer>(await this.bytes(path, { offset, bytes, sha256: hash, signal }), 'raw');
     this.cache.set(key, raw, raw.byteLength); return raw;
   }
-  destroy() { this.decoder.destroy(); this.cache.clear(); }
+  destroy() { this.lifetime.abort(); this.decoder.destroy(); this.cache.clear(); this.inFlight.clear(); }
 }

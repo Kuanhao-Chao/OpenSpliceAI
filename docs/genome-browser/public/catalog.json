@@ -1,1 +1,9 @@
-{ "datasets": [{ "id": "grch38-scored-review-20261010", "label": "GRCh38 scored review subset", "manifest": "./data/review/manifest.json" }] }
+{
+  "datasets": [
+    {
+      "id": "grch38-r10-r13-final-20261023T204420Z-demo-v3",
+      "label": "GRCh38 r10 / r13 \u00b7 final audited demonstration",
+      "manifest": "./data/final-demo-20261023T204420Z-demo-v3/manifest.json"
+    }
+  ]
+}

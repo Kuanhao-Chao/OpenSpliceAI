@@ -10,12 +10,17 @@
     "typecheck": "tsc --noEmit",
     "audit": "playwright test"
   },
-  "engines": { "node": ">=22.12" },
+  "engines": {
+    "node": ">=22.12"
+  },
   "devDependencies": {
     "@playwright/test": "1.58.2",
     "@types/node": "22.19.7",
     "typescript": "5.9.3",
     "vite": "6.4.4",
     "vitest": "4.1.11"
+  },
+  "dependencies": {
+    "igv": "3.8.9"
   }
 }

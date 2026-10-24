@@ -27,10 +27,10 @@ export function draw(ctx: CanvasRenderingContext2D, width: number, state: Browse
   const step = [1, 2, 5, 10].map(n => n * power).find(n => n >= span / targetTicks)!;
   ctx.font = '10px Inter, system-ui, sans-serif';
   for (let pos = Math.ceil(state.start / step) * step; pos < state.end; pos += step) { ctx.strokeStyle = palette.line; ctx.beginPath(); ctx.moveTo(x(pos), 51); ctx.lineTo(x(pos), height - 27); ctx.stroke(); ctx.fillStyle = palette.muted; ctx.fillText((pos + 1).toLocaleString('en-US'), x(pos) + 3, 52); }
-  const selected = loaded.variants.find(v => variantKey(v) === state.selected);
+  const selected = loaded.query?.selected || loaded.variants.find(v => variantKey(v) === state.selected);
   for (const lane of lanes) {
     const { y, height: h, id } = lane;
-    ctx.fillStyle = palette.ink; ctx.font = '11px Inter, system-ui, sans-serif'; ctx.fillText(id === 'genes' ? 'MANE genes' : id === 'heatmap' ? 'ALT max DS' : id === 'difference' ? 'r13 − r10' : id === 'coverage' ? 'r13 coverage' : id === 'reference' ? 'Reference' : `DS_${id}`, 10, y + 14);
+    ctx.fillStyle = palette.ink; ctx.font = '11px Inter, system-ui, sans-serif'; ctx.fillText(id === 'genes' ? 'GENCODE genes' : id === 'heatmap' ? 'ALT max DS' : id === 'difference' ? 'r13 − r10' : id === 'coverage' ? 'r13 coverage' : id === 'reference' ? 'Reference' : `DS_${id}`, 10, y + 14);
     ctx.strokeStyle = palette.line; ctx.beginPath(); ctx.moveTo(left, y + h); ctx.lineTo(right, y + h); ctx.stroke();
     ctx.save(); ctx.beginPath(); ctx.rect(left, y, right - left, h); ctx.clip();
     if (id === 'genes') {
@@ -59,6 +59,9 @@ export function draw(ctx: CanvasRenderingContext2D, width: number, state: Browse
       for (let i = 0; i < 4; i++) { ctx.fillStyle = palette.muted; ctx.fillText(alts[i], left + 3, y + 7 + i * band + band / 2); }
       if (loaded.exact) {
         const pixels = new Map<string, { v: number; mismatch: boolean; px: number; band: number }>();
+        if (loaded.query) { const plot=loaded.query.plot;
+          for(let i=0;i<plot.pos.length;i++){ const px=Math.floor(x(plot.pos[i])), band=plot.alt[i], key=`${px}:${band}`, score=plot.score[i], old=pixels.get(key); if(!old || old.v<score) pixels.set(key,{v:score,mismatch:!!plot.mismatch[i],px,band}); }
+        }
         for (const v of visible) { const band = alts.indexOf(v.alt); if (band < 0) continue; const values = [0, 1, 2, 3].map(c => value(v, state.model, c, state.gene)).filter(a => a !== null) as number[]; if (!values.length) continue; const px = Math.floor(x(v.pos)), key = `${px}:${band}`; const score = Math.max(...values); const old = pixels.get(key); if (!old || old.v < score) pixels.set(key, { v: score, mismatch: v.refMismatch, px, band }); }
         for (const p of pixels.values()) { ctx.fillStyle = p.mismatch ? palette.compare : palette.accent; ctx.globalAlpha = 0.12 + 0.88 * p.v; ctx.fillRect(p.px, y + 6 + p.band * band, Math.max(1, (right - left) / span), band - 1); }
         ctx.globalAlpha = 1;
@@ -67,6 +70,7 @@ export function draw(ctx: CanvasRenderingContext2D, width: number, state: Browse
       const middle = y + h / 2;
       ctx.strokeStyle = palette.line; ctx.beginPath(); ctx.moveTo(left, middle); ctx.lineTo(right, middle); ctx.stroke();
       if (loaded.exact) {
+        if(loaded.query){const plot=loaded.query.plot; for(let i=0;i<plot.difference.length;i++){const delta=plot.difference[i];ctx.fillStyle=delta>=0?palette.accent:palette.compare;ctx.fillRect(x(plot.differencePos[i]),middle-Math.max(0,delta)*(h/2-4),Math.max(1,(right-left)/span),Math.max(1,Math.abs(delta)*(h/2-4)));}}
         for (const v of visible) for (const match of matchedAnnotations(v)) { if (state.gene && match.gene !== state.gene) continue; const delta = Math.max(...match.r13.ds) - Math.max(...match.r10.ds); ctx.fillStyle = delta >= 0 ? palette.accent : palette.compare; ctx.fillRect(x(v.pos), middle - Math.max(0, delta) * (h / 2 - 4), Math.max(1, (right - left) / span), Math.max(1, Math.abs(delta) * (h / 2 - 4))); }
       } else { ctx.fillStyle = palette.muted; ctx.fillText('Exact matched gene comparisons require zoom', left + 4, y + 12); }
     } else {

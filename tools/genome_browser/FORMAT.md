@@ -63,3 +63,32 @@ ranged representations for Firefox. These bounded reads authenticate the
 complete stored-file SHA-256 before slicing and checking the block/page bytes.
 Genome-wide datasets and external origins always retain the strict range
 contract; they never fall back to downloading a complete packed file.
+
+
+## Manifest version 2 and native IGV tracks
+
+OSGB1 exact block encoding is unchanged. Version 2 adds `igv` descriptors for
+12 BigWigs (baseline/r10/r13 × AG/AL/DG/DL), three REF-matching ALT-count tracks,
+BGZF/tabix scoring genes, and excerpt or indexed reference sequence. Indexed
+references include FASTA, FAI and GZI descriptors. Every public descriptor binds
+stored bytes and SHA-256; metadata can additionally bind its decoded JSON.
+
+`geneFormat: "tuples-v1"` means the search lookup contains
+`[name, chrom, start0, end0, strand]` rows. Exon geometry remains in per-contig
+features and the native gene track. Legacy object lookups remain supported.
+`publishedIntervals` defines the demonstration's 0-based half-open scored
+extent. `processing` describes scientific processing, while `coverage.global`
+and `coverage.published` distinguish the full audited census from packaged data.
+Neither processing completion nor a missing annotation is a measured zero.
+
+`provenance` maps 1,000-chunk page numbers to compressed evidence descriptors.
+Pages contain audit states, output and receipt hashes, and occurrence counts;
+private filesystem paths are excluded. Full source-collection export requires
+`releaseVerified`, set only after the campaign's data verification completes.
+Preparation state and native construction receipts are not public assets.
+
+Application session version 2 pins the manifest URL and hash, loci/active pane,
+model/display state, stable track IDs, presentation and regions. Snapshot File
+objects become logical `snapshotPath` descriptors. Local user tracks become
+`localFile` reselection placeholders. Built-in data URLs are reconstructed from
+the pinned manifest; session presentation cannot replace them.

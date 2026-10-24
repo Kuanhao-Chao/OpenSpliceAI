@@ -1,0 +1,9 @@
+node_modules
+dist/
+test-results/
+validation/*.log
+validation/local-review.json
+# These are small, authenticated public demonstration assets.
+!public/data/**/*.fa
+!public/data/**/*.fai
+!public/licenses/*.txt
