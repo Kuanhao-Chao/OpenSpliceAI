@@ -6,6 +6,20 @@ source annotations remain in lossless OSGB1 packs. Worker queries return
 100-row pages and compact plot buffers; full CSV and statistics use the complete
 matching collection.
 
+Exact ALT and matched-difference columns follow each native IGV viewport. The
+geometry adapter reads fractional reference frames and translated canvases
+through IGV's open Shadow DOM; drawing and base selection share that transform.
+Pixel ratios use the actual canvas backing dimensions, with borders on its
+wrapper. Labels occupy the native axis gutter rather than shifting score cells.
+Cached absolute positions reproject on animation frames during dragging. New
+edge bases remain blank and labelled while their bounded data requests load.
+
+Each pane owns its exact-query handle. Two background loads can run concurrently,
+sharing the resource cache; background collections are released after producing
+plot arrays. The selected pane retains its collection for inspection, statistics
+and CSV. Replacing or closing views releases their handles. Pane selection uses
+composed pointer-event paths, including overlapping loci on one chromosome.
+
 The default expanded demonstration contains ten scored intervals and 67,579
 source occurrences. CFTR, HBB, BRCA1 and BRCA2 add four 2,048-base splice-junction
 windows across both strands. Existing examples, reference-only mitochondrial
@@ -43,12 +57,15 @@ identities. `LOCAL_REVIEW.md` describes feature checks and local validation.
 
 ## Focused release validation
 
-Pages uses 16 scientific/query/coverage unit checks, all public snapshot hashes,
-TypeScript and production/Sphinx builds, local links, and five core workflows
-per browser (15 checks across Chromium, Firefox and WebKit). The browser gate
+Pages uses 22 scientific/query/coverage/geometry unit checks, all public snapshot hashes,
+TypeScript and production/Sphinx builds, local links, and seven core workflows
+per browser (21 checks across Chromium, Firefox and WebKit). Two focused
+alignment scenarios compare actual Canvas2D columns with native one-base
+bedGraph markers to a one-physical-pixel tolerance, including pan, zoom,
+responsive layout, high DPI, multiple loci and session restoration. The browser gate
 serves the production bundle with Vite preview. Core phone checks verify usable
 controls at 320 px; global scroll-area geometry stays in the extended audit.
 
-All 35 frontend tests, 72 broader browser checks and 32 data-preparation tests
+All 41 frontend tests, 72 broader browser checks and 32 data-preparation tests
 remain available through the separate manual extended-audit workflow. That
 workflow has no deployment dependency or Pages publication permission.

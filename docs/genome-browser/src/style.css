@@ -27,3 +27,7 @@ main,.controls,.control-row,.control-row>*,.below-grid>*,.browser-grid>*,.card{m
 #dataset,#chromosome{max-width:100%;width:100%}
 @media(max-width:760px){.control-row>label:not(.check){flex-basis:100%}.locus{min-width:0}.brand span{display:block;margin:5px 0 0}.intro{max-width:100%}.card form label{min-width:0}#igv-browser .igv-navbar{overflow:hidden}.file-label input{width:100%}}
 .loading #allele-rows,.loading #variant-details,.loading .exact-detail{pointer-events:none;opacity:.5}
+/* Borders belong to the wrapper: the canvas CSS width must equal its drawing width. */
+.matrix-frame{outline:1px solid var(--line);border-radius:5px;overflow:hidden}
+#track-canvas{border:0;border-radius:0}
+#matrix-status{margin-bottom:8px;min-height:19px}

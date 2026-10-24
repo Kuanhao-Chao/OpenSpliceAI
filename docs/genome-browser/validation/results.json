@@ -1,6 +1,6 @@
 {
-  "recordedUtc": "2026-10-24T08:44:09.360961+00:00",
-  "phase": "core release validation; deployment pending",
+  "recordedUtc": "2026-10-24T18:01:49.990459+00:00",
+  "phase": "column-alignment core release validated; deployment pending",
   "baseCommit": "13ff432c211d0871eec27a1884d59df0a99df5eb",
   "implementationCommit": "ff8f39b121f2a2b70c0fb18aaaf7be256830a999",
   "checks": {
@@ -149,7 +149,7 @@
           "chrom": "chr1",
           "start": 68990,
           "end": 70110,
-          "label": "OR4F5 · + strand",
+          "label": "OR4F5 \u00b7 + strand",
           "sourceRecords": 2751,
           "r10PredictionRecords": 2751,
           "r13PredictionRecords": 2751
@@ -158,7 +158,7 @@
           "chrom": "chr1",
           "start": 685500,
           "end": 686900,
-          "label": "OR4F16 · − strand",
+          "label": "OR4F16 \u00b7 \u2212 strand",
           "sourceRecords": 2814,
           "r10PredictionRecords": 2814,
           "r13PredictionRecords": 2814
@@ -167,7 +167,7 @@
           "chrom": "chr1",
           "start": 925400,
           "end": 930500,
-          "label": "SAMD11 · + strand",
+          "label": "SAMD11 \u00b7 + strand",
           "sourceRecords": 28140,
           "r10PredictionRecords": 28140,
           "r13PredictionRecords": 28140
@@ -176,7 +176,7 @@
           "chrom": "chr2_KI270773v1_alt",
           "start": 18500,
           "end": 19400,
-          "label": "Alternate-contig audit · duplicates and REF mismatch",
+          "label": "Alternate-contig audit \u00b7 duplicates and REF mismatch",
           "sourceRecords": 5863,
           "r10PredictionRecords": 0,
           "r13PredictionRecords": 0
@@ -185,7 +185,7 @@
           "chrom": "chr2",
           "start": 241871200,
           "end": 241872225,
-          "label": "Strong delta-score example · chr2",
+          "label": "Strong delta-score example \u00b7 chr2",
           "sourceRecords": 3075,
           "r10PredictionRecords": 3075,
           "r13PredictionRecords": 3075
@@ -194,7 +194,7 @@
           "chrom": "chr2",
           "start": 241869353,
           "end": 241870378,
-          "label": "Matched r10/r13 difference · chr2",
+          "label": "Matched r10/r13 difference \u00b7 chr2",
           "sourceRecords": 1950,
           "r10PredictionRecords": 1950,
           "r13PredictionRecords": 1950
@@ -203,7 +203,7 @@
           "chrom": "chr7",
           "start": 117503339,
           "end": 117505387,
-          "label": "CFTR · + strand · splice junction",
+          "label": "CFTR \u00b7 + strand \u00b7 splice junction",
           "sourceRecords": 6144,
           "r10PredictionRecords": 6144,
           "r13PredictionRecords": 6144
@@ -212,7 +212,7 @@
           "chrom": "chr11",
           "start": 5225552,
           "end": 5227600,
-          "label": "HBB · − strand · splice junction",
+          "label": "HBB \u00b7 \u2212 strand \u00b7 splice junction",
           "sourceRecords": 4554,
           "r10PredictionRecords": 4554,
           "r13PredictionRecords": 4554
@@ -221,7 +221,7 @@
           "chrom": "chr17",
           "start": 43122992,
           "end": 43125040,
-          "label": "BRCA1 · − strand · splice junction",
+          "label": "BRCA1 \u00b7 \u2212 strand \u00b7 splice junction",
           "sourceRecords": 6144,
           "r10PredictionRecords": 6144,
           "r13PredictionRecords": 6144
@@ -230,7 +230,7 @@
           "chrom": "chr13",
           "start": 32315503,
           "end": 32317551,
-          "label": "BRCA2 · + strand · splice junction",
+          "label": "BRCA2 \u00b7 + strand \u00b7 splice junction",
           "sourceRecords": 6144,
           "r10PredictionRecords": 6144,
           "r13PredictionRecords": 6144
@@ -299,6 +299,51 @@
     ]
   },
   "releaseGate": {
+    "profile": "core-v2-native-column-alignment",
+    "unitTests": 22,
+    "browserTests": 21,
+    "projects": {
+      "chromium": 7,
+      "firefox": 7,
+      "webkit": 7
+    },
+    "unexpected": 0,
+    "flaky": 0,
+    "browserElapsedSeconds": 209.41284999999996,
+    "serves": "production Vite build through Vite preview",
+    "publicSnapshotInventories": 5,
+    "snapshotVerificationUsesOnlyPythonStandardLibrary": true,
+    "typecheck": true,
+    "productionBuild": true,
+    "sphinxWarningsAsErrors": true,
+    "localDocumentationReferences": 2116,
+    "sourceSha256": "7e016a689f6bb2c090cda346a876e76ccd69cf7c9b204332909081753b614baf",
+    "coreWorkflows": [
+      "native tracks and real r10/r13 scores in all four added genes",
+      "continuous dragging, ruler zoom and selected BED regions",
+      "model comparison and exact CSV/PNG/SVG exports",
+      "multiple inspector panes and pinned session restoration",
+      "data-error recovery, coverage availability and usable 320px controls",
+      "rendered column alignment through continuous pan, ruler zoom, responsive widths and high DPI",
+      "independent multi-region alignment, overlapping-pane selection, delayed loads, native pane closure and pinned session restoration"
+    ]
+  },
+  "extendedAudit": {
+    "workflow": "genome-browser-audit.yml",
+    "trigger": "workflow_dispatch",
+    "frontendUnitTests": 41,
+    "browserChecks": 72,
+    "backendTests": 32,
+    "blocksPagesDeployment": false,
+    "knownFinding": {
+      "engine": "WebKit on hosted runner",
+      "viewportWidth": 320,
+      "documentScrollWidth": 351,
+      "capturedElementBoxesOutsideViewport": 0,
+      "check": "document-wide scroll area, retained in the extended audit"
+    }
+  },
+  "previousReleaseGate": {
     "profile": "core-v1",
     "unitTests": 16,
     "browserTests": 15,
@@ -326,19 +371,64 @@
       "data-error recovery, coverage availability and usable 320px controls"
     ]
   },
-  "extendedAudit": {
-    "workflow": "genome-browser-audit.yml",
-    "trigger": "workflow_dispatch",
-    "frontendUnitTests": 35,
-    "browserChecks": 72,
-    "backendTests": 32,
-    "blocksPagesDeployment": false,
-    "knownFinding": {
-      "engine": "WebKit on hosted runner",
-      "viewportWidth": 320,
-      "documentScrollWidth": 351,
-      "capturedElementBoxesOutsideViewport": 0,
-      "check": "document-wide scroll area, retained in the extended audit"
-    }
+  "historicalChecksNote": "The checks object preserves the previous demonstration release measurements and their original source hashes. The releaseGate and alignmentRelease objects record the current alignment release.",
+  "alignmentRelease": {
+    "baseCommit": "c7e73a70a0ece625bfbd600ac70ebb1c4b9ff6a9",
+    "testJob": "32445439",
+    "frontendUnitPassed": 22,
+    "browserCore": {
+      "passed": 21,
+      "unexpected": 0,
+      "flaky": 0,
+      "durationSeconds": 209.41284999999996,
+      "measurements": [
+        {
+          "browser": "chromium",
+          "scenario": "column-alignment.json",
+          "paneMeasurements": 8,
+          "maximumPhysicalPixelError": 4.284083843231201e-08
+        },
+        {
+          "browser": "chromium",
+          "scenario": "multi-region-alignment.json",
+          "paneMeasurements": 9,
+          "maximumPhysicalPixelError": 1.829647544582258e-13
+        },
+        {
+          "browser": "firefox",
+          "scenario": "column-alignment.json",
+          "paneMeasurements": 8,
+          "maximumPhysicalPixelError": 4.284083843231201e-08
+        },
+        {
+          "browser": "firefox",
+          "scenario": "multi-region-alignment.json",
+          "paneMeasurements": 9,
+          "maximumPhysicalPixelError": 1.829647544582258e-13
+        },
+        {
+          "browser": "webkit",
+          "scenario": "column-alignment.json",
+          "paneMeasurements": 8,
+          "maximumPhysicalPixelError": 8.568167686462402e-08
+        },
+        {
+          "browser": "webkit",
+          "scenario": "multi-region-alignment.json",
+          "paneMeasurements": 9,
+          "maximumPhysicalPixelError": 3.659295089164516e-13
+        }
+      ],
+      "maximumPhysicalPixelError": 8.568167686462402e-08,
+      "currentRuntimeMatchesFrozenInputs": true,
+      "sourceSha256": "7e016a689f6bb2c090cda346a876e76ccd69cf7c9b204332909081753b614baf"
+    },
+    "publicSnapshotInventories": 5,
+    "publicDataUnchanged": true,
+    "sphinxWarningsAsErrors": true,
+    "localDocumentationReferences": 2116,
+    "tolerancePhysicalPixels": 1,
+    "measurementMethod": "Actual Canvas2D heatmap and difference bar boundaries compared with independently loaded one-base native bedGraph markers at left, middle and right; shared application geometry helpers are not used by the oracle.",
+    "retention": "Selected-pane exact collection retained; background handles released after producing plot arrays; closed, replaced and aborted handles released."
   }
 }

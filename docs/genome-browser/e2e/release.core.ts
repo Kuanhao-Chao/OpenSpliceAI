@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { addAlignmentMarkers, captureDrawing, measuredAlignment, nativeBase } from './alignment';
 
 const catalog = JSON.parse(await readFile(new URL('../public/catalog.json', import.meta.url), 'utf8'));
 const manifestPath = catalog.datasets[0].manifest.replace(/^\.\//, '');
@@ -142,4 +143,84 @@ test('recover from data errors and operate core controls on a phone', async ({ p
   await expect(page.locator('#load-status')).toContainText('Outside published demonstration');
   await expect(page.locator('#csv')).toBeDisabled(); await expect(page.locator('#summary-csv')).toBeDisabled();
   await expect(page.locator('#variant-details')).not.toContainText('scored zero');
+});
+
+test('align drawn exact columns with native bases through pan, zoom, resize and high DPI', async ({ page, browser }) => {
+  test.setTimeout(90000);
+  await captureDrawing(page);
+  await locus(page, 'chr7:117504101-117504180'); await ready(page);
+  await addAlignmentMarkers(page);
+  const evidence: unknown[] = [await measuredAlignment(page, 1)];
+  for (const width of [1024, 768, 320, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    evidence.push({ width, measurements: await measuredAlignment(page, 1) });
+  }
+  const viewport = page.locator('#igv-browser .igv-column .igv-viewport:has(canvas)').nth(4);
+  await viewport.scrollIntoViewIfNeeded(); const box = (await viewport.boundingBox())!;
+  await page.mouse.move(box.x + box.width * .63, box.y + 10); await page.mouse.down();
+  await page.mouse.move(box.x + box.width * .617, box.y + 10, { steps: 5 });
+  evidence.push({ dragging: await measuredAlignment(page, 1) }); await page.mouse.up();
+  const ruler = page.locator('#igv-browser .igv-viewport:has(.igv-ruler-tooltip)').first();
+  await ruler.scrollIntoViewIfNeeded(); const r = (await ruler.boundingBox())!;
+  await page.mouse.move(r.x + r.width * .25, r.y + r.height * .6); await page.mouse.down();
+  await page.mouse.move(r.x + r.width * .75, r.y + r.height * .6, { steps: 5 }); await page.mouse.up();
+  evidence.push({ zoomed: await measuredAlignment(page, 1) });
+  const base = await nativeBase(page, 0), matrix = page.locator('#track-canvas');
+  await matrix.scrollIntoViewIfNeeded(); const m = (await matrix.boundingBox())!;
+  await matrix.click({ position: { x: base.screenX - m.x, y: 110 } });
+  await expect(page.locator('#variant-select')).toContainText('Choose an ALT allele');
+  const alleles = await page.locator('#variant-select option').evaluateAll(options => options.map(o => (o as HTMLOptionElement).value).filter(Boolean));
+  expect(alleles.length).toBeGreaterThan(0);
+  expect(alleles.every(key => key.startsWith(`${base.chrom}:${base.position + 1}:`))).toBe(true);
+  const context = await browser.newContext({ deviceScaleFactor: 2, viewport: { width: 1440, height: 1000 } });
+  try {
+    const highDpi = await context.newPage(), highDpiErrors: string[] = [];
+    highDpi.on('pageerror', error => highDpiErrors.push(error.message));
+    await highDpi.goto(page.url()); await captureDrawing(highDpi); await ready(highDpi);
+    await addAlignmentMarkers(highDpi);
+    evidence.push({ pixelRatio: 2, measurements: await measuredAlignment(highDpi, 1) });
+    expect(highDpiErrors).toEqual([]);
+  } finally { await context.close(); }
+  await test.info().attach('column-alignment.json', { body: JSON.stringify(evidence, null, 2), contentType: 'application/json' });
+});
+
+test('align every region and select the correct pane through delayed loads and session restore', async ({ page }) => {
+  test.setTimeout(90000);
+  await captureDrawing(page);
+  await page.route('**/*.pack', async route => { await new Promise(resolve => setTimeout(resolve, 800)); await route.continue(); });
+  for (const regions of ['chr7:117504101-117504180 chr13:32316501-32316580', 'chr13:32316501-32316580 chr7:117504101-117504180']) {
+    await page.locator('#multilocus').fill(regions); await page.locator('#multilocus-form button').click();
+    await expect(page.locator('#locus-pane option')).toHaveCount(2);
+  }
+  await ready(page); await addAlignmentMarkers(page);
+  const evidence: unknown[] = [await measuredAlignment(page, 2)];
+  await page.unroute('**/*.pack');
+  const chooseColumn = async (pane: number) => {
+    const base = await nativeBase(page, pane), matrix = page.locator('#track-canvas');
+    await matrix.scrollIntoViewIfNeeded(); const box = (await matrix.boundingBox())!;
+    await matrix.click({ position: { x: base.screenX - box.x, y: 110 } });
+    await expect(page.locator('#locus-pane')).toHaveValue(String(pane));
+    await expect(page.locator('#variant-select')).toContainText('Choose an ALT allele');
+    const alleles = await page.locator('#variant-select option').evaluateAll(options => options.map(o => (o as HTMLOptionElement).value).filter(Boolean));
+    expect(alleles.length).toBeGreaterThan(0);
+    expect(alleles.every(key => key.startsWith(`${base.chrom}:${base.position + 1}:`))).toBe(true);
+    await page.locator('#variant-select').selectOption(alleles[0]);
+    await expect(page.locator('.variant-title')).toHaveText(alleles[0]);
+  };
+  await chooseColumn(1);
+  await page.locator('#model').selectOption('r13');
+  evidence.push({ r13: await measuredAlignment(page, 2) });
+  // Two overlapping views of the same chromosome still have separate pane identities.
+  await page.locator('#multilocus').fill('chr7:117504101-117504180 chr7:117504121-117504200');
+  await page.locator('#multilocus-form button').click(); await ready(page);
+  evidence.push({ overlapping: await measuredAlignment(page, 2) }); await chooseColumn(1);
+  const saved = await download(page, 'save-session');
+  await page.locator('#session-file').setInputFiles({ name: 'session.json', mimeType: 'application/json', buffer: saved });
+  await page.waitForURL(url => url.searchParams.has('manifest')); await ready(page);
+  await expect(page.locator('#locus-pane')).toHaveValue('1');
+  await addAlignmentMarkers(page); evidence.push({ restored: await measuredAlignment(page, 2) });
+  await page.locator('#igv-browser .igv-multi-locus-close-button').nth(1).click(); await ready(page);
+  await expect(page.locator('#locus-pane option')).toHaveCount(1);
+  evidence.push({ singleRegion: await measuredAlignment(page, 1) });
+  await test.info().attach('multi-region-alignment.json', { body: JSON.stringify(evidence, null, 2), contentType: 'application/json' });
 });

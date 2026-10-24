@@ -64,7 +64,7 @@ export class Decoder {
     return new Promise((resolve, reject) => {
       if (signal?.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
       const id = ++this.serial;
-      const abort = () => { this.pending.delete(id); reject(new DOMException('Aborted', 'AbortError')); };
+      const abort = () => { this.pending.delete(id); this.release(id); reject(new DOMException('Aborted', 'AbortError')); };
       signal?.addEventListener('abort', abort, { once: true });
       this.pending.set(id, { resolve: value => { signal?.removeEventListener('abort', abort); resolve(value as number); }, reject: e => { signal?.removeEventListener('abort', abort); reject(e); } });
       this.worker.postMessage({ id, kind: 'collect', blocks, start, end });
@@ -73,6 +73,7 @@ export class Decoder {
   query<T>(token: number, state: import('./types').BrowserState, page = 0, channel = 0, position?: number, kind = 'query'): Promise<T> {
     return new Promise((resolve,reject) => { const id = ++this.serial; this.pending.set(id,{resolve:resolve as (v:unknown)=>void,reject}); this.worker.postMessage({id,kind,token,state,page,channel,position}); });
   }
+  release(token: number | undefined) { if (token !== undefined) this.worker.postMessage({ kind: 'release', token }); }
   scan(sequence: string, query: string, offset: number, maxHits: number, signal: AbortSignal): Promise<{ positions: number[]; count: number }> {
     return new Promise((resolve, reject) => {
       if (signal.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }

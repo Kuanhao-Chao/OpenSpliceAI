@@ -63,6 +63,13 @@ menus control presentation, scaling and height; drag handles reorder tracks.
 The controls also support chromosome navigation, zoom, previous/next genes,
 multiple genomic panes, and explicit selection of the inspector's active pane.
 
+The **Exact ALT matrix and matched differences** panel follows the native IGV
+columns beneath every displayed region. Columns retain their genomic alignment
+while dragging, zooming and resizing, including on high-DPI displays. Select a
+column to inspect that pane and base. The inspector, comparison statistics and
+CSV exports follow the selected pane. Newly exposed bases are labelled as
+loading until their exact records arrive; absent predictions remain gaps.
+
 The exact table displays 100 alleles per page. Pagination does not truncate
 statistics or CSV exports. Select an allele to inspect all original gene
 annotations, source occurrences, five-decimal OpenSpliceAI values and signed
@@ -152,11 +159,14 @@ excluded. The legacy viewer preserves version-1 snapshot links.
 Core release checks
 -------------------
 
-``npm test`` runs 16 core checks for score precision, missing values, complete
-queries and published coverage. After ``npm run build``, ``npm run audit`` runs
-five production-browser workflows in each of Chromium, Firefox and WebKit.
+``npm test`` runs 22 core checks for score precision, missing values, complete
+queries, published coverage and native coordinate transforms. After
+``npm run build``, ``npm run audit`` runs seven production-browser workflows
+in each of Chromium, Firefox and WebKit.
 These cover navigation, selection, exports, sessions, data errors and usable
-phone controls. Install their runtimes with
+phone controls. Two alignment scenarios compare drawn matrix and difference
+columns with native one-base markers through navigation, resizing, high DPI
+and multiple regions, with a one-physical-pixel tolerance. Install their runtimes with
 ``npx playwright install --with-deps chromium firefox webkit`` first.
 
 The complete frontend and visual suites remain available as

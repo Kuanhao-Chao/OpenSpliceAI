@@ -21,6 +21,9 @@ https://khchao.com/OpenSpliceAI/content/genome_browser.html.
 6. Compare multiple regions, switch the inspector pane, reorder/resize native
    tracks and restore a saved session. Track presentation and marked regions
    persist; built-in data remain pinned to their manifest.
+   Each region has its own exact ALT matrix and matched-difference plot directly
+   beneath its native columns. Check alignment while dragging, zooming and
+   resizing; clicking a column selects the corresponding pane and base.
 7. Add BED, BigWig, indexed VCF, BAM or CRAM tracks. Local files stay on your
    computer and must be reselected when a saved session is reopened.
 8. Page through exact alleles and export full matching CSV. Pagination does not
@@ -56,12 +59,14 @@ Playwright target an already served build instead of starting its own server.
 
 ## Release and extended checks
 
-`npm test` runs the 16 score/coverage/query unit checks. `npm run build` creates
-the production application; `npm run audit` then runs five essential workflows
-in Chromium, Firefox and WebKit (15 checks). The browser gate uses Vite preview
+`npm test` runs 22 score/coverage/query/geometry unit checks. `npm run build` creates
+the production application; `npm run audit` then runs seven essential workflows
+in Chromium, Firefox and WebKit (21 checks). The two alignment workflows compare
+drawn columns against native one-base markers, including high DPI and multiple
+regions. The browser gate uses Vite preview
 of the built files. Phone checks exercise actual controls at 320 px.
 
-Use `npm run test:all` for all 35 frontend tests and `npm run audit:all` for the
+Use `npm run test:all` for all 41 frontend tests and `npm run audit:all` for the
 72-check audit, including themes, all viewport widths and advanced features.
 The manually triggered **Genome browser extended audit** workflow also runs
 the 32 backend tests. It is independent of Pages deployment.

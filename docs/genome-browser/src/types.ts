@@ -35,9 +35,10 @@ export interface Variant { chrom: string; pos: number; ref: string; alt: string;
 export interface DecodedBlock { chrom: string; rows: number; genes: string[]; columns: Record<string, Uint32Array | Uint8Array | Int16Array>; bytes: number }
 export interface ExactQuery {
   total: number; page: number; rows: Variant[]; top: Variant[]; selected?: Variant; atPosition: Variant[];
-  plot: { pos: Uint32Array; alt: Uint8Array; score: Float32Array; mismatch: Uint8Array; differencePos: Uint32Array; difference: Float32Array };
+  plot: ExactPlot;
   stats: { n: number; meanDifference: number | null; correlation: number | null; pixels: Uint32Array };
 }
+export interface ExactPlot { pos: Uint32Array; alt: Uint8Array; score: Float32Array; mismatch: Uint8Array; differencePos: Uint32Array; difference: Float32Array }
 export interface LoadedView { view: View; exact: boolean; variants: Variant[]; queryToken?: number; query?: ExactQuery; summaries: Summary[]; sequence: string | null; genes?: Gene[]; failed?: string }
 export interface BrowserState extends View {
   snapshot: string; model: Model; compare: boolean; theme: Theme; density: 'comfortable' | 'compact' | 'dense';

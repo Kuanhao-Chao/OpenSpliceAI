@@ -3,10 +3,11 @@ import { checksum } from './resources';
 import { GenomeEngine, type Config } from './igv';
 import { publishedCoverage } from './coverage';
 import { DataSource, summaryTotals } from './data';
-import { CHANNEL_COLORS, draw, layout, margin, type Palette } from './paint';
-import { comparisonStatistics, csvCell, exactCsv, predictionStatus, visibleVariants } from './science';
+import { DetailPanel } from './detail';
+import { layout, type Palette } from './paint';
+import { csvCell, predictionStatus } from './science';
 import { searchSequence } from './search';
-import { clampView, DEFAULT_STATE, EXACT_BP, formatView, History, orderedContigs, parseLocus, restoreState, serializeState, snapshotLink, TRACKS, variantKey } from './state';
+import { clampView, DEFAULT_STATE, formatView, History, orderedContigs, parseLocus, restoreState, serializeState, snapshotLink, TRACKS, variantKey } from './state';
 import type { BrowserState, Gene, LoadedView, Manifest, SearchHit, Variant, View } from './types';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id)! as T;
@@ -26,6 +27,7 @@ let epoch = 0, successfulEpoch = -1;
 let datasetEpoch = 0, datasetReady = false;
 let datasetRequest: AbortController | null = null;
 let engine: GenomeEngine | null = null;
+let detailPanel: DetailPanel | null = null;
 let locusTimer: ReturnType<typeof setTimeout>;
 let activePane = 0;
 let allelePage = 0, navigationId = 0, paintId = 0, hashId = 0;
@@ -62,7 +64,7 @@ function trackControls() {
   const ordered = [...state.tracks, ...TRACKS.filter(t => !state.tracks.includes(t))];
   $('track-list').innerHTML = ordered.filter(t => `${t} ${descriptions[t]}`.toLowerCase().includes(filter)).map(t => `<div class="track-item" title="${esc(descriptions[t])}"><label class="check"><input type="checkbox" data-track="${t}" ${state.tracks.includes(t) ? 'checked' : ''}/>${t}</label><button data-move="${t}" data-dir="-1" aria-label="Move ${t} up">↑</button><button data-move="${t}" data-dir="1" aria-label="Move ${t} down">↓</button><input type="number" min="32" max="240" value="${state.heights[t] || layout({ ...state, tracks: [t] })[0].height}" data-height="${t}" aria-label="${t} height in pixels" /></div>`).join('');
 }
-function paint(): Promise<void> { painting = render(); painting.catch(report); return painting; }
+function paint(): Promise<void> { detailPanel?.synchronize(); painting = render(); painting.catch(report); return painting; }
 async function render() {
   const data = loaded, revision = ++paintId;
   if (!data || wholeGenome || data.view.chrom !== state.chrom || data.view.start !== state.start || data.view.end !== state.end) return;
@@ -73,11 +75,7 @@ async function render() {
       data.query = query; allelePage = query.page;
     } catch(error) { if(revision !== paintId || loaded !== data) return; throw error; }
   }
-  const detailState = { ...state, tracks: state.tracks.filter(t => ['heatmap', 'difference'].includes(t)) };
-  const width = Math.max(280, canvas.parentElement!.clientWidth), lanes = layout(detailState), height = (lanes.at(-1)?.y || 64) + (lanes.at(-1)?.height || 0) + 42;
-  const dpr = Math.min(2, devicePixelRatio || 1);
-  canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr); canvas.style.height = `${height}px`;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw(ctx, width, detailState, data, data.genes || genes, palette());
+  detailPanel?.use(data, activePane);
   const variants = data.query?.rows || [];
   const total = data.query?.total || 0, top = data.query?.top || [], selected = data.query?.selected;
   select('variant-select').innerHTML = `<option value="">${data.exact ? `${total.toLocaleString()} alleles; showing top ${Math.min(400, total)}` : 'Zoom in for exact alleles'}</option>` + top.map(v => `<option value="${esc(variantKey(v))}">${esc(variantKey(v))} · ${esc(predictionStatus(v, state.model))}</option>`).join('');
@@ -127,8 +125,10 @@ async function navigate(view: View, changes: Partial<BrowserState> = {}, push = 
 }
 function clearLoadedView() {
   $('demo-coverage').hidden = true;
+  source?.resources.decoder.release(loaded?.queryToken);
   loaded = null; successfulEpoch = -1;
   ctx.clearRect(0, 0, canvas.width, canvas.height); renderInspector();
+  detailPanel?.synchronize();
   select('variant-select').innerHTML = '<option>Loading exact alleles…</option>';
   $('gene-details').textContent = 'Waiting for current-view data.';
   $('stats').textContent = 'Waiting for current-view data.';
@@ -141,8 +141,10 @@ function refresh(): Promise<void> {
   // Retain the previous frame with an explicit label until this generation commits.
   if (loaded) $('load-status').textContent = `Loading ${formatView(state)} · previous frame ${formatView(loaded.view)}`;
   paintOverview();
-  loading = source.load({ chrom: state.chrom, start: state.start, end: state.end }, signal).then(result => {
-    if (local !== epoch || signal.aborted) return;
+  const currentSource = source;
+  loading = currentSource.load({ chrom: state.chrom, start: state.start, end: state.end }, signal).then(result => {
+    if (local !== epoch || signal.aborted) { currentSource.resources.decoder.release(result.queryToken); return; }
+    currentSource.resources.decoder.release(loaded?.queryToken);
     loaded = result; successfulEpoch = local;
     const totals = summaryTotals(result.summaries);
     const coverage = showPublishedCoverage(state);
@@ -201,15 +203,17 @@ function paintScatter() {
   cx.globalAlpha = 1; cx.fillStyle = p.muted; cx.font = '11px system-ui'; cx.fillText('r10 delta score →', 140, 220); cx.fillText('r13', 3, 14);
   $('stats').textContent = loaded?.exact ? `${result.n.toLocaleString()} matched allele/gene pairs · mean r13−r10 ${result.meanDifference?.toFixed(5) ?? '—'} · Pearson r ${result.correlation?.toFixed(3) ?? 'undefined (no variance or no matches)'}` : 'Zoom in for exact matched allele/gene statistics. Wide-view maxima are not used as exact comparisons.';
 }
-async function inspectPosition(chrom: string,pos: number) {
+async function inspectPosition(chrom: string,pos: number,paneIndex?: number) {
   if (!datasetReady || wholeGenome) return;
-  if (!loaded || loaded.view.chrom !== chrom || pos < loaded.view.start || pos >= loaded.view.end) {
-    const pane = engine?.views.findIndex(v => v.chrom===chrom && v.start<=pos && pos<v.end) ?? -1;
+  if (paneIndex !== undefined && paneIndex !== activePane || !loaded || loaded.view.chrom !== chrom || pos < loaded.view.start || pos >= loaded.view.end) {
+    const pane = paneIndex ?? engine?.views.findIndex(v => v.chrom===chrom && v.start<=pos && pos<v.end) ?? -1;
     if (pane>=0) {activePane=pane; select('locus-pane').value=String(pane); await navigate(engine!.views[pane],{},true,false);}
     else await navigate({chrom,start:pos-100,end:pos+101},{selected:''});
   }
   if (loaded?.queryToken===undefined || successfulEpoch!==epoch) return;
+  const current = epoch;
   const query = await source.resources.decoder.query<import('./types').ExactQuery>(loaded.queryToken,structuredClone(state),allelePage,0,pos);
+  if (current !== epoch) return;
   const candidates = query.atPosition;
   if (candidates.length===1) {state.selected=variantKey(candidates[0]);updateHash();await paint();}
   else if(candidates.length>1) {
@@ -241,6 +245,7 @@ async function loadDataset(url: string, restore = true) {
   datasetRequest?.abort(); datasetRequest = new AbortController();
   const datasetSignal = datasetRequest.signal, thisDataset = ++datasetEpoch;
   datasetReady = false; nativeSession = undefined; wholeGenome = false; ++hashId;
+  detailPanel?.destroy(); detailPanel = null;
   history.clear(); clearLoadedView();
   viewRequest?.abort(); searchRequest?.abort(); epoch++; engine?.destroy(); engine = null; source?.destroy();
   $('load-status').textContent = 'Loading dataset…'; $('retry').hidden = true;
@@ -279,10 +284,10 @@ async function loadDataset(url: string, restore = true) {
     clearTimeout(locusTimer); viewRequest?.abort(); successfulEpoch = -1;
     $('load-status').textContent = 'Updating locus…';
     locusTimer = setTimeout(() => navigate(views[activePane], {}, true, false).catch(report), 120);
-  }, (chrom, pos) => {
+  }, (chrom, pos, pane) => {
     if (!datasetReady) return;
-    inspectPosition(chrom,pos).catch(report);
-  }, () => { if(!datasetReady || !engine)return;const current=engine;void current.session().then(saved=>{if(engine!==current||!datasetReady)return;nativeSession=saved;for(const t of saved.tracks as Config[]){const id=String(t.id||'').replace('osai-','');if(TRACKS.includes(id as never)&&typeof t.height==='number')state.heights[id]=t.height;}trackControls();updateHash(false);}).catch(report); });
+    inspectPosition(chrom,pos,pane).catch(report);
+  }, () => { if(!datasetReady || !engine)return;const current=engine;void current.session().then(saved=>{if(engine!==current||!datasetReady)return;nativeSession=saved;for(const t of saved.tracks as Config[]){const id=String(t.id||'').replace('osai-','');if(TRACKS.includes(id as never)&&typeof t.height==='number')state.heights[id]=t.height;}trackControls();updateHash(false);}).catch(report); }, () => detailPanel?.synchronize());
   const saved = new URLSearchParams(location.hash.slice(1)).get('igv');
   await engine.create(state, saved ? JSON.parse(saved) : undefined);
   activePane = Math.min(Number(new URLSearchParams(location.hash.slice(1)).get('pane')) || 0,Math.max(0,engine.views.length-1));
@@ -290,6 +295,8 @@ async function loadDataset(url: string, restore = true) {
   select('locus-pane').value = String(activePane);
   if (engine.views[activePane]) state = {...state,...clampView(engine.views[activePane],manifest.contigs)};
   else if(saved && JSON.parse(saved).locus?.includes('all')) wholeGenome=true;
+  detailPanel = new DetailPanel(canvas, source, () => engine?.geometry() || [], () => state, palette,
+    (pane, position) => inspectPosition(pane.chrom, position, pane.index), report);
   datasetReady = true; syncControls(); history.push(state); updateHash(false); if(wholeGenome){clearLoadedView();$('view-label').textContent='Whole genome';$('load-status').textContent='Whole-genome overview · choose a chromosome for exact alleles';$<HTMLButtonElement>('csv').disabled=true;}else await refresh();
 }
 
@@ -318,7 +325,7 @@ $('track-list').addEventListener('click', e => { const b = (e.target as HTMLElem
 select('variant-select').addEventListener('change', () => { state.selected = select('variant-select').value; updateHash(); paint(); });
 $('variant-details').addEventListener('click', e => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-site]'); if (b) { const site = Number(b.dataset.site) - 1; navigate({ chrom: state.chrom, start: site - 80, end: site + 81 }).catch(report); } });
 $('gene-details').addEventListener('click', e => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-exon-start]'); if (b) navigate({ chrom: state.chrom, start: Number(b.dataset.exonStart) - 70, end: Number(b.dataset.exonEnd) + 70 }, { selected: '' }).catch(report); });
-on('retry', () => datasetReady ? refresh() : catalog.length ? loadDataset((catalog.find(c => c.id === select('dataset').value) || catalog[0]).manifest) : initialize());
+on('retry', () => { detailPanel?.retry(); return datasetReady ? refresh() : catalog.length ? loadDataset((catalog.find(c => c.id === select('dataset').value) || catalog[0]).manifest) : initialize(); });
 on('back', async () => { const s = history.back(); if (s) { state = s; await navigate(s, {}, false); } });
 on('forward', async () => { const s = history.forward(); if (s) { state = s; await navigate(s, {}, false); } });
 const shift = (fraction: number) => navigate({ ...state, start: state.start + (state.end - state.start) * fraction, end: state.end + (state.end - state.start) * fraction });
@@ -352,11 +359,6 @@ on('summary-csv', () => stableExport((data,metadata) => { const rows: unknown[][
 select('stats-event').addEventListener('change', () => { if (loaded) paint(); });
 $('genome-overview').addEventListener('click', e => { const c = orderedContigs(source.manifest.contigs).filter(c => /^chr(\d+|X|Y|M)$/.test(c.name)), target = c[Math.min(c.length - 1, Math.floor((e.offsetX / $<HTMLCanvasElement>('genome-overview').clientWidth) * c.length))]; if (target) navigate({ chrom: target.name, start: 0, end: target.length }).catch(report); });
 $('minimap').addEventListener('click', e => { const length = source.manifest.contigs.find(c => c.name === state.chrom)!.length, center = e.offsetX / $<HTMLCanvasElement>('minimap').clientWidth * length, span = state.end - state.start; navigate({ chrom: state.chrom, start: center - span / 2, end: center + span / 2 }).catch(report); });
-canvas.addEventListener('click', e => {
-  if (!loaded?.exact) return;
-  const rect = canvas.getBoundingClientRect(), pos = Math.round(state.start + (e.clientX - rect.left - margin(rect.width)) / (rect.width - margin(rect.width) - 14) * (state.end - state.start));
-  inspectPosition(state.chrom,pos).catch(report);
-});
 $('browser').addEventListener('keydown', e => { if (!(e instanceof KeyboardEvent) || e.target !== $('browser')) return; if (['ArrowLeft', 'ArrowRight', '+', '=', '-', 'r', 'R'].includes(e.key)) e.preventDefault(); if (e.key === 'ArrowLeft') shift(-0.2).catch(report); if (e.key === 'ArrowRight') shift(0.2).catch(report); if (e.key === '+' || e.key === '=') zoom(0.5).catch(report); if (e.key === '-') zoom(2).catch(report); if (e.key.toLowerCase() === 'r') { state.roi = { chrom: state.chrom, start: state.start, end: state.end }; updateHash(); paint(); } });
 $('sequence-form').addEventListener('submit', e => { e.preventDefault(); searchRequest?.abort(); searchRequest = new AbortController(); const signal = searchRequest.signal;
   const scope = select('sequence-scope').value; let requested: View | 'chromosome' | 'genome' = scope === 'genome' ? 'genome' : scope === 'chromosome' ? 'chromosome' : { chrom: state.chrom, start: state.start, end: state.end };
@@ -391,8 +393,7 @@ on('roi-bed', async () => { const rois = await engine!.rois(); const rows = rois
 $('add-track-form').addEventListener('submit', e => { e.preventDefault(); engine?.loadTrack(input('track-url').value, input('track-index').value || undefined).then(() => { $('track-status').textContent = 'Track loaded'; }).catch(report); });
 input('track-files').addEventListener('change', async () => { try { const files = [...(input('track-files').files || [])]; const indexes = files.filter(f => /\.(bai|crai|tbi|csi|idx)$/i.test(f.name)); for (const file of files.filter(f => !indexes.includes(f))) { const index = indexes.find(i => i.name.startsWith(file.name) || i.name.replace(/\.(bai|crai)$/, '') === file.name.replace(/\.(bam|cram)$/, '')); await engine?.loadTrack(file, index); } $('track-status').textContent = 'Local tracks loaded; reselect these files after restoring a session'; } catch (error) { report(error); } });
 window.addEventListener('hashchange', () => { if (!source) return; try { const restored = restoreState(location.hash, state, source.manifest.contigs); if (restored.snapshot !== source.manifest.id) throw new Error('Shared link requires another dataset snapshot'); state = restored; navigate(restored).catch(report); } catch (error) { report(error); } });
-new ResizeObserver(() => paint()).observe(canvas.parentElement!);
-window.addEventListener('pagehide', () => { viewRequest?.abort(); searchRequest?.abort(); engine?.destroy(); source?.destroy(); });
+window.addEventListener('pagehide', () => { viewRequest?.abort(); searchRequest?.abort(); detailPanel?.destroy(); engine?.destroy(); source?.destroy(); });
 initialize().catch(error => { if (error.name === 'AbortError') return; $('dataset-note').classList.add('error'); $('dataset-note').textContent = error.message; report(error); });
 
 input('roi-file').addEventListener('change',async()=>{try{

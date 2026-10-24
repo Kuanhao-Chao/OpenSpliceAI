@@ -3,11 +3,13 @@ import type { BrowserState, Descriptor, Model, View } from './types';
 import type { DataSource } from './data';
 import { EVENTS } from './types';
 import { formatView } from './state';
+import type { PaneGeometry } from './viewport';
 
 export type Config = Record<string, unknown>;
 type Track = { id: string; type: string; name: string; order: number; height?: number; reversed?: boolean; frameTranslate?: boolean; getState?(): Config; config: Config;
   trackView: { setTrackHeight(height: number, force: boolean): void } };
-type Frame = { chr: string; start: number; end: number };
+type Frame = { id: string; chr: string; start: number; end: number; bpPerPixel: number };
+type NativeCanvas = HTMLCanvasElement & { _data?: { referenceFrame: Frame; bpStart: number; bpPerPixel: number } };
 interface Engine {
   on(event: string, handler: (...args: never[]) => unknown): void;
   search(locus: string): Promise<void>; loadTrack(config: Config): Promise<Track>;
@@ -34,16 +36,19 @@ export class GenomeEngine {
   private presentationTimer?: ReturnType<typeof setTimeout>;
   private restored = new Map<string, Config>();
   private lastState?: BrowserState;
+  private geometryFrame = 0;
+  private resizeObserver?: ResizeObserver;
+  private mutationObserver?: MutationObserver;
   views: View[] = [];
   constructor(private source: DataSource, private element: HTMLElement,
-    private onLoci: (views: View[]) => void, private onPosition: (chrom: string, pos: number) => void,
-    private onPresentation: () => void = () => {}) {}
+    private onLoci: (views: View[]) => void, private onPosition: (chrom: string, pos: number, pane: number) => void,
+    private onPresentation: () => void = () => {}, private onGeometry: () => void = () => {}) {}
 
   private enqueue(action: () => Promise<void>) {
     const run = this.pending.catch(() => {}).then(async () => {
       if (this.disposed) return;
       this.updating++;
-      try { await action(); } finally { this.updating--; }
+      try { await action(); } finally { this.updating--; this.geometryChanged(); }
     });
     this.pending = run; return run;
   }
@@ -106,6 +111,7 @@ export class GenomeEngine {
       await rawSearch(terms.join(' '));
     };
     this.browser.on('locuschange', ((frames: Frame[]) => {
+      this.geometryChanged();
       const views = frames.filter(f => f.chr !== 'all').map(f => ({ chrom: f.chr, start: Math.max(0, Math.floor(f.start)), end: Math.ceil(f.end) }));
       const changed = JSON.stringify(views) !== JSON.stringify(this.views); this.views = views;
       if (!this.updating && changed) this.onLoci(views);
@@ -115,10 +121,20 @@ export class GenomeEngine {
     this.browser.on('trackclick', ((track: Track, _popup: unknown, pos: number, features?: { chr?: string }[]) => {
       if (!track.id?.startsWith('osai-') || track.type === 'annotation' || track.type === 'sequence') return;
       const chrom = features?.find(f => f.chr)?.chr || this.views[this.pointerPane]?.chrom;
-      if (chrom && Number.isFinite(pos)) this.onPosition(chrom, Math.floor(pos));
+      if (chrom && Number.isFinite(pos)) this.onPosition(chrom, Math.floor(pos), this.pointerPane);
       return false;
     }) as never);
     this.browser.on('trackorderchanged', (() => { if (!this.updating) this.onPresentation(); }) as never);
+    this.browser.on('trackdrag', this.geometryChanged as never);
+    this.browser.on('trackdragend', this.geometryChanged as never);
+    this.resizeObserver = new ResizeObserver(this.geometryChanged);
+    this.resizeObserver.observe(this.element);
+    const columns = this.element.shadowRoot?.querySelector('.igv-column-container');
+    if (columns) {
+      // Native repaint replaces canvases after async track loads, independently of locuschange.
+      this.mutationObserver = new MutationObserver(this.geometryChanged);
+      this.mutationObserver.observe(columns, { childList: true, subtree: true });
+    }
     if (Array.isArray(saved?.tracks)) this.restored = new Map((saved.tracks as Config[]).map((t,i) => {const id=String(t.id || (t.type==='sequence'?'osai-reference':`user-saved-${i}`));return [id,{...t,id}];}));
     await this.sync(state);
     for (const track of this.restored.values()) {
@@ -130,11 +146,33 @@ export class GenomeEngine {
     this.restored.clear();
     this.views=this.browser.referenceFrameList.filter(f=>f.chr!=='all').map(f=>({chrom:f.chr,start:Math.max(0,Math.floor(f.start)),end:Math.ceil(f.end)}));
     this.element.dataset.ready = 'true';
+    this.geometryChanged();
+  }
+  private geometryChanged = () => {
+    if (this.disposed || this.geometryFrame) return;
+    this.geometryFrame = requestAnimationFrame(() => { this.geometryFrame = 0; if (!this.disposed) this.onGeometry(); });
+  };
+  geometry(): PaneGeometry[] {
+    if (!this.browser) return [];
+    const columns = this.element.shadowRoot?.querySelectorAll<HTMLElement>('.igv-column');
+    return this.browser.referenceFrameList.flatMap((frame, index) => {
+      if (frame.chr === 'all' || !columns?.[index]) return [];
+      const column = columns[index];
+      const canvas = [...column.querySelectorAll<NativeCanvas>('.igv-viewport canvas')].find(c =>
+        c._data?.referenceFrame === frame && c._data.bpPerPixel === frame.bpPerPixel);
+      const viewport = canvas?.closest<HTMLElement>('.igv-viewport');
+      const rect = (viewport || column).getBoundingClientRect();
+      const left = rect.left + (viewport?.clientLeft || 0);
+      return [{ id: frame.id, index, chrom: frame.chr, start: frame.start, end: frame.end,
+        bpPerPixel: frame.bpPerPixel, left, width: viewport?.clientWidth ?? column.clientWidth,
+        originBase: canvas?._data?.bpStart ?? frame.start,
+        originPixel: canvas ? canvas.getBoundingClientRect().left - left : 0, ready: !!canvas }];
+    });
   }
   private rememberPresentation = () => {clearTimeout(this.presentationTimer);this.presentationTimer=setTimeout(()=>{if(!this.disposed&&!this.updating)this.onPresentation();},200);};
   private rememberPane = (event: Event) => {
-    const column = (event.target as Element).closest('.igv-column');
-    const index = Array.from(this.element.querySelectorAll('.igv-column')).indexOf(column!);
+    const column = event.composedPath().find(node => node instanceof Element && node.classList.contains('igv-column'));
+    const index = Array.from(this.element.shadowRoot?.querySelectorAll('.igv-column') || []).indexOf(column as Element);
     if (index >= 0) this.pointerPane = index;
   };
   sync(state: BrowserState) {
@@ -201,5 +239,5 @@ export class GenomeEngine {
   importRois(features: {chr:string;start:number;end:number;name?:string}[]) {return this.enqueue(()=>this.browser.loadROI([{name:'Imported regions',features,color:'rgba(15,156,136,0.18)'}]));}
   private loadTrackConfig(config: Config) { if(typeof config.id!=='string')config={...config,id:`user-${crypto.randomUUID()}`};return this.enqueue(async () => { const track=await this.browser.loadTrack(config);track.id=String(config.id);track.config.id=track.id; }).then(()=>this.onPresentation()); }
   loadTrack(url: string | File, index?: string | File) { return this.loadTrackConfig({ url, indexURL: index, name: typeof url === 'string' ? url.split('/').at(-1) : url.name }); }
-  destroy() { this.disposed = true;clearTimeout(this.presentationTimer);delete this.element.dataset.ready;this.element.removeEventListener('pointerup',this.rememberPresentation); this.element.removeEventListener('pointerdown',this.rememberPane); if (this.browser) igv.removeBrowser(this.browser as unknown as Parameters<typeof igv.removeBrowser>[0]); this.files.clear(); }
+  destroy() { this.disposed = true;clearTimeout(this.presentationTimer);cancelAnimationFrame(this.geometryFrame);this.resizeObserver?.disconnect();this.mutationObserver?.disconnect();delete this.element.dataset.ready;this.element.removeEventListener('pointerup',this.rememberPresentation); this.element.removeEventListener('pointerdown',this.rememberPane); if (this.browser) igv.removeBrowser(this.browser as unknown as Parameters<typeof igv.removeBrowser>[0]); this.files.clear(); }
 }
