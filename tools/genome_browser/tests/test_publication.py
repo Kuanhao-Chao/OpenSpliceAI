@@ -5,7 +5,7 @@ from pathlib import Path
 
 from tools.genome_browser.build import file_sha
 from tools.genome_browser.hosting import verify
-from tools.genome_browser.publication import publication_plan
+from tools.genome_browser.publication import publication_plan, export_snapshot
 
 
 class PublicationTests(unittest.TestCase):
@@ -56,3 +56,17 @@ class PublicationTests(unittest.TestCase):
         self.manifest['files'] = [original, original]; self.save()
         with self.assertRaisesRegex(ValueError, 'safe relative'):
             verify(self.snapshot)
+
+    def test_export_contains_only_authenticated_inventory(self):
+        (self.snapshot/'preparation.sqlite').write_text('private source paths')
+        output=self.root/'public'
+        export_snapshot(self.snapshot,output)
+        self.assertEqual({p.name for p in output.iterdir()},{'manifest.json','scores-0000.pack'})
+        self.assertTrue(verify(output)['passed'])
+        with self.assertRaisesRegex(ValueError,'must be empty'): export_snapshot(self.snapshot,output)
+
+    def test_full_collection_requires_release_gate_before_export_or_inventory(self):
+        self.manifest['scope']='source-collection';self.save()
+        with self.assertRaisesRegex(ValueError,'release verification'):export_snapshot(self.snapshot,self.root/'public')
+        with self.assertRaisesRegex(ValueError,'release verification'):publication_plan(self.snapshot,'https://institution.example/data/',self.root/'plan')
+        self.assertFalse((self.root/'public').exists())

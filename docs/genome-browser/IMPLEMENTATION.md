@@ -1,83 +1,71 @@
-# Human genome browser implementation
+# IGV browser implementation
 
-The browser is a standalone TypeScript application built for
-`/OpenSpliceAI/genome/` by the existing Sphinx documentation build. It follows the
-yeast browser's navigation, tracks, themes, sequence search, figure export and
-mobile interactions. Its measurements are the existing variant delta scores;
-no additional inference is performed.
+The approved browser uses pinned IGV.js 3.8.9 for native dragging, ruler zoom and
+selection, track presentation, multiple panes and local or URL tracks. Exact
+source annotations remain in lossless OSGB1 packs. Worker queries return
+100-row pages and compact plot buffers; full CSV and statistics use the complete
+matching collection.
 
-## Data and publication contract
+Exact ALT and matched-difference columns follow each native IGV viewport. The
+geometry adapter reads fractional reference frames and translated canvases
+through IGV's open Shadow DOM; drawing and base selection share that transform.
+Pixel ratios use the actual canvas backing dimensions, with borders on its
+wrapper. Labels occupy the native axis gutter rather than shifting score cells.
+Cached absolute positions reproject on animation frames during dragging. New
+edge bases remain blank and labelled while their bounded data requests load.
 
-* GRCh38.p14 reference, the scoring annotation's exons and strand, single-model
-  rs10 and rs13 results, and the original masked SpliceAI annotation.
-* Complete rs10 is the default. rs13 is a frozen, audited preview until a final
-  full-content audit permits promotion. A filename alone never establishes
-  acceptance. Preview gaps, missing annotations, measured zero and positions
-  outside the source collection are separate states.
-* Lossless integer DS (scale 100000) and signed DP, per-annotation gene symbols,
-  original row identities, duplicate occurrences and reference-match flags.
-  Genomic affected-site coordinates are POS + DP on either strand.
-* Independent gzip blocks in indexed packed files; summaries serve wide views,
-  while byte ranges fetch exact scores near a variant. No per-base files.
-* Metadata and file hashes identify immutable snapshots. The manifest is
-  published last. Hosting must provide HTTPS, byte ranges and CORS for khchao.com.
-  The institutional URL is configurable; paid services are not required.
+Each pane owns its exact-query handle. Two background loads can run concurrently,
+sharing the resource cache; background collections are released after producing
+plot arrays. The selected pane retains its collection for inspection, statistics
+and CSV. Replacing or closing views releases their handles. Pane selection uses
+composed pointer-event paths, including overlapping loci on one chromosome.
 
-## Acceptance checklist
+The default expanded demonstration contains ten scored intervals and 67,579
+source occurrences. CFTR, HBB, BRCA1 and BRCA2 add four 2,048-base splice-junction
+windows across both strands. Existing examples, reference-only mitochondrial
+search and earlier immutable snapshots remain available. Manifest-driven
+bookmarks identify scored windows; merged interval coverage distinguishes fully
+published, partially published and unavailable views. A gene search can show
+more context than a demonstration window.
 
-- [x] Streaming, resumable data preparation and source-content checks
-- [x] Real-data review subset with honest coverage and dataset labels
-- [x] Lossless Python/TypeScript decoding and edge-case tests
-- [x] Main/alternative contigs, gene/region/variant navigation and MANE features
-- [x] Four DS tracks, alternate-allele heatmap, comparison and variant inspector
-- [x] Coverage overview, reference, ROI, history and complete shared state
-- [x] IUPAC sequence search on both strands, with cancellation and a static index
-- [x] Six themes, mobile controls, keyboard and accessible alternatives
-- [x] Stable PNG/SVG, exact CSV and separately labelled summary CSV exports
-- [x] Bounded cache, workers, range validation, explicit failures and retry
-- [x] Sphinx integration, CI, documentation and publication checks
-- [x] Chromium/Firefox audits and captured validation evidence
-- [x] WebKit acceptance on the Ubuntu CI host
-- [ ] Completed genome-wide score/reference packaging and final content verification
-- [ ] Institutional upload, endpoint probe and genome-wide catalog activation
+Version-2 sessions pin the manifest URL and SHA-256 and preserve loci, the active
+pane, presentation and regions. Built-in scientific tracks retain pinned data
+identities while accepting presentation changes. Local user tracks serialize as
+reselection placeholders. The archived viewer preserves version-1 links.
 
-These checked items describe implemented and tested features. They do not
-assert that all genome-wide preparation or live publication has finished.
-See [validation/results.json](validation/results.json) for measured evidence.
+Conversion verifies lossless DS/DP, annotation and source identities; native
+tracks reduce REF-matching canonical alleles while preserving recorded zero and
+missing states. The expanded selection is reproducible from
+`tools/genome_browser/recipes/demo-expanded-v4.json`. Its source census and every
+native plotted value are checked against the audited VCFs. Only authenticated
+manifest-listed files are copied into the public snapshot.
 
-## Preparation started on October 10
+Both final source models completed processing; each has 3,271,090,620 predictions
+among 3,339,752,304 distinct canonical input SNVs. The 68,661,684 absent
+predictions stay absent. Source occurrences and annotation entries are not
+relabeled unique variants. GENCODE v24 supplies scoring genes; MANE describes
+training. Historical provenance remains explicit.
 
-The frozen run is `grch38-r10-r13preview-20261010T184032Z`. Its preview accepts
-92,294 chunks, including 390 freshly content-verified receipt-bound worker
-passes. Later scoring progress belongs to a subsequent immutable snapshot.
+Full browser-data packaging is independent of this demonstration release. The
+existing frozen jobs retain their code and allocations. Readiness requires
+receipts bound to the full dataset, including final census and content checks;
+intermediate packs or a queued continuation do not establish completion. Large
+full data remain outside Git/GitHub Pages and require an indexed HTTPS host.
 
-| Job | Role | CPUs | RAM | Time limit | Dependency |
-| --- | --- | ---: | ---: | --- | --- |
-| 31847915 | Score conversion | 2 | 8 GiB | 48 h | None |
-| 31847916 | Reference and FM indexes | 2 | 16 GiB | 24 h | None |
-| 31847939 | Score checkpoint continuation | 2 | 8 GiB | 48 h | After 31847915 ends |
-| 31847942 | Score checkpoint continuation | 2 | 8 GiB | 48 h | After 31847939 ends |
-| 31847952 | Attach reference and verify public files | 1 | 4 GiB | 2 h | Both paths succeed |
+`validation/results.json` records measured release checks and immutable dataset
+identities. `LOCAL_REVIEW.md` describes feature checks and local validation.
 
-All use `ssalzbe1_bigmem`/`bigmem` and zero GPUs. The concurrent request is
-4 CPUs and 24 GiB RAM. Slurm reports billing=2 for each two-CPU job. The
-configured maximum is 338 CPU billing hours across all five jobs; completed
-score continuations exit immediately, so this ceiling is not a cost forecast.
-Reference/search preparation completed successfully for all 705 contigs in
-19m27s, producing 2,671,966,163 public data bytes. It used 0.6483 CPU billing
-hours and peaked at 3.38 GiB RAM. Score preparation continues with 2 CPUs and
-8 GiB; checkpoint continuations and final verification remain dependent jobs.
-The measured small-sample estimate is 30–65 score-conversion wall hours with
-two workers, approximately 50 GB of score packs, plus reference/search data
-and verification. Queue time and source I/O remain uncertain.
+## Focused release validation
 
-The initial failed preparation attempt wrote no score packs. Its quota-table
-parser was corrected and tested; this new run leaves the failed evidence
-intact. The running code and audit inputs are copied into the run directory,
-so subsequent repository work cannot change the executing jobs. Source-control
-review uses an isolated worktree and leaves the scoring checkout's HEAD alone.
+Pages uses 22 scientific/query/coverage/geometry unit checks, all public snapshot hashes,
+TypeScript and production/Sphinx builds, local links, and seven core workflows
+per browser (21 checks across Chromium, Firefox and WebKit). Two focused
+alignment scenarios compare actual Canvas2D columns with native one-base
+bedGraph markers to a one-physical-pixel tolerance, including pan, zoom,
+responsive layout, high DPI, multiple loci and session restoration. The browser gate
+serves the production bundle with Vite preview. Core phone checks verify usable
+controls at 320 px; global scroll-area geometry stays in the extended audit.
 
-Full-data preparation reads the existing VCFs without changing them and uses
-CPUs only. It does not cancel, resubmit or change any r13 scoring job. The review
-subset is not described as a genome-wide publication. Live deployment depends
-on the institutional host details and completed data verification.
+All 41 frontend tests, 72 broader browser checks and 32 data-preparation tests
+remain available through the separate manual extended-audit workflow. That
+workflow has no deployment dependency or Pages publication permission.

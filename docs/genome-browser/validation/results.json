@@ -1,197 +1,434 @@
 {
-  "baseCommit": "b3a8f1caa75f15c43de03ec95853f25c4d016bb5",
+  "recordedUtc": "2026-10-24T18:01:49.990459+00:00",
+  "phase": "column-alignment core release validated; deployment pending",
+  "baseCommit": "13ff432c211d0871eec27a1884d59df0a99df5eb",
+  "implementationCommit": "ff8f39b121f2a2b70c0fb18aaaf7be256830a999",
   "checks": {
-    "browser": {
-      "chromium": {
-        "passed": 10,
-        "version": "145.0.7632.6"
-      },
-      "firefox": {
-        "passed": 10,
-        "version": "146.0.1"
-      },
-      "webkit": {
-        "currentSourceCi": "pending; workflow runs all three engines",
-        "local": "unavailable: host libraries missing"
-      }
-    },
     "frontendUnit": {
-      "passed": 27
+      "passed": 35,
+      "runner": "Vitest 4.1.12"
     },
+    "python": {
+      "passed": 32,
+      "skipped": 0
+    },
+    "completeBrowserSuite": {
+      "passed": 72,
+      "chromium": 24,
+      "firefox": 24,
+      "webkit": 24,
+      "unexpected": 0,
+      "flaky": 0,
+      "sourceSha256": "5a04cef630c2a6485bed2dc922acd6f5c2376401f453a666de8700edb2c2b9e5"
+    },
+    "navigationFollowUp": {
+      "passed": 18,
+      "chromium": 6,
+      "firefox": 6,
+      "webkit": 6,
+      "unexpected": 0,
+      "sourceSha256": "fc7c464b5c23e6a9578fb29478388a28eb84847d815755e91ed0fb4cd3176b54",
+      "reason": "Synchronize pane labels after programmatic jumps and collapse a multi-pane view safely."
+    },
+    "typecheck": true,
+    "productionBuild": true,
+    "sphinxWarningsAsErrors": true,
     "localDocumentationLinks": {
-      "pages": 39,
-      "passed": true,
-      "references": 2112
+      "pages": 40,
+      "references": 2115,
+      "passed": true
     },
     "npmAudit": {
-      "critical": 0,
-      "high": 0,
       "info": 0,
       "low": 0,
       "moderate": 0,
+      "high": 0,
+      "critical": 0,
       "total": 0
     },
-    "previousUbuntuCi": {
-      "browserChecks": 27,
-      "headCommit": "f140ea2ff109146c67b0f3dbaf371304034ceb34",
-      "passed": true,
-      "url": null,
-      "verifiedImplementationSourceSha256": "551340b7d92ac3f65467a0a1365a0091f09c249bc5e144397cd30914024c184e"
+    "initialDataTransfer": {
+      "encodedBytes": 1556970,
+      "budgetBytes": 2097152,
+      "excludes": "JavaScript and CSS; only requests below the immutable snapshot URL are counted."
     },
-    "productionBuild": {
-      "passed": true
+    "productionSmoke": {
+      "baseUrl": "http://127.0.0.1:4176/OpenSpliceAI/genome/",
+      "dataset": "grch38-r10-r13-final-20261023T151954Z-demo-expanded-v4",
+      "manifestSha256": "aa87d3079d1689d85ad7ef7a254ebebe696093a9e5f02db08d74580714c5e11e",
+      "sourceOccurrences": 67579,
+      "scoredRegions": 10,
+      "verifiedFiles": 61,
+      "engines": {
+        "chromium": {
+          "genes": [
+            "CFTR",
+            "HBB",
+            "BRCA1",
+            "BRCA2"
+          ],
+          "startupDataBytes": 1556970,
+          "downloads": {
+            "svg": 415289,
+            "csv": 3341153,
+            "png": 125966
+          },
+          "session": "passed",
+          "previousSnapshot": "passed",
+          "legacy": "passed",
+          "errors": [],
+          "external": []
+        },
+        "firefox": {
+          "genes": [
+            "CFTR",
+            "HBB",
+            "BRCA1",
+            "BRCA2"
+          ],
+          "startupDataBytes": 1556970,
+          "downloads": {
+            "svg": 415569,
+            "csv": 3341153,
+            "png": 126276
+          },
+          "session": "passed",
+          "previousSnapshot": "passed",
+          "legacy": "passed",
+          "errors": [],
+          "external": []
+        }
+      }
     },
-    "pythonDataUnit": {
-      "numpy": "2.4.6",
-      "passed": 23,
-      "pydivsufsort": "0.0.18",
-      "python": "3.11.9",
-      "skipped": 0
+    "publicSnapshotInventories": {
+      "verified": 5,
+      "allPassed": true
     },
-    "sphinxWarningsAsErrors": {
-      "passed": true
-    },
-    "stalePanelsRegression": {
-      "engine": "chromium",
-      "passed": true
+    "responsiveFollowUp": {
+      "passed": 24,
+      "chromium": 8,
+      "firefox": 8,
+      "webkit": 8,
+      "unexpected": 0,
+      "flaky": 0,
+      "sourceSha256": "2a9e670148665846a4e0e1463baa147a337cc14a25863158209abd28da76a2b4",
+      "reason": "Wait for fonts and asynchronous responsive layout to fit the viewport; retain the original width limit and attach element bounds on persistent overflow."
     }
   },
-  "defaultEncodedDataDownloadBytes": {
-    "chromium": 1846912,
-    "firefox": 1846912
+  "runtime": {
+    "igv": "3.8.9",
+    "playwright": "1.58.2",
+    "container": "mcr.microsoft.com/playwright:v1.58.2-noble",
+    "imageSha256": "6dc164e5c3a1d7bc4a01d0556e1e145eb56eb68c3f72c1e24d8bbcd0eae23b92",
+    "ciRunner": "ubuntu-24.04"
   },
-  "hostingCorrection": {
-    "failedViewPolicy": "Clear variant, gene and comparison panels before loading another view",
-    "fullGenomePolicy": "HTTP 206 and unchanged indexed bytes are mandatory; whole-file fallback is disabled",
-    "reason": "GitHub Pages gzip transformation invalidated Firefox range offsets",
-    "reviewPolicy": "Same-origin review files at most 1 MiB are downloaded with a body-size cap and whole-file SHA-256 verification before slicing",
-    "sharePolicy": "Shared links include the immutable manifest URL and complete state"
-  },
-  "implementationSourceHashMethod": "SHA-256 of sorted relative-path/SHA-256 JSON for app source/config/review data and tools/genome_browser; excludes generated builds and validation records",
-  "implementationSourceSha256": "3338185afb8dd081c905b9ad9f53d5d160b43d5ea22e0dff2d68a3dd3b686899",
-  "localEvidenceDirectory": "docs/genome-browser/validation/hosting-fix",
-  "pending": [
-    "genome-wide preparation and final file verification",
-    "institutional HTTPS URL and upload target",
-    "institutional endpoint probe, genome-wide catalog activation and live publication"
-  ],
-  "preparation": {
-    "GPUs": 0,
-    "account": "ssalzbe1_bigmem",
-    "concurrentCpus": 4,
-    "concurrentRamGiB": 24,
-    "estimateExcludes": [
-      "queue time",
-      "final verification"
-    ],
-    "existingScoringJobsUnchanged": [
-      31832345,
-      "31831815_1"
-    ],
-    "freshlyAcceptedPreviewChunks": 390,
-    "frozenBuilderSha256": "3f0651e127405b549f2d254242273652513f88edf90e6d1309860a13f199aefe",
-    "initialQuota": {
-      "existingPreparationFiles": 0,
-      "freeBytes": 2444588010700.8003,
-      "freeFiles": 38238,
-      "pendingPreparationFiles": 4000,
-      "preparationFileBudget": 4000,
-      "reservedScoringChunks": 7689,
-      "retainedFileMargin": 10000
-    },
-    "jobs": [
-      {
-        "cpus": 2,
-        "dependency": null,
-        "id": 31847915,
-        "limitHours": 48,
-        "ramGiB": 8,
-        "role": "scores"
-      },
-      {
-        "cpus": 2,
-        "dependency": null,
-        "id": 31847916,
-        "limitHours": 24,
-        "ramGiB": 16,
-        "role": "reference"
-      },
-      {
-        "cpus": 2,
-        "dependency": "afterany:31847915",
-        "id": 31847939,
-        "limitHours": 48,
-        "ramGiB": 8,
-        "role": "scores"
-      },
-      {
-        "cpus": 2,
-        "dependency": "afterany:31847939",
-        "id": 31847942,
-        "limitHours": 48,
-        "ramGiB": 8,
-        "role": "scores"
-      },
-      {
-        "cpus": 1,
-        "dependency": "afterok:31847942:31847916",
-        "id": 31847952,
-        "limitHours": 2,
-        "ramGiB": 4,
-        "role": "finalize"
-      }
-    ],
-    "maximumCpuBillingHours": 338,
-    "partition": "bigmem",
-    "previewAcceptedChunks": 92294,
-    "referenceCompleted": {
-      "contigs": 705,
-      "cpuBillingHours": 0.6483333333333333,
-      "elapsedSeconds": 1167,
-      "maxRssKiB": 3546188,
+  "demonstration": {
+    "id": "grch38-r10-r13-final-20261023T151954Z-demo-expanded-v4",
+    "manifestSha256": "aa87d3079d1689d85ad7ef7a254ebebe696093a9e5f02db08d74580714c5e11e",
+    "sourceOccurrences": 67579,
+    "scoredIntervals": 10,
+    "additionalSourceOccurrences": 22986,
+    "publicFiles": 61,
+    "publicBytes": 4973603,
+    "referenceContigs": 705,
+    "referenceOnlyMitochondrialSearch": true,
+    "scientificVerification": {
       "passed": true,
-      "publicBytes": 2671966163,
-      "publicFiles": 2820
+      "files": 61,
+      "bytes": 4973603,
+      "dataset": "grch38-r10-r13-final-20261023T151954Z-demo-expanded-v4",
+      "exactSourceOccurrencesCompared": 67579,
+      "nativePositionsCompared": 281430,
+      "method": "All packed source identities, DS, DP and genes compared against content-hashed final VCFs; all native values and gaps independently reduced from those VCFs.",
+      "recipeSha256": "0379aea10e6df2534b384ebfaf8e0239daafe348b68d89a3b8ca8f0b35c1dd22",
+      "sourceManifestSha256": {
+        "r10": "2122d97903d88723bd5a892f8a972cd19bc0cf066459c277885d0c6180594504",
+        "r13": "858aaa055c5208f41d50654e789ff0de16bb3f21e7639772e92fcbd80776e2a2"
+      },
+      "regions": [
+        {
+          "chrom": "chr1",
+          "start": 68990,
+          "end": 70110,
+          "label": "OR4F5 \u00b7 + strand",
+          "sourceRecords": 2751,
+          "r10PredictionRecords": 2751,
+          "r13PredictionRecords": 2751
+        },
+        {
+          "chrom": "chr1",
+          "start": 685500,
+          "end": 686900,
+          "label": "OR4F16 \u00b7 \u2212 strand",
+          "sourceRecords": 2814,
+          "r10PredictionRecords": 2814,
+          "r13PredictionRecords": 2814
+        },
+        {
+          "chrom": "chr1",
+          "start": 925400,
+          "end": 930500,
+          "label": "SAMD11 \u00b7 + strand",
+          "sourceRecords": 28140,
+          "r10PredictionRecords": 28140,
+          "r13PredictionRecords": 28140
+        },
+        {
+          "chrom": "chr2_KI270773v1_alt",
+          "start": 18500,
+          "end": 19400,
+          "label": "Alternate-contig audit \u00b7 duplicates and REF mismatch",
+          "sourceRecords": 5863,
+          "r10PredictionRecords": 0,
+          "r13PredictionRecords": 0
+        },
+        {
+          "chrom": "chr2",
+          "start": 241871200,
+          "end": 241872225,
+          "label": "Strong delta-score example \u00b7 chr2",
+          "sourceRecords": 3075,
+          "r10PredictionRecords": 3075,
+          "r13PredictionRecords": 3075
+        },
+        {
+          "chrom": "chr2",
+          "start": 241869353,
+          "end": 241870378,
+          "label": "Matched r10/r13 difference \u00b7 chr2",
+          "sourceRecords": 1950,
+          "r10PredictionRecords": 1950,
+          "r13PredictionRecords": 1950
+        },
+        {
+          "chrom": "chr7",
+          "start": 117503339,
+          "end": 117505387,
+          "label": "CFTR \u00b7 + strand \u00b7 splice junction",
+          "sourceRecords": 6144,
+          "r10PredictionRecords": 6144,
+          "r13PredictionRecords": 6144
+        },
+        {
+          "chrom": "chr11",
+          "start": 5225552,
+          "end": 5227600,
+          "label": "HBB \u00b7 \u2212 strand \u00b7 splice junction",
+          "sourceRecords": 4554,
+          "r10PredictionRecords": 4554,
+          "r13PredictionRecords": 4554
+        },
+        {
+          "chrom": "chr17",
+          "start": 43122992,
+          "end": 43125040,
+          "label": "BRCA1 \u00b7 \u2212 strand \u00b7 splice junction",
+          "sourceRecords": 6144,
+          "r10PredictionRecords": 6144,
+          "r13PredictionRecords": 6144
+        },
+        {
+          "chrom": "chr13",
+          "start": 32315503,
+          "end": 32317551,
+          "label": "BRCA2 \u00b7 + strand \u00b7 splice junction",
+          "sourceRecords": 6144,
+          "r10PredictionRecords": 6144,
+          "r13PredictionRecords": 6144
+        }
+      ]
+    }
+  },
+  "fullCollectionPreparation": {
+    "checkedAtUTC": "2026-10-24T06:19:25.522278+00:00",
+    "dataset": "grch38-r10-r13-final-20261023T151954Z",
+    "sourceScoringComplete": true,
+    "releaseReady": false,
+    "campaignVerification": false,
+    "scorePacks": {
+      "completed": 34,
+      "expected": 100,
+      "sourceOccurrences": 1167356000,
+      "expectedSourceOccurrences": 3433384833,
+      "storedBytes": 22259193379,
+      "percentOfPacks": 34.0
     },
-    "scoreCheckpoints": {
-      "classification": "Actual committed progress; extrapolation from early chr1 shards remains an estimate",
-      "completedShards": 6,
-      "estimatedWholeConversionWallHours": 36,
-      "estimatedWholePackedBytes": 60846372816.666664,
-      "expectedShards": 100,
-      "packedBytes": 3650782369,
-      "planningWallHours": [
-        30,
-        65
+    "phase": "score-pack-conversion",
+    "etaNote": "Pack conversion, native tracks, reference and final verification have different costs; pack percentage is not total-runtime percentage.",
+    "job": {
+      "jobId": "32361767",
+      "state": "RUNNING",
+      "elapsedSeconds": 53928,
+      "allocatedCpus": 8,
+      "requestedMemory": "32G",
+      "allocatedTRES": "billing=8,cpu=8,mem=32G,node=1",
+      "account": "ssalzbe1",
+      "partition": "parallel",
+      "billedUnitHours": 119.84,
+      "allocatedGpus": 0
+    }
+  },
+  "publication": {
+    "approvedOn": "2026-10-24",
+    "target": "https://khchao.com/OpenSpliceAI/genome/",
+    "guide": "https://khchao.com/OpenSpliceAI/content/genome_browser.html",
+    "workflow": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/workflows/docs.yml",
+    "note": "This file records pre-publication core evidence. The Docs workflow runs the same core production suite before deployment. Full visual and preparation audits are separately available on request.",
+    "initialCi": {
+      "url": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/runs/40076134041",
+      "conclusion": "failure",
+      "browserPassed": 71,
+      "browserFailed": 1,
+      "deployment": "skipped",
+      "failure": "WebKit responsive phone check used a fixed 150 ms delay; follow-up waits for layout readiness and passed 24 repeated resize checks."
+    },
+    "previousCiRuns": [
+      {
+        "run": 40076134041,
+        "conclusion": "failure",
+        "browserPassed": 71,
+        "browserFailed": 1,
+        "deployment": "skipped"
+      },
+      {
+        "run": 40077265211,
+        "conclusion": "failure",
+        "browserPassed": 71,
+        "browserFailed": 1,
+        "deployment": "skipped"
+      }
+    ]
+  },
+  "releaseGate": {
+    "profile": "core-v2-native-column-alignment",
+    "unitTests": 22,
+    "browserTests": 21,
+    "projects": {
+      "chromium": 7,
+      "firefox": 7,
+      "webkit": 7
+    },
+    "unexpected": 0,
+    "flaky": 0,
+    "browserElapsedSeconds": 209.41284999999996,
+    "serves": "production Vite build through Vite preview",
+    "publicSnapshotInventories": 5,
+    "snapshotVerificationUsesOnlyPythonStandardLibrary": true,
+    "typecheck": true,
+    "productionBuild": true,
+    "sphinxWarningsAsErrors": true,
+    "localDocumentationReferences": 2116,
+    "sourceSha256": "7e016a689f6bb2c090cda346a876e76ccd69cf7c9b204332909081753b614baf",
+    "coreWorkflows": [
+      "native tracks and real r10/r13 scores in all four added genes",
+      "continuous dragging, ruler zoom and selected BED regions",
+      "model comparison and exact CSV/PNG/SVG exports",
+      "multiple inspector panes and pinned session restoration",
+      "data-error recovery, coverage availability and usable 320px controls",
+      "rendered column alignment through continuous pan, ruler zoom, responsive widths and high DPI",
+      "independent multi-region alignment, overlapping-pane selection, delayed loads, native pane closure and pinned session restoration"
+    ]
+  },
+  "extendedAudit": {
+    "workflow": "genome-browser-audit.yml",
+    "trigger": "workflow_dispatch",
+    "frontendUnitTests": 41,
+    "browserChecks": 72,
+    "backendTests": 32,
+    "blocksPagesDeployment": false,
+    "knownFinding": {
+      "engine": "WebKit on hosted runner",
+      "viewportWidth": 320,
+      "documentScrollWidth": 351,
+      "capturedElementBoxesOutsideViewport": 0,
+      "check": "document-wide scroll area, retained in the extended audit"
+    }
+  },
+  "previousReleaseGate": {
+    "profile": "core-v1",
+    "unitTests": 16,
+    "browserTests": 15,
+    "projects": {
+      "chromium": 5,
+      "firefox": 5,
+      "webkit": 5
+    },
+    "unexpected": 0,
+    "flaky": 0,
+    "browserElapsedSeconds": 137.74615300000002,
+    "serves": "production Vite build through Vite preview",
+    "publicSnapshotInventories": 5,
+    "snapshotVerificationUsesOnlyPythonStandardLibrary": true,
+    "typecheck": true,
+    "productionBuild": true,
+    "sphinxWarningsAsErrors": true,
+    "localDocumentationReferences": 2116,
+    "sourceSha256": "bf26f5be1299069cd9d4a11b2cb9bec06122df9d7091ada4ae37d3ca02ad93ae",
+    "coreWorkflows": [
+      "native tracks and real r10/r13 scores in all four added genes",
+      "continuous dragging, ruler zoom and selected BED regions",
+      "model comparison and exact CSV/PNG/SVG exports",
+      "multiple inspector panes and pinned session restoration",
+      "data-error recovery, coverage availability and usable 320px controls"
+    ]
+  },
+  "historicalChecksNote": "The checks object preserves the previous demonstration release measurements and their original source hashes. The releaseGate and alignmentRelease objects record the current alignment release.",
+  "alignmentRelease": {
+    "baseCommit": "c7e73a70a0ece625bfbd600ac70ebb1c4b9ff6a9",
+    "testJob": "32445439",
+    "frontendUnitPassed": 22,
+    "browserCore": {
+      "passed": 21,
+      "unexpected": 0,
+      "flaky": 0,
+      "durationSeconds": 209.41284999999996,
+      "measurements": [
+        {
+          "browser": "chromium",
+          "scenario": "column-alignment.json",
+          "paneMeasurements": 8,
+          "maximumPhysicalPixelError": 4.284083843231201e-08
+        },
+        {
+          "browser": "chromium",
+          "scenario": "multi-region-alignment.json",
+          "paneMeasurements": 9,
+          "maximumPhysicalPixelError": 1.829647544582258e-13
+        },
+        {
+          "browser": "firefox",
+          "scenario": "column-alignment.json",
+          "paneMeasurements": 8,
+          "maximumPhysicalPixelError": 4.284083843231201e-08
+        },
+        {
+          "browser": "firefox",
+          "scenario": "multi-region-alignment.json",
+          "paneMeasurements": 9,
+          "maximumPhysicalPixelError": 1.829647544582258e-13
+        },
+        {
+          "browser": "webkit",
+          "scenario": "column-alignment.json",
+          "paneMeasurements": 8,
+          "maximumPhysicalPixelError": 8.568167686462402e-08
+        },
+        {
+          "browser": "webkit",
+          "scenario": "multi-region-alignment.json",
+          "paneMeasurements": 9,
+          "maximumPhysicalPixelError": 3.659295089164516e-13
+        }
       ],
-      "sourceOccurrences": 206004000
+      "maximumPhysicalPixelError": 8.568167686462402e-08,
+      "currentRuntimeMatchesFrozenInputs": true,
+      "sourceSha256": "7e016a689f6bb2c090cda346a876e76ccd69cf7c9b204332909081753b614baf"
     },
-    "scoreConversionEstimatedWallHours": [
-      30,
-      65
-    ],
-    "snapshot": "grch38-r10-r13preview-20261010T184032Z"
-  },
-  "productionBundles": {
-    "assets/index-CGK9BZVE.css": 8142,
-    "assets/index-skgG1RYm.js": 52710,
-    "assets/worker-A6tuPVEc.js": 2255,
-    "catalog.json": 143,
-    "index.html": 10444,
-    "settings.json": 35
-  },
-  "recordedUtc": "2026-10-10T21:07:31.444790+00:00",
-  "reviewDataset": {
-    "acceptedR13Occurrences": 39568,
-    "id": "grch38-scored-review-20261010",
-    "manifestSha256": "293d48221d545da3ee968983d9c243f75c87c6d0636406bac5d5e0ea39cda7bb",
-    "sourceOccurrences": 39568,
-    "verifiedBytes": 3511569,
-    "verifiedFiles": 38
-  },
-  "sourceFiles": 90,
-  "historyNormalization": {
-    "commitReferences": "Updated to equivalent rewritten history",
-    "githubEvidence": "Historical GitHub evidence removed; recorded test results retained"
+    "publicSnapshotInventories": 5,
+    "publicDataUnchanged": true,
+    "sphinxWarningsAsErrors": true,
+    "localDocumentationReferences": 2116,
+    "tolerancePhysicalPixels": 1,
+    "measurementMethod": "Actual Canvas2D heatmap and difference bar boundaries compared with independently loaded one-base native bedGraph markers at left, middle and right; shared application geometry helpers are not used by the oracle.",
+    "retention": "Selected-pane exact collection retained; background handles released after producing plot arrays; closed, replaced and aborted handles released."
   }
 }

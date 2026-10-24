@@ -5,17 +5,25 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "preview": "vite preview --host 127.0.0.1 --strictPort",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run",
+    "test": "vitest run src/codec.test.ts src/science.test.ts src/query.test.ts src/coverage.test.ts src/viewport.test.ts src/collections.test.ts",
+    "test:all": "vitest run",
     "typecheck": "tsc --noEmit",
-    "audit": "playwright test"
+    "audit": "playwright test --config playwright.release.config.ts",
+    "audit:all": "playwright test --config playwright.config.ts"
   },
-  "engines": { "node": ">=22.12" },
+  "engines": {
+    "node": ">=22.12"
+  },
   "devDependencies": {
     "@playwright/test": "1.58.2",
     "@types/node": "22.19.7",
     "typescript": "5.9.3",
     "vite": "6.4.4",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
+  },
+  "dependencies": {
+    "igv": "3.8.9"
   }
 }

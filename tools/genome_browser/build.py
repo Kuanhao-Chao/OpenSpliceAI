@@ -11,6 +11,7 @@ import concurrent.futures
 import gzip
 import hashlib
 import itertools
+import fcntl
 import json
 import os
 import re
@@ -53,6 +54,40 @@ def compressed_json(path, value):
 def load_manifest(path):
     with Path(path).open() as handle:
         return {int(row["chunk_id"]): row for row in csv.DictReader(handle, delimiter="\t")}
+
+
+class ManifestLookup:
+    """Disk-backed manifest; workers never retain the two 100,000-row TSVs."""
+    def __init__(self, path):
+        self.path = Path(path)
+        self.db = sqlite3.connect(str(self.path) + '.browser-index.sqlite')
+        with Path(str(self.path) + '.browser-index.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            digest = file_sha(self.path)
+            self.db.execute('CREATE TABLE IF NOT EXISTS identity (sha TEXT)')
+            self.db.execute('CREATE TABLE IF NOT EXISTS entries (id INTEGER PRIMARY KEY, row TEXT)')
+            prior = self.db.execute('SELECT sha FROM identity').fetchone()
+            if not prior or prior[0] != digest:
+                with self.db:
+                    self.db.execute('DELETE FROM entries')
+                    with self.path.open() as handle:
+                        self.db.executemany('INSERT INTO entries VALUES (?,?)',
+                            ((int(r['chunk_id']), json.dumps(r)) for r in csv.DictReader(handle, delimiter='\t')))
+                    self.db.execute('DELETE FROM identity')
+                    self.db.execute('INSERT INTO identity VALUES (?)', (digest,))
+    def __iter__(self):
+        return (r[0] for r in self.db.execute('SELECT id FROM entries ORDER BY id'))
+    def __len__(self):
+        return self.db.execute('SELECT count(*) FROM entries').fetchone()[0]
+    def get(self, key, default=None):
+        row = self.db.execute('SELECT row FROM entries WHERE id=?', (key,)).fetchone()
+        return json.loads(row[0]) if row else default
+    def __getitem__(self, key):
+        result = self.get(key)
+        if result is None: raise KeyError(key)
+        return result
+    def close(self):
+        self.db.close()
 
 
 def accepted(row):
@@ -100,8 +135,8 @@ def prepare(config_path, output, *, shard_size=None, first_shard=0, last_shard=N
         raise ValueError("snapshot configuration changed; use a new output directory")
     if not lock.exists():
         atomic(lock, (config_identity + "\n").encode())
-    r10 = load_manifest(config["r10_manifest"])
-    r13 = load_manifest(config["r13_manifest"]) if config.get("r13_manifest") else {}
+    r10 = ManifestLookup(config["r10_manifest"])
+    r13 = ManifestLookup(config["r13_manifest"]) if config.get("r13_manifest") else {}
     ids = config.get("chunks") or sorted(r10)
     if len(ids) != len(set(ids)) or ids != sorted(ids):
         raise ValueError("chunk IDs must be unique and in source order")
@@ -130,22 +165,25 @@ def prepare(config_path, output, *, shard_size=None, first_shard=0, last_shard=N
             pack_name = f"scores-{shard:04d}.pack"
             pack_path = output / (pack_name + ".partial")
             descriptors = []
-            rows, current = [], None
+            rows, current, estimated = [], None, 0
             records, r13_records = 0, 0
             closed, last_pos = set(), {}
             with pack_path.open("wb") as pack:
                 def flush():
-                    nonlocal rows
+                    nonlocal rows, estimated
                     if not rows:
                         return
                     chrom, start = current
                     raw = encode_block(chrom, start, rows)
+                    from .integrity import verify_encoding
+                    verify_encoding(raw, rows)
                     data = gzip.compress(raw, compresslevel=6, mtime=0)
                     byte_offset = pack.tell()
                     pack.write(data)
                     descriptors.append((shard, chrom, start, byte_offset, len(data), len(raw),
                                         sha256(data), canonical_json(summarize(rows, start)).decode()))
                     rows = []
+                    estimated = 0
 
                 for chunk in chunk_ids:
                     m10 = r10[chunk]
@@ -161,6 +199,8 @@ def prepare(config_path, output, *, shard_size=None, first_shard=0, last_shard=N
                             raise ValueError(f"r10/r13 row counts differ for chunk {chunk}")
                         if b and any(a[field] != b[field] for field in ("chrom", "pos", "ref", "alts")):
                             raise ValueError(f"r10/r13 source keys differ at {chunk}:{a['ordinal']}")
+                        if b and a['annotations'].get('SpliceAI', []) != b['annotations'].get('SpliceAI', []):
+                            raise ValueError(f'r10/r13 original SpliceAI annotations differ at {chunk}:{a["ordinal"]}')
                         seen += 1
                         chrom, pos = a["chrom"], a["pos"]
                         if chrom in last_pos and pos < last_pos[chrom]:
@@ -188,8 +228,11 @@ def prepare(config_path, output, *, shard_size=None, first_shard=0, last_shard=N
                             }
                             rows.append({"pos": pos, "ref": a["ref"], "alt": alt, "chunk": chunk,
                                          "ordinal": a["ordinal"], "flags": flags, "models": models})
+                            estimated += 19 + sum(32 + len(e['gene'].encode()) for entries in models.values() for e in entries)
                             records += 1
                             r13_records += has_r13
+                            if len(rows) >= 8192 or estimated >= 8 * 1048576:
+                                flush()
                     if seen != int(m10["output_records"]):
                         raise ValueError(f"r10 record count differs from audit for chunk {chunk}")
                     if has_r13 and seen != int(m13["output_records"]):
@@ -211,6 +254,8 @@ def prepare(config_path, output, *, shard_size=None, first_shard=0, last_shard=N
     finally:
         db.close()
         ref.close()
+        r10.close()
+        if isinstance(r13, ManifestLookup): r13.close()
 
 
 def prepare_parallel(config_path, output, *, workers=2, first_shard=0, last_shard=None):
@@ -236,7 +281,7 @@ def finalize(config_path, output, *, base_url="", allow_subset=False):
     config = json.loads(Path(config_path).read_text())
     output = Path(output)
     db = init_db(output / "preparation.sqlite")
-    r10 = load_manifest(config["r10_manifest"])
+    r10 = ManifestLookup(config["r10_manifest"])
     ids = config.get("chunks") or sorted(r10)
     shard_size = config.get("shard_size", 1000)
     expected = (len(ids) + shard_size - 1) // shard_size
@@ -254,34 +299,40 @@ def finalize(config_path, output, *, base_url="", allow_subset=False):
         return descriptor
 
     # Search metadata is small; exon geometry is fetched only for the current contig.
-    gene_descriptor = write_json("genes.json.gz", [{**g, "exons": []} for g in genes])
+    gene_descriptor = write_json("genes.json.gz", [[g["name"], g["chrom"], g["start"], g["end"], g["strand"]] for g in genes])
     contigs = []
     for chrom, (length, *_) in ref.contigs.items():
         windows = {}
         totals = []
+        def write_window(window, value):
+            summaries = merge_summaries(value["summaries"])
+            value["summaries"] = summaries
+            indexes[str(window)] = write_json(f"index-{chrom}-{window:03d}.json.gz", value)
+            coarse = []
+            for s in summaries:
+                c = dict(s); c["start"] = s["start"] // 1048576 * 1048576
+                c["end"] = min(c["start"] + 1048576, length); coarse.append(c)
+            totals.append(coarse)
+        indexes = {}
+        active_window = None
         for row in db.execute("SELECT start,shard,offset,length,raw_bytes,sha,summary FROM blocks WHERE chrom=? ORDER BY start,shard,offset", (chrom,)):
             start, shard, offset, compressed, raw, digest, summary = row
+            window = start // INDEX_BP
+            if active_window is not None and window != active_window:
+                write_window(active_window, windows.pop(active_window))
+            active_window = window
             item = windows.setdefault(start // INDEX_BP, {"blocks": [], "summaries": []})
             item["blocks"].append({"start": start, "end": min(start + BLOCK_BP, length),
                                    "path": f"scores-{shard:04d}.pack", "offset": offset,
                                    "bytes": compressed, "rawBytes": raw, "sha256": digest})
             item["summaries"].append(json.loads(summary))
-        indexes = {}
         for window, value in sorted(windows.items()):
-            summaries = merge_summaries(value["summaries"])
-            value["summaries"] = summaries
-            indexes[str(window)] = write_json(f"index-{chrom}-{window:03d}.json.gz", value)
-            coarse = []
-            # Overview bins are 1 Mb, with explicit source-occurrence denominators.
-            for s in summaries:
-                c = dict(s)
-                c["start"] = s["start"] // 1048576 * 1048576
-                c["end"] = min(c["start"] + 1048576, length)
-                coarse.append(c)
-            totals.append(coarse)
+            write_window(window, value)
         contig = {"name": chrom, "length": length, "indexes": indexes,
                   "overview": merge_summaries(totals)}
         features = [g for g in genes if g["chrom"] == chrom]
+        if config.get("scope") == "demonstration" and config.get("regions"):
+            features = [g for g in features if any(r["chrom"]==chrom and r["start"]<g["end"] and g["start"]<r["end"] for r in config["regions"])]
         if features:
             contig["genes"] = write_json(f"genes-{chrom}.json.gz", features)
         contigs.append(contig)
@@ -303,7 +354,7 @@ def finalize(config_path, output, *, base_url="", allow_subset=False):
                 "r13Evidence": config.get("r13_evidence", "frozen accepted audit manifest"),
                 "referenceSha256": reference_digest, "annotationSha256": annotation_digest,
                 "models": config["models"], "scoreScale": SCALE, "blockBp": BLOCK_BP,
-                "indexBp": INDEX_BP, "summaryBp": 1024, "genes": gene_descriptor,
+                "indexBp": INDEX_BP, "summaryBp": 1024, "genes": gene_descriptor, "geneFormat": "tuples-v1",
                 "contigs": contigs, "files": files, "overview": overview_descriptor,
                 "preparedShards": len(shards), "expectedShards": expected,
                 "sourceOccurrences": sum(s[4] for s in shards),
@@ -323,15 +374,17 @@ def finalize(config_path, output, *, base_url="", allow_subset=False):
         if not evidence.get("path") or not evidence.get("sha256") or file_sha(evidence["path"]) != evidence["sha256"]:
             raise ValueError("r13 promotion requires authenticated final audit evidence")
         audit = json.loads(Path(evidence["path"]).read_text())
-        m13 = load_manifest(config.get("r13_manifest", ""))
+        m13 = ManifestLookup(config.get("r13_manifest", ""))
         census = config.get("r13_distinct_scored_census", {})
         if (not audit.get("full_content") or not audit.get("completion_gate_passed") or
-                not all(accepted(m13.get(i)) for i in ids) or len(ids) != 100000 or
+                not all(accepted(m13.get(i)) for i in range(1,100001)) or len(m13) != 100000 or
                 not census.get("path") or file_sha(census["path"]) != census.get("sha256") or
                 not json.loads(Path(census["path"]).read_text()).get("passed")):
             raise ValueError("r13 promotion requires the full-domain content/provenance audit and passed distinct-scored census")
+        m13.close()
     if len(shards) != expected:
         manifest["scope"] = "preparation-subset"
     atomic(output / "manifest.json", canonical_json(manifest))
     db.close()
+    r10.close()
     return manifest

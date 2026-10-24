@@ -1,155 +1,119 @@
-# Human genome browser data
+# Genome browser data and local review
 
-This pipeline publishes the existing masked GRCh38 OpenSpliceAI SNV results.
-It performs no model inference and never changes scoring jobs or source VCFs.
-The browser source is in `docs/genome-browser`; Sphinx publishes its build
-under `/OpenSpliceAI/genome/`.
+The application uses IGV.js and final audited r10/r13 sources. No inference or
+GPU resources are required. Full browser packaging remains separate from source
+scoring completion; use the campaign verification receipts to establish readiness.
 
-## Frozen configuration
+The small default dataset is a self-contained ten-region demonstration. Every
+public file is listed and hashed in its immutable manifest. Indexed BigWigs
+support native browsing; OSGB1 packs retain exact DS/DP, genes, duplicates and
+source identities. Missing predictions are not zeros. The scoring annotation is
+GENCODE v24; the individual models were MANE-trained.
 
-Start with the configuration returned by `tools.genome_browser.review.make_config`
-and use a **new immutable ID** and output directory for a genome-wide snapshot.
-Remove `chunks`, `regions`, and `reference_review_regions`, use
-`scope: "source-collection"`, and set `shard_size: 1000`. Supply:
-
-| Field | Meaning |
-| --- | --- |
-| `r10_manifest` | Accepted full-content VCF audit TSV, including source paths, SHA-256 and record counts |
-| `r13_manifest` | Frozen accepted audit TSV; unaccepted rows are preview gaps |
-| `reference`, `reference_sha256` | Pinned indexed FASTA and authenticated reference identity |
-| `annotation`, `annotation_sha256` | Scoring annotation TSV and its identity |
-| `models` | Labels, source precision, seed and actual single-model hashes |
-| `r13_evidence` | Honest description of content, receipt-bound and legacy evidence |
-| `default_view` | 0-based half-open initial region |
-
-Keep private absolute paths in local configuration, never in a public catalog.
-Copy audit manifests to an immutable preparation directory before a full run.
-R13 preview snapshots are explicitly separate from final completion. Scored
-record counts are not distinct allele counts. Unsupported and baseline-only
-contigs remain inspectable. See [FORMAT.md](FORMAT.md) for exact semantics.
-
-## Prepare, resume and verify
+## Verified export and local serving
 
 ```bash
-python -m tools.genome_browser prepare CONFIG.json SNAPSHOT_DIR
-python -m tools.genome_browser finalize CONFIG.json SNAPSHOT_DIR
 python -m tools.genome_browser verify SNAPSHOT_DIR
+python -m tools.genome_browser export SNAPSHOT_DIR PUBLIC_DIR
+python -m tools.genome_browser serve PUBLIC_DIR \
+  --browser docs/genome-browser/dist/genome --port 8765
 ```
 
-Preparation hashes each source VCF while parsing it and checks source keys and
-row counts between models. Changed source content aborts the shard. Shards are
-committed only after their pack is flushed; interrupted `.partial` files are
-replaced on resume. The SQLite preparation index uses a few files rather than
-per-tile receipts. `--first-shard` and `--last-shard` allow bounded CPU batches.
-Use `--workers 2` within a two-CPU allocation for disjoint shard workers;
-their SQLite commits are serialized. Do not start a second independent
-preparation coordinator for the same snapshot.
-Finalization requires every configured shard unless `--allow-subset` explicitly
-marks a preparation subset. Complete file verification precedes publication.
+Open http://127.0.0.1:8765/. Export copies only manifest-listed files and requires
+an empty destination. Full source-collection exports require release verification.
+The server allowlists data files and can mount the built application on the same
+origin. Existing data-only serving remains available without --browser.
 
-The review subset can be reproduced on the data-owning machine with
-`python -m tools.genome_browser.review`. Its original VCF hashes, gene annotation
-and FASTA are checked; it is not a simulated or genome-wide result.
+## Final campaign
 
-## Reference and whole-genome motif search
-
-Install `requirements.txt` in a separate environment; scoring environments
-remain untouched. Reference blocks and a native-built paged FM index allow
-sequence searches entirely through static byte ranges:
+The frozen configuration binds accepted source manifests, their census, model
+metadata, reference and annotation. The run command authenticates the executing
+builder. Disjoint workers commit independently flushed packs to a SQLite index.
+Checkpoint adoption checks frozen code, source manifests, scientific settings,
+per-shard identities and every pack hash before rebinding it to a new release.
 
 ```bash
-OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \
-  python -m tools.genome_browser reference CONFIG.json SNAPSHOT_DIR --search
-python -m tools.genome_browser attach-reference SNAPSHOT_DIR
-python -m tools.genome_browser verify SNAPSHOT_DIR
+python -m tools.genome_browser.complete freeze REPO NEW_RUN_DIR
+python -m tools.genome_browser.complete run NEW_RUN_DIR --workers 4
 ```
 
-Construction processes one reference contig at a time. Native suffix sorting
-requires several GB for chr1; request 16 GiB and cap native threads to the
-allocated CPUs. `--contigs chrM,chr1` permits an independently resumable batch.
-Search needs every contig's index for a whole-reference query. Missing indexes
-raise a visible error instead of reporting zero hits. IUPAC N matches canonical
-A/C/G/T, not unknown reference bases. Results are bounded to 200 displayed
-strand hits; the total count is computed without locating every occurrence.
+A full run creates exact packs, summaries, 12 native score BigWigs, 3 coverage
+BigWigs, BGZF/tabix genes, paged provenance, reference and motif indexes. Native
+conversion reconciles occurrence and distinct-allele census totals. Indexed
+FASTA requires compressed-file hashes, decompressed identity and contig-length
+proof. Completion writes all-data-verified.json; an intermediate manifest alone
+is not a release. Preserve failed evidence and use a new immutable configuration
+when code or source identities change.
 
-## Resources and publication
+Use checkpointed CPU allocations on shared for small jobs; no scoring jobs are
+modified. The existing full campaign continues independently. Keep a free-space
+and inode margin; full packs are tens of GB plus native tracks and reference.
+Resource estimates must come from completed checkpoints and measured phases.
 
-Use packed files to stay within the shared filesystem's inode budget. A full
-100,000-chunk snapshot uses about 100 score packs, approximately 200 regional
-index files and five reference/search artifacts per contig. Leave room
-for the still-running r13 output VCFs and receipts. Compression ratios from
-small samples are estimates; the preparation logs report actual bytes.
-Use a CPU partition and a separate small allocation for preparation. No GPUs
-are needed. Avoid sharing or modifying the sealed scoring controller.
+## Reproduce the expanded demonstration
 
-For the existing local campaign, `python -m tools.genome_browser.jobs freeze
-REPOSITORY NEW_RUN_DIRECTORY` copies the audit inputs, preparation Python code
-and auditor into a new run. The `slurm/prepare.sbatch` launcher executes that
-frozen copy. Its score role freshly verifies worker passes before freezing the
-preview; score and reference roles then run independently. Checkpoint score
-continuations use `afterany` and skip completed work. A scientific failure
-records a failure marker and requires review before any continuation. The
-finalize role runs only after both paths succeed and verifies every public
-file. The quota guard preserves remaining scoring outputs and a file margin,
-including files already created when a preparation run resumes.
-
-The October 10 representative 12-chunk benchmark converted 396,841 source
-occurrences into 5,945,419 packed bytes in 47.82 wall seconds and 22.22 CPU
-seconds, using about 714 MiB peak RAM. Linear extrapolation gives 49.55 GB of
-score packs and 51.44 CPU hours. The estimated two-worker score run is 30–65
-wall hours; setup, audit, compression mix and shared I/O make this approximate.
-Reference/search indexes are additional. This is a preparation estimate, not
-the time required to finish model scoring. Actual Slurm allocations and files
-should replace estimates as full shards complete.
-
-The small application and review files fit in the documentation build. Full
-data belong on the existing institutional host. Before upload, configure its
-HTTPS route using the examples in `hosting/` and run local verification. Upload
-data files first, then manifest, then catalog. Catalog example:
-
-```json
-{"datasets":[{"id":"grch38-immutable-snapshot","label":"GRCh38 r10 complete / r13 preview","manifest":"https://HOST/DATA/SNAPSHOT/manifest.json"}]}
-```
-
-Set `docs/genome-browser/public/settings.json` to `{"catalogUrl":"https://HOST/DATA/catalog.json"}`.
-Require exact HTTP 206 ranges and CORS exposing `Content-Range`, and disable
-HTTP content compression of packed files. Internally gzip-compressed pages
-must retain their stored byte offsets. Validate the actual endpoint with:
+With access to the final frozen configuration and its audited source VCFs:
 
 ```bash
+python -m tools.genome_browser.complete demo FROZEN_CONFIG.json PRIVATE_OUTPUT \
+  --recipe tools/genome_browser/recipes/demo-expanded-v4.json
+python -m tools.genome_browser verify PRIVATE_OUTPUT
+python -m tools.genome_browser export PRIVATE_OUTPUT PUBLIC_OUTPUT
+```
+
+The optional recipe supplies an immutable name, sorted unique chunk IDs, labelled
+0-based half-open intervals, a contained default view and an expected source
+count. The expanded recipe preserves six earlier examples and adds compact CFTR,
+HBB, BRCA1 and BRCA2 windows: 67,579 source occurrences across ten intervals.
+Reference windows are merged independently of scored intervals. Both source
+models must have accepted evidence for every selected chunk. Omitting the recipe
+retains the original six-region builder. Use a new output directory when the
+recipe, code or inputs change. Public export omits preparation state.
+
+## Future online publication
+
+The full dataset stays outside Git and GitHub Pages. After local verification
+and approval, configure an HTTPS host with byte ranges and cross-origin headers,
+then generate an upload inventory and probe the actual endpoint:
+
+```bash
+python -m tools.genome_browser publication-plan PUBLIC_DIR \
+  https://HOST/DATA/SNAPSHOT/ PUBLICATION_PLAN_DIR
 python -m tools.genome_browser probe https://HOST/DATA/SNAPSHOT/manifest.json
 ```
 
-Generate a concrete upload inventory and checksums after verification:
-
-```bash
-python -m tools.genome_browser publication-plan SNAPSHOT_DIR \
-  https://HOST/DATA/SNAPSHOT/ PUBLICATION_PLAN_DIR
-```
-
-This creates `data-files.txt`, `checksums.sha256`, `catalog.json` and a publication
-receipt; it does not upload files. Only the manifest-listed data files belong
-in the public directory. Private configurations, audit TSVs and preparation
-SQLite files remain local. Use the verified inventory for the institutional
-host's upload method, then probe its HTTPS endpoint before switching settings.
-
-For local review, `python -m tools.genome_browser serve SNAPSHOT_DIR` supplies
-the same range/CORS contract at `http://127.0.0.1:8765/manifest.json`.
+Preserve stored bytes for indexed files. Upload data before the manifest and
+catalog. These commands do not upload or activate remote data. Full-data hosting
+is separate from the small demonstration served by GitHub Pages.
 
 ## Validation
 
+Pages verifies the published file inventory and runs the frontend core release
+suite. Full preparation tests run separately in the manually triggered **Genome
+browser extended audit** workflow. They remain available locally:
+
 ```bash
-OMP_NUM_THREADS=2 python -m unittest discover -s tools/genome_browser/tests -v
+OMP_NUM_THREADS=1 python -m unittest discover -s tools/genome_browser/tests -v
 cd docs/genome-browser
-npm ci
-npm test
+npm run test:all
 npm run build
-npx playwright install chromium firefox webkit
-npm run audit
+npm run audit:all
 ```
 
-Python tests cover lossless numbers, bounds, missing data, REF flags, hashes,
-row alignment, corrupted checkpoints and native sequence-index search. Browser
-tests cover real allele round trips, conflicts, saved state, themes, mobile
-layouts, sequence search, failed ranges and PNG/SVG/CSV exports. Ubuntu CI runs
-all three browser engines; local WebKit availability depends on host libraries.
+Tests cover exact numeric preservation, duplicates, missing/zero states, corrupt
+checkpoints, reference identity, paged motif search, safe exports and HTTP ranges.
+Browser acceptance covers native gestures, panes, sessions, local tracks, regions,
+figures, full CSV, responsive controls, cancellation and transfer budgets. WebKit
+requires its supported runtime libraries; a pinned Playwright container can run
+on CPU compute nodes without changing the Rockfish system environment.
+
+## Read-only campaign status
+
+```bash
+python -m tools.genome_browser status CAMPAIGN_DIR --job JOB_ID
+```
+
+This reports committed packs, source occurrences, bytes, phase and Slurm billing
+units without changing jobs or creating a preparation database. A pack percentage
+is not a total-runtime percentage: native tracks, reference and final verification
+follow conversion. Readiness markers must identify the configured snapshot.

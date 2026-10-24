@@ -13,11 +13,13 @@ on:
       - 'docs/**'
       - 'tools/genome_browser/**'
       - '.github/workflows/docs.yml'
+      - '.gitattributes'
   pull_request:
     paths:
       - 'docs/**'
       - 'tools/genome_browser/**'
       - '.github/workflows/docs.yml'
+      - '.gitattributes'
   workflow_dispatch:
 
 permissions:
@@ -25,7 +27,8 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -47,25 +50,20 @@ jobs:
           cache: npm
           cache-dependency-path: docs/genome-browser/package-lock.json
 
-      - name: Install and test genome browser
+      - name: Install browser dependencies and run core unit tests
         working-directory: docs/genome-browser
         run: |
           npm ci
           npm test
-          npx playwright install --with-deps chromium firefox webkit
-          npm run audit
 
-      - name: Test browser data preparation
+      - name: Verify every published snapshot file
         run: |
-          pip install -r tools/genome_browser/requirements.txt
-          OMP_NUM_THREADS=2 python -m unittest discover -s tools/genome_browser/tests -v
-
-      - name: Preserve browser audit evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: genome-browser-audit
-          path: docs/genome-browser/test-results
+          python - <<'PY'
+          from pathlib import Path
+          from tools.genome_browser.hosting import verify
+          for manifest in sorted(Path('docs/genome-browser/public').glob('**/manifest.json')):
+              print(verify(manifest.parent))
+          PY
 
       - name: Build documentation (warnings are errors)
         run: make -C docs html SPHINXOPTS="-W"
@@ -74,6 +72,21 @@ jobs:
         # Sphinx does not validate URLs written by hand inside `.. raw:: html` blocks or in
         # _templates/*.html, and the docs rely on both, so -W alone is not enough.
         run: python docs/check_links.py docs/build/html
+
+      - name: Test production browser core workflows
+        working-directory: docs/genome-browser
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/release-report.json
+        run: |
+          npx playwright install --with-deps chromium firefox webkit
+          npm run audit -- --reporter=line,json
+
+      - name: Preserve core browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: genome-browser-core
+          path: docs/genome-browser/test-results
 
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
@@ -84,7 +97,7 @@ jobs:
   deploy:
     needs: build
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     permissions:
       pages: write

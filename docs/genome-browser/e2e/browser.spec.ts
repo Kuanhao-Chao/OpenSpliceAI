@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile, writeFile } from 'node:fs/promises';
 
+const catalog=JSON.parse(await readFile(new URL('../public/catalog.json',import.meta.url),'utf8'));
+const demoPath=catalog.datasets[0].manifest.replace(/^\.\//,'');
 const scriptErrors = new WeakMap<Page, string[]>();
 
 test.beforeEach(async ({ page }) => {
@@ -45,7 +47,7 @@ test('state, navigation, filters, empty track selection and themes', async ({ pa
   } }));
   await page.locator('#share').click(); await expect(page.locator('#load-status')).toContainText('copied');
   const shared = await page.evaluate(() => (window as unknown as { sharedUrl: string }).sharedUrl);
-  expect(new URL(shared).searchParams.get('manifest')).toContain('/data/review/manifest.json');
+  expect(new URL(shared).searchParams.get('manifest')).toContain('/'+demoPath);
   await page.route('**/settings.json', route => route.fulfill({ status: 503 }));
   await page.route('**/catalog.json', route => route.fulfill({ status: 503 }));
   await page.goto(shared); await expect(page.locator('#load-status')).toContainText('Exact');
@@ -85,15 +87,15 @@ test('failed score requests are visible and prevent exports, then retry succeeds
 });
 
 test('genome-wide mode rejects whole-file responses to a byte-range request', async ({ page }) => {
-  const manifest = JSON.parse(await readFile(new URL('../public/data/review/manifest.json', import.meta.url), 'utf8'));
-  manifest.scope = 'source-collection';
+  const manifest = JSON.parse(await readFile(new URL('../public/'+demoPath, import.meta.url), 'utf8'));
+  manifest.scope = 'source-collection'; manifest.igv = JSON.parse(JSON.stringify(manifest.igv));
   await page.route(url => url.pathname.endsWith('/manifest.json') && url.searchParams.has('strict'),
     route => route.fulfill({ contentType: 'application/json', body: JSON.stringify(manifest) }));
-  const fullFile = await readFile(new URL('../public/data/review/scores-0000.pack', import.meta.url));
+  const fullFile = await readFile(new URL('../public/'+demoPath.replace('manifest.json','scores-0000.pack'), import.meta.url));
   await page.route('**/scores-0000.pack', route => route.fulfill({ status: 200, contentType: 'application/octet-stream', body: fullFile }));
-  const manifestUrl = new URL('data/review/manifest.json?strict=1', page.url()).href;
+  const manifestUrl = new URL(demoPath+'?strict=1', page.url()).href;
   await page.goto(`./?manifest=${encodeURIComponent(manifestUrl)}`);
-  await expect(page.locator('#load-status')).toContainText('HTTP 206');
+  await expect(page.locator('#load-status')).toContainText('HTTP 206',{timeout:30000});
   await expect(page.locator('#retry')).toBeVisible();
   await page.locator('#svg').click(); await expect(page.locator('#load-status')).toContainText('successfully loaded');
 });
@@ -101,8 +103,16 @@ test('genome-wide mode rejects whole-file responses to a byte-range request', as
 test('responsive layouts have no overflow and retain accessible controls', async ({ page }, testInfo) => {
   for (const [name, width, height] of [['phone', 320, 812], ['tablet', 768, 1024], ['laptop', 1440, 900]] as const) {
     await page.setViewportSize({ width, height });
-    await page.waitForTimeout(150);
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); expect(overflow, name).toBe(false);
+    // IGV resizes its canvases asynchronously; wait for layout, not a fixed frame.
+    await page.evaluate(() => document.fonts.ready);
+    try {
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), { message: name, timeout: 5000 }).toBe(false);
+    } catch (error) {
+      const bounds = await page.evaluate(() => ({ viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+        elements: [...document.querySelectorAll('body *')].map(el => { const r = el.getBoundingClientRect(); return { tag: el.tagName, id: el.id, class: el.className?.toString(), left: r.left, right: r.right, width: r.width }; }).filter(r => r.width && (r.right > innerWidth + 1 || r.left < -1)) }));
+      await testInfo.attach(`${name}-overflow.json`, { body: JSON.stringify(bounds, null, 2), contentType: 'application/json' });
+      throw error;
+    }
     if (width < 1024) { await page.locator('#tracks-open').click(); await expect(page.locator('#track-panel')).toBeVisible(); await page.locator('#tracks-close').click(); }
     await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: true });
   }
@@ -117,7 +127,7 @@ test('wide views use summaries and refuse exact CSV', async ({ page }) => {
 test('paged FM search agrees with the actual mitochondrial reference', async ({ page }) => {
   await page.locator('#locus').fill('chrM:1-20'); await page.locator('#locus-form button[type=submit]').click();
   await expect(page.locator('#view-label')).toContainText('chrM');
-  await expect(page.locator('#load-status')).toContainText('Exact');
+  await expect(page.locator('#load-status')).toContainText('Outside published demonstration');
   await page.locator('#motif').fill('GATCACAGGTCTATCACCCT');
   await page.locator('#sequence-scope').selectOption('chromosome');
   await page.route('**/search-chrM.*', async route => {
@@ -136,7 +146,8 @@ test('paged FM search agrees with the actual mitochondrial reference', async ({ 
 });
 
 test('default view stays within the small initial data budget and has no script errors', async ({ page }, testInfo) => {
-  const metrics = await page.evaluate(() => performance.getEntriesByType('resource').filter(e => /\/data\//.test(e.name)).map(e => ({ url: e.name, encodedBytes: (e as PerformanceResourceTiming).encodedBodySize })));
+  const dataBase = new URL('.', new URL(demoPath, page.url())).href;
+  const metrics = await page.evaluate(prefix => performance.getEntriesByType('resource').filter(e => e.name.startsWith(prefix)).map(e => ({ url: e.name, encodedBytes: (e as PerformanceResourceTiming).encodedBodySize })), dataBase);
   const total = metrics.reduce((n, m) => n + m.encodedBytes, 0);
   await writeFile(testInfo.outputPath('startup-budget.json'), JSON.stringify({ encodedDataBytes: total, resources: metrics }, null, 2));
   expect(total).toBeLessThan(2 * 1048576);

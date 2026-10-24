@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -11,10 +12,31 @@ from .format import canonical_json
 from .hosting import verify
 
 
+def export_snapshot(directory, output):
+    """Export an authenticated allowlist, never a preparation directory tree."""
+    directory, output = Path(directory), Path(output)
+    proof = verify(directory)
+    if output.exists() and any(output.iterdir()):
+        raise ValueError('snapshot export destination must be empty')
+    manifest = json.loads((directory / 'manifest.json').read_text())
+    if manifest.get('scope')=='source-collection' and not manifest.get('releaseVerified'):
+        raise ValueError('full snapshot has not passed its release verification gate')
+    output.mkdir(parents=True, exist_ok=True)
+    for entry in manifest['files']:
+        source, target = directory / entry['path'], output / entry['path']
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+    atomic(output / 'manifest.json', (directory / 'manifest.json').read_bytes())
+    verify(output)
+    return proof
+
+
 def publication_plan(directory, public_url, output):
     directory, output = Path(directory), Path(output)
     verification = verify(directory)
     manifest = json.loads((directory / 'manifest.json').read_text())
+    if manifest.get('scope')=='source-collection' and not manifest.get('releaseVerified'):
+        raise ValueError('full snapshot has not passed its release verification gate')
     if not re.fullmatch(r'[A-Za-z0-9._-]+', manifest['id']):
         raise ValueError('snapshot ID is not safe for a public directory')
     url = urlparse(public_url)
