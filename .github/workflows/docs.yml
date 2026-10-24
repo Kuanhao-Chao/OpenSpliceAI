@@ -59,6 +59,12 @@ jobs:
         run: |
           pip install -r tools/genome_browser/requirements.txt
           OMP_NUM_THREADS=2 python -m unittest discover -s tools/genome_browser/tests -v
+          python - <<'PY'
+          from pathlib import Path
+          from tools.genome_browser.hosting import verify
+          for manifest in sorted(Path('docs/genome-browser/public').glob('**/manifest.json')):
+              print(verify(manifest.parent))
+          PY
 
       - name: Preserve browser audit evidence
         if: always()

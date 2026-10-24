@@ -1,95 +1,267 @@
 {
-  "checkedAtUTC": "2026-10-24T05:07:43.396983+00:00",
-  "frontend": {
-    "engine": "IGV.js 3.8.9",
-    "unitTests": {
-      "passed": 31
+  "recordedUtc": "2026-10-24T07:51:22.045476+00:00",
+  "phase": "pre-publication release verification",
+  "baseCommit": "13ff432c211d0871eec27a1884d59df0a99df5eb",
+  "implementationCommit": "ff8f39b121f2a2b70c0fb18aaaf7be256830a999",
+  "checks": {
+    "frontendUnit": {
+      "passed": 35,
+      "runner": "Vitest 4.1.12"
     },
-    "browserTests": {
-      "chromium": {
-        "passed": 21
-      },
-      "firefox": {
-        "passed": 21
-      },
-      "webkit": {
-        "passed": 21,
-        "jobId": 32423922,
-        "runtime": "Playwright 1.58.2 noble",
-        "imageSha256": "6dc164e5c3a1d7bc4a01d0556e1e145eb56eb68c3f72c1e24d8bbcd0eae23b92"
+    "python": {
+      "passed": 32,
+      "skipped": 0
+    },
+    "completeBrowserSuite": {
+      "passed": 72,
+      "chromium": 24,
+      "firefox": 24,
+      "webkit": 24,
+      "unexpected": 0,
+      "flaky": 0,
+      "sourceSha256": "5a04cef630c2a6485bed2dc922acd6f5c2376401f453a666de8700edb2c2b9e5"
+    },
+    "navigationFollowUp": {
+      "passed": 18,
+      "chromium": 6,
+      "firefox": 6,
+      "webkit": 6,
+      "unexpected": 0,
+      "sourceSha256": "fc7c464b5c23e6a9578fb29478388a28eb84847d815755e91ed0fb4cd3176b54",
+      "reason": "Synchronize pane labels after programmatic jumps and collapse a multi-pane view safely."
+    },
+    "typecheck": true,
+    "productionBuild": true,
+    "sphinxWarningsAsErrors": true,
+    "localDocumentationLinks": {
+      "pages": 40,
+      "references": 2115,
+      "passed": true
+    },
+    "npmAudit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "initialDataTransfer": {
+      "encodedBytes": 1556970,
+      "budgetBytes": 2097152,
+      "excludes": "JavaScript and CSS; only requests below the immutable snapshot URL are counted."
+    },
+    "productionSmoke": {
+      "baseUrl": "http://127.0.0.1:4176/OpenSpliceAI/genome/",
+      "dataset": "grch38-r10-r13-final-20261023T151954Z-demo-expanded-v4",
+      "manifestSha256": "aa87d3079d1689d85ad7ef7a254ebebe696093a9e5f02db08d74580714c5e11e",
+      "sourceOccurrences": 67579,
+      "scoredRegions": 10,
+      "verifiedFiles": 61,
+      "engines": {
+        "chromium": {
+          "genes": [
+            "CFTR",
+            "HBB",
+            "BRCA1",
+            "BRCA2"
+          ],
+          "startupDataBytes": 1556970,
+          "downloads": {
+            "svg": 415289,
+            "csv": 3341153,
+            "png": 125966
+          },
+          "session": "passed",
+          "previousSnapshot": "passed",
+          "legacy": "passed",
+          "errors": [],
+          "external": []
+        },
+        "firefox": {
+          "genes": [
+            "CFTR",
+            "HBB",
+            "BRCA1",
+            "BRCA2"
+          ],
+          "startupDataBytes": 1556970,
+          "downloads": {
+            "svg": 415569,
+            "csv": 3341153,
+            "png": 126276
+          },
+          "session": "passed",
+          "previousSnapshot": "passed",
+          "legacy": "passed",
+          "errors": [],
+          "external": []
+        }
       }
     },
-    "typecheck": "passed",
-    "productionBuild": "passed",
-    "startupDataBytes": 1442459,
-    "allRequestsLocal": true,
-    "scriptErrors": [],
-    "stableUserTrackIds": true,
-    "testedUserFormats": [
-      "BED",
-      "BigWig",
-      "VCF+tabix",
-      "BAM+BAI",
-      "CRAM+CRAI"
-    ]
+    "publicSnapshotInventories": {
+      "verified": 5,
+      "allPassed": true
+    }
   },
-  "documentation": {
-    "sphinxWarningsAsErrors": "passed",
-    "localLinks": 2114,
-    "runner": "ubuntu-24.04"
+  "runtime": {
+    "igv": "3.8.9",
+    "playwright": "1.58.2",
+    "container": "mcr.microsoft.com/playwright:v1.58.2-noble",
+    "imageSha256": "6dc164e5c3a1d7bc4a01d0556e1e145eb56eb68c3f72c1e24d8bbcd0eae23b92",
+    "ciRunner": "ubuntu-24.04"
   },
-  "demo": {
-    "id": "grch38-r10-r13-final-20261023T204420Z-demo-v3",
-    "manifestSha256": "e73ffd3cf22184b705b1a4ec89f409c4edd7c86433df492d7d74bd1a56e72904",
-    "publicFiles": 39,
-    "publicBytes": 3016231,
-    "sourceOccurrences": 44593,
-    "scoredRegions": 6
+  "demonstration": {
+    "id": "grch38-r10-r13-final-20261023T151954Z-demo-expanded-v4",
+    "manifestSha256": "aa87d3079d1689d85ad7ef7a254ebebe696093a9e5f02db08d74580714c5e11e",
+    "sourceOccurrences": 67579,
+    "scoredIntervals": 10,
+    "additionalSourceOccurrences": 22986,
+    "publicFiles": 61,
+    "publicBytes": 4973603,
+    "referenceContigs": 705,
+    "referenceOnlyMitochondrialSearch": true,
+    "scientificVerification": {
+      "passed": true,
+      "files": 61,
+      "bytes": 4973603,
+      "dataset": "grch38-r10-r13-final-20261023T151954Z-demo-expanded-v4",
+      "exactSourceOccurrencesCompared": 67579,
+      "nativePositionsCompared": 281430,
+      "method": "All packed source identities, DS, DP and genes compared against content-hashed final VCFs; all native values and gaps independently reduced from those VCFs.",
+      "recipeSha256": "0379aea10e6df2534b384ebfaf8e0239daafe348b68d89a3b8ca8f0b35c1dd22",
+      "sourceManifestSha256": {
+        "r10": "2122d97903d88723bd5a892f8a972cd19bc0cf066459c277885d0c6180594504",
+        "r13": "858aaa055c5208f41d50654e789ff0de16bb3f21e7639772e92fcbd80776e2a2"
+      },
+      "regions": [
+        {
+          "chrom": "chr1",
+          "start": 68990,
+          "end": 70110,
+          "label": "OR4F5 · + strand",
+          "sourceRecords": 2751,
+          "r10PredictionRecords": 2751,
+          "r13PredictionRecords": 2751
+        },
+        {
+          "chrom": "chr1",
+          "start": 685500,
+          "end": 686900,
+          "label": "OR4F16 · − strand",
+          "sourceRecords": 2814,
+          "r10PredictionRecords": 2814,
+          "r13PredictionRecords": 2814
+        },
+        {
+          "chrom": "chr1",
+          "start": 925400,
+          "end": 930500,
+          "label": "SAMD11 · + strand",
+          "sourceRecords": 28140,
+          "r10PredictionRecords": 28140,
+          "r13PredictionRecords": 28140
+        },
+        {
+          "chrom": "chr2_KI270773v1_alt",
+          "start": 18500,
+          "end": 19400,
+          "label": "Alternate-contig audit · duplicates and REF mismatch",
+          "sourceRecords": 5863,
+          "r10PredictionRecords": 0,
+          "r13PredictionRecords": 0
+        },
+        {
+          "chrom": "chr2",
+          "start": 241871200,
+          "end": 241872225,
+          "label": "Strong delta-score example · chr2",
+          "sourceRecords": 3075,
+          "r10PredictionRecords": 3075,
+          "r13PredictionRecords": 3075
+        },
+        {
+          "chrom": "chr2",
+          "start": 241869353,
+          "end": 241870378,
+          "label": "Matched r10/r13 difference · chr2",
+          "sourceRecords": 1950,
+          "r10PredictionRecords": 1950,
+          "r13PredictionRecords": 1950
+        },
+        {
+          "chrom": "chr7",
+          "start": 117503339,
+          "end": 117505387,
+          "label": "CFTR · + strand · splice junction",
+          "sourceRecords": 6144,
+          "r10PredictionRecords": 6144,
+          "r13PredictionRecords": 6144
+        },
+        {
+          "chrom": "chr11",
+          "start": 5225552,
+          "end": 5227600,
+          "label": "HBB · − strand · splice junction",
+          "sourceRecords": 4554,
+          "r10PredictionRecords": 4554,
+          "r13PredictionRecords": 4554
+        },
+        {
+          "chrom": "chr17",
+          "start": 43122992,
+          "end": 43125040,
+          "label": "BRCA1 · − strand · splice junction",
+          "sourceRecords": 6144,
+          "r10PredictionRecords": 6144,
+          "r13PredictionRecords": 6144
+        },
+        {
+          "chrom": "chr13",
+          "start": 32315503,
+          "end": 32317551,
+          "label": "BRCA2 · + strand · splice junction",
+          "sourceRecords": 6144,
+          "r10PredictionRecords": 6144,
+          "r13PredictionRecords": 6144
+        }
+      ]
+    }
   },
-  "fullData": {
-    "checkedAtUTC": "2026-10-24T05:07:43.396983+00:00",
+  "fullCollectionPreparation": {
+    "checkedAtUTC": "2026-10-24T06:19:25.522278+00:00",
     "dataset": "grch38-r10-r13-final-20261023T151954Z",
     "sourceScoringComplete": true,
     "releaseReady": false,
     "campaignVerification": false,
     "scorePacks": {
-      "completed": 32,
+      "completed": 34,
       "expected": 100,
-      "sourceOccurrences": 1098688000,
+      "sourceOccurrences": 1167356000,
       "expectedSourceOccurrences": 3433384833,
-      "storedBytes": 20925599908,
-      "percentOfPacks": 32.0
+      "storedBytes": 22259193379,
+      "percentOfPacks": 34.0
     },
     "phase": "score-pack-conversion",
     "etaNote": "Pack conversion, native tracks, reference and final verification have different costs; pack percentage is not total-runtime percentage.",
     "job": {
       "jobId": "32361767",
       "state": "RUNNING",
-      "elapsedSeconds": 49626,
+      "elapsedSeconds": 53928,
       "allocatedCpus": 8,
       "requestedMemory": "32G",
       "allocatedTRES": "billing=8,cpu=8,mem=32G,node=1",
       "account": "ssalzbe1",
       "partition": "parallel",
-      "billedUnitHours": 110.28,
+      "billedUnitHours": 119.84,
       "allocatedGpus": 0
     }
   },
-  "backend": {
-    "pythonTests": {
-      "passed": 28,
-      "skipped": 0
-    }
-  },
-  "productionSmoke": {
-    "guideStatus": 200,
-    "guideHasFinalCounts": true,
-    "productionNativeCanvases": 40,
-    "productionStatus": "Exact \u00b7 5,460 source occurrences in overlapping bins",
-    "legacyStatus": "Exact \u00b7 5,460 source occurrences in overlapping bins \u00b7 r13 100.0% accepted",
-    "legacyUrl": "http://127.0.0.1:4174/OpenSpliceAI/genome/legacy/?manifest=http%3A%2F%2F127.0.0.1%3A4174%2FOpenSpliceAI%2Fgenome%2Fdata%2Freview%2Fmanifest.json",
-    "errors": []
-  },
-  "releaseState": "Approved six-region IGV review; expanded release pending",
-  "baseCommit": "13ff432c211d0871eec27a1884d59df0a99df5eb"
+  "publication": {
+    "approvedOn": "2026-10-24",
+    "target": "https://khchao.com/OpenSpliceAI/genome/",
+    "guide": "https://khchao.com/OpenSpliceAI/content/genome_browser.html",
+    "workflow": "https://github.com/Kuanhao-Chao/OpenSpliceAI/actions/workflows/docs.yml",
+    "note": "This file records pre-publication evidence. The Docs workflow repeats the complete suite before deployment; the deployment outcome is recorded for the release commit in GitHub Actions."
+  }
 }

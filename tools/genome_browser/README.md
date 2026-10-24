@@ -4,7 +4,7 @@ The application uses IGV.js and final audited r10/r13 sources. No inference or
 GPU resources are required. Full browser packaging remains separate from source
 scoring completion; use the campaign verification receipts to establish readiness.
 
-The small default dataset is a self-contained six-region demonstration. Every
+The small default dataset is a self-contained ten-region demonstration. Every
 public file is listed and hashed in its immutable manifest. Indexed BigWigs
 support native browsing; OSGB1 packs retain exact DS/DP, genes, duplicates and
 source identities. Missing predictions are not zeros. The scoring annotation is
@@ -50,6 +50,26 @@ modified. The existing full campaign continues independently. Keep a free-space
 and inode margin; full packs are tens of GB plus native tracks and reference.
 Resource estimates must come from completed checkpoints and measured phases.
 
+## Reproduce the expanded demonstration
+
+With access to the final frozen configuration and its audited source VCFs:
+
+```bash
+python -m tools.genome_browser.complete demo FROZEN_CONFIG.json PRIVATE_OUTPUT \
+  --recipe tools/genome_browser/recipes/demo-expanded-v4.json
+python -m tools.genome_browser verify PRIVATE_OUTPUT
+python -m tools.genome_browser export PRIVATE_OUTPUT PUBLIC_OUTPUT
+```
+
+The optional recipe supplies an immutable name, sorted unique chunk IDs, labelled
+0-based half-open intervals, a contained default view and an expected source
+count. The expanded recipe preserves six earlier examples and adds compact CFTR,
+HBB, BRCA1 and BRCA2 windows: 67,579 source occurrences across ten intervals.
+Reference windows are merged independently of scored intervals. Both source
+models must have accepted evidence for every selected chunk. Omitting the recipe
+retains the original six-region builder. Use a new output directory when the
+recipe, code or inputs change. Public export omits preparation state.
+
 ## Future online publication
 
 The full dataset stays outside Git and GitHub Pages. After local verification
@@ -63,8 +83,8 @@ python -m tools.genome_browser probe https://HOST/DATA/SNAPSHOT/manifest.json
 ```
 
 Preserve stored bytes for indexed files. Upload data before the manifest and
-catalog. These commands do not upload or activate remote data. Publication is
-currently deferred until feature review is complete.
+catalog. These commands do not upload or activate remote data. Full-data hosting
+is separate from the small demonstration served by GitHub Pages.
 
 ## Validation
 

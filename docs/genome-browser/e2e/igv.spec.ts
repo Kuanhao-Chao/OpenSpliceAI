@@ -1,4 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+const catalog = JSON.parse(await readFile(new URL('../public/catalog.json', import.meta.url), 'utf8'));
+const manifestPath = catalog.datasets[0].manifest.replace(/^\.\//, '');
+const manifest = JSON.parse(await readFile(new URL('../public/' + manifestPath, import.meta.url), 'utf8'));
 
 test.beforeEach(async ({ page }) => {
   await page.goto('./');
@@ -38,6 +42,12 @@ test('multiple native regions and inspector-pane selection', async ({ page }) =>
   await page.locator('#locus-pane').selectOption('1');
   await expect(page.locator('#view-label')).toContainText('69,040');
   await expect(page.locator('#load-status')).toContainText('Exact');
+  const index = manifest.bookmarks.findIndex((b: {label: string}) => b.label.startsWith('CFTR ·'));
+  await page.locator(`#example-loci [data-bookmark="${index}"]`).click();
+  await expect(page.locator('#locus-pane option')).toHaveCount(1);
+  await expect(page.locator('#locus-pane')).toHaveValue('0');
+  await expect(page.locator('#locus-pane option:checked')).toContainText('chr7:');
+  await expect(page.locator('#load-status')).toContainText('Exact');
 });
 
 test('session saves native tracks and exact snapshot identity', async ({ page }) => {
@@ -45,15 +55,65 @@ test('session saves native tracks and exact snapshot identity', async ({ page })
   const download = await waiting; const stream = await download.createReadStream(); const parts: Buffer[] = [];
   for await (const part of stream!) parts.push(part);
   const saved = JSON.parse(Buffer.concat(parts).toString());
-  expect(saved.version).toBe(2); expect(saved.manifest).toContain('/data/final-demo-');
+  expect(saved.version).toBe(2); expect(saved.manifest).toBe(new URL(manifestPath, page.url()).href);
   expect(saved.igv.tracks.length).toBeGreaterThan(4); expect(saved.state.snapshot).toContain('final');
 });
 
 test('outside-demo regions remain explicitly unavailable', async ({ page }) => {
-  await page.locator('#locus').fill('chr7:117504153-117504464');
+  const contig = manifest.contigs.find((c: {name: string}) => /^chr\d+$/.test(c.name) && !manifest.publishedIntervals.some((r: {chrom: string}) => r.chrom === c.name));
+  expect(contig).toBeTruthy();
+  await page.locator('#locus').fill(`${contig.name}:1-100`);
   await page.locator('#locus-form button[type=submit]').click();
   await expect(page.locator('#load-status')).toContainText('Outside published demonstration');
   await expect(page.locator('#variant-details')).not.toContainText('scored zero');
+  await expect(page.locator('#csv')).toBeDisabled();
+  await expect(page.locator('#summary-csv')).toBeDisabled();
+});
+
+test('four additional gene examples show both final models at exact resolution', async ({ page }) => {
+  await expect(page.locator('#dataset-note')).toContainText('10 scored regions');
+  await expect(page.locator('#example-loci button')).toHaveCount(10);
+  for (const gene of ['CFTR', 'HBB', 'BRCA1', 'BRCA2']) {
+    const index = manifest.bookmarks.findIndex((b: {label: string}) => b.label.startsWith(gene + ' ·'));
+    expect(index).toBeGreaterThanOrEqual(0);
+    const locus = manifest.bookmarks[index];
+    await page.locator(`#example-loci [data-bookmark="${index}"]`).click();
+    await expect(page.locator('#view-label')).toContainText(locus.chrom + ':');
+    await expect(page.locator('#browser')).not.toHaveClass(/loading/);
+    await expect(page.locator('#load-status')).toContainText('Exact');
+    await expect(page.locator('#demo-coverage')).toHaveAttribute('data-coverage', 'full');
+    await expect(page.locator('#gene-details')).toContainText(gene);
+    await expect(page.locator('#locus-pane option:checked')).toHaveText((await page.locator('#view-label').textContent())!);
+    const option = page.locator('#variant-select option').nth(1);
+    await expect(option).toHaveAttribute('value', /:/);
+    await page.locator('#variant-select').selectOption((await option.getAttribute('value'))!);
+    await expect(page.locator('#variant-details')).toContainText(gene);
+    await expect(page.locator('#variant-details')).toContainText('OpenSpliceAI MANE r10');
+    await expect(page.locator('#variant-details')).toContainText('OpenSpliceAI MANE r13');
+    await page.locator('#model').selectOption('r13');
+    await expect(page.locator('#csv')).toBeEnabled();
+  }
+});
+
+test('partial demonstration views identify gaps and focus a published interval', async ({ page }) => {
+  const index = manifest.bookmarks.findIndex((b: {label: string}) => b.label.startsWith('CFTR ·'));
+  const locus = manifest.bookmarks[index];
+  await page.locator('#locus').fill(`${locus.chrom}:${locus.start - 199}-${locus.end + 200}`);
+  await page.locator('#locus-form button[type=submit]').click();
+  await expect(page.locator('#load-status')).toContainText('partially covered demonstration');
+  await expect(page.locator('#demo-coverage')).toHaveAttribute('data-coverage', 'partial');
+  await expect(page.locator('#demo-coverage')).toContainText('2,048 / 2,448 bp');
+  await page.locator(`#demo-coverage [data-bookmark="${index}"]`).click();
+  await expect(page.locator('#demo-coverage')).toHaveAttribute('data-coverage', 'full');
+  await expect(page.locator('#load-status')).toContainText('Exact');
+});
+
+test('the approved six-region immutable snapshot remains available', async ({ page }) => {
+  const old = new URL('data/final-demo-20261023T204420Z-demo-v3/manifest.json', page.url()).href;
+  await page.goto(`./?manifest=${encodeURIComponent(old)}`);
+  await expect(page.locator('#load-status')).toContainText('Exact', {timeout: 30000});
+  await expect(page.locator('#dataset-note')).toContainText('6 scored regions');
+  await expect(page.locator('#example-loci button')).toHaveCount(6);
 });
 
 test('all requests remain local during demonstration navigation', async ({ page }) => {
@@ -86,7 +146,7 @@ test('whole-genome native overview exports figures and disables exact CSV',async
 
 test('multiple URL tracks keep distinct identities after a session round trip',async({page})=>{
  await page.route('**/review-url-*.bed',route=>route.fulfill({contentType:'text/plain',body:'chr1\t925900\t926000\tURL_feature\n'}));
- for(const name of ['a','b']){await page.locator('#track-url').fill(`http://127.0.0.1:4173/review-url-${name}.bed`);await page.locator('#add-track-form button').click();await expect(page.locator('#track-status')).toContainText('Track loaded');}
+ for(const name of ['a','b']){await page.locator('#track-url').fill(new URL(`review-url-${name}.bed`,page.url()).href);await page.locator('#add-track-form button').click();await expect(page.locator('#track-status')).toContainText('Track loaded');}
  const capture=async()=>{const waiting=page.waitForEvent('download');await page.locator('#save-session').click();const d=await waiting;const chunks=[];for await(const chunk of (await d.createReadStream())!)chunks.push(chunk);return Buffer.concat(chunks);};
  const content=await capture();const saved=JSON.parse(content.toString());const user=saved.igv.tracks.filter((t:{id:string})=>t.id.startsWith('user-'));expect(user).toHaveLength(2);expect(new Set(user.map((t:{id:string})=>t.id)).size).toBe(2);
  await page.locator('#session-file').setInputFiles({name:'session.json',mimeType:'application/json',buffer:content});await page.waitForURL(url=>url.searchParams.has('manifest'));await expect(page.locator('#igv-browser')).toHaveAttribute('data-ready','true',{timeout:60000});await expect(page.locator('#load-status')).toContainText('Exact',{timeout:30000});const restored=JSON.parse((await capture()).toString());expect(restored.igv.tracks.filter((t:{id:string})=>t.id.startsWith('user-')).map((t:{id:string})=>t.id).sort()).toEqual(user.map((t:{id:string})=>t.id).sort());

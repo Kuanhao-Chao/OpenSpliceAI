@@ -1,0 +1,18 @@
+{
+  "name": "expanded-v4",
+  "chunks": [1, 2, 17208, 17209, 45436, 60903, 71025, 84298],
+  "expected_source_occurrences": 67579,
+  "default_view": {"chrom": "chr1", "start": 925850, "end": 926130},
+  "regions": [
+    {"chrom": "chr1", "start": 68990, "end": 70110, "label": "OR4F5 · + strand"},
+    {"chrom": "chr1", "start": 685500, "end": 686900, "label": "OR4F16 · − strand"},
+    {"chrom": "chr1", "start": 925400, "end": 930500, "label": "SAMD11 · + strand"},
+    {"chrom": "chr2_KI270773v1_alt", "start": 18500, "end": 19400, "label": "Alternate-contig audit · duplicates and REF mismatch"},
+    {"chrom": "chr2", "start": 241871200, "end": 241872225, "label": "Strong delta-score example · chr2"},
+    {"chrom": "chr2", "start": 241869353, "end": 241870378, "label": "Matched r10/r13 difference · chr2"},
+    {"chrom": "chr7", "start": 117503339, "end": 117505387, "label": "CFTR · + strand · splice junction"},
+    {"chrom": "chr11", "start": 5225552, "end": 5227600, "label": "HBB · − strand · splice junction"},
+    {"chrom": "chr17", "start": 43122992, "end": 43125040, "label": "BRCA1 · − strand · splice junction"},
+    {"chrom": "chr13", "start": 32315503, "end": 32317551, "label": "BRCA2 · + strand · splice junction"}
+  ]
+}

@@ -1,38 +1,42 @@
-# IGV browser implementation and local review
+# IGV browser implementation
 
-This work remains uncommitted and unpublished. The source is isolated from the
-scoring checkout. The public website still serves the earlier review snapshot.
+The approved browser uses pinned IGV.js 3.8.9 for native dragging, ruler zoom and
+selection, track presentation, multiple panes and local or URL tracks. Exact
+source annotations remain in lossless OSGB1 packs. Worker queries return
+100-row pages and compact plot buffers; full CSV and statistics use the complete
+matching collection.
 
-The current application uses pinned IGV.js 3.8.9 for native genomic navigation,
-track rendering, multiple panes and user tracks. Exact source records remain in
-lossless OSGB1 packs. Filtering, ranking, statistics and complete exact CSV
-exports run in a worker; tables return 100-row pages and compact plot buffers.
+The default expanded demonstration contains ten scored intervals and 67,579
+source occurrences. CFTR, HBB, BRCA1 and BRCA2 add four 2,048-base splice-junction
+windows across both strands. Existing examples, reference-only mitochondrial
+search and earlier immutable snapshots remain available. Manifest-driven
+bookmarks identify scored windows; merged interval coverage distinguishes fully
+published, partially published and unavailable views. A gene search can show
+more context than a demonstration window.
 
-Version-2 sessions pin the manifest URL and SHA-256 and preserve loci, active
-pane, track presentation and regions. Verified demonstration Files serialize as
-logical snapshot descriptors. Local user tracks serialize as reselection
-placeholders. A rebuilt legacy viewer preserves version-1 snapshots.
+Version-2 sessions pin the manifest URL and SHA-256 and preserve loci, the active
+pane, presentation and regions. Built-in scientific tracks retain pinned data
+identities while accepting presentation changes. Local user tracks serialize as
+reselection placeholders. The archived viewer preserves version-1 links.
 
-The default demonstration contains 44,593 source occurrences across six regions,
-complete mitochondrial sequence/search, indexed score/coverage tracks and
-published-region gene features. Public export is an authenticated allowlist;
-private configuration, SQLite state and internal receipts remain outside it.
-See public/catalog.json for its exact immutable identity.
+Conversion verifies lossless DS/DP, annotation and source identities; native
+tracks reduce REF-matching canonical alleles while preserving recorded zero and
+missing states. The expanded selection is reproducible from
+`tools/genome_browser/recipes/demo-expanded-v4.json`. Its source census and every
+native plotted value are checked against the audited VCFs. Only authenticated
+manifest-listed files are copied into the public snapshot.
 
-Scientific processing completion, prediction availability and packaging status
-are separate. Full r10/r13 source processing is complete; each model has
-3,271,090,620 predictions among 3,339,752,304 distinct canonical inputs. The
-68,661,684 absent predictions remain absent. Source occurrence and annotation
-counts are never relabeled unique variants. GENCODE v24 is the scoring annotation;
-MANE describes model training. Legacy provenance is retained explicitly.
+Both final source models completed processing; each has 3,271,090,620 predictions
+among 3,339,752,304 distinct canonical input SNVs. The 68,661,684 absent
+predictions stay absent. Source occurrences and annotation entries are not
+relabeled unique variants. GENCODE v24 supplies scoring genes; MANE describes
+training. Historical provenance remains explicit.
 
-Full packaging continues in frozen Slurm job 32361767. Dependent CPU job 32417755
-will authenticate its checkpoints, finish conversion if needed, rebuild native
-tracks/reference evidence, reconcile the final census, and export a local full
-snapshot. It stops for source-job scientific failures and does not publish.
-Actual completion requires all-data-verified.json and review-ready.json; a queued
-job or an intermediate manifest does not establish completion.
+Full browser-data packaging is independent of this demonstration release. The
+existing frozen jobs retain their code and allocations. Readiness requires
+receipts bound to the full dataset, including final census and content checks;
+intermediate packs or a queued continuation do not establish completion. Large
+full data remain outside Git/GitHub Pages and require an indexed HTTPS host.
 
-Local evidence and remaining checks are recorded in validation/local-review.json
-and LOCAL_REVIEW.md. A failed test remains a release blocker until corrected.
-There has been no new commit, push, merge or deployment for this review.
+`validation/results.json` records measured release checks and immutable dataset
+identities. `LOCAL_REVIEW.md` describes feature checks and local validation.

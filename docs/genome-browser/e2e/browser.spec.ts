@@ -138,7 +138,8 @@ test('paged FM search agrees with the actual mitochondrial reference', async ({ 
 });
 
 test('default view stays within the small initial data budget and has no script errors', async ({ page }, testInfo) => {
-  const metrics = await page.evaluate(() => performance.getEntriesByType('resource').filter(e => /\/data\//.test(e.name)).map(e => ({ url: e.name, encodedBytes: (e as PerformanceResourceTiming).encodedBodySize })));
+  const dataBase = new URL('.', new URL(demoPath, page.url())).href;
+  const metrics = await page.evaluate(prefix => performance.getEntriesByType('resource').filter(e => e.name.startsWith(prefix)).map(e => ({ url: e.name, encodedBytes: (e as PerformanceResourceTiming).encodedBodySize })), dataBase);
   const total = metrics.reduce((n, m) => n + m.encodedBytes, 0);
   await writeFile(testInfo.outputPath('startup-budget.json'), JSON.stringify({ encodedDataBytes: total, resources: metrics }, null, 2));
   expect(total).toBeLessThan(2 * 1048576);

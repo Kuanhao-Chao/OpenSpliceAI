@@ -3,15 +3,54 @@ Human genome browser
 
 `Open the browser <https://khchao.com/OpenSpliceAI/genome/>`_ to explore
 precomputed GRCh38 SNV delta scores with native IGV.js navigation and an
-OpenSpliceAI exact-allele inspector. The updated application is being reviewed
-locally; the public website continues to serve its previously published snapshot
-until publication is approved.
+OpenSpliceAI exact-allele inspector.
 
-The bundled demonstration contains six real scored regions from the final r10
+The bundled demonstration contains ten real scored regions from the final r10
 and r13 collections. Its reference excerpts, gene features and scores are
 self-contained. Regions outside the demonstration are explicitly unavailable.
 The completed source collections and their genome-wide browser packaging are
 separate deliverables; full online data require a configured indexed-data host.
+
+Scored demonstration regions
+--------------------------------
+
+The demonstration contains 67,579 source occurrences. The **Scored examples**
+buttons navigate directly to published windows. Coordinates below are 1-based
+inclusive; these windows are examples, not whole-gene score releases.
+
+.. list-table:: Published GRCh38 score windows
+   :header-rows: 1
+   :widths: 40 60
+
+   * - Example
+     - Interval
+   * - OR4F5 (+)
+     - chr1:68,991–70,110
+   * - OR4F16 (−)
+     - chr1:685,501–686,900
+   * - SAMD11 (+)
+     - chr1:925,401–930,500
+   * - Alternate-contig audit
+     - chr2_KI270773v1_alt:18,501–19,400
+   * - Strong delta-score example
+     - chr2:241,871,201–241,872,225
+   * - Matched r10/r13 difference
+     - chr2:241,869,354–241,870,378
+   * - CFTR (+), splice junction
+     - chr7:117,503,340–117,505,387
+   * - HBB (−), splice junction
+     - chr11:5,225,553–5,227,600
+   * - BRCA1 (−), splice junction
+     - chr17:43,122,993–43,125,040
+   * - BRCA2 (+), splice junction
+     - chr13:32,315,504–32,317,551
+
+The coverage notice distinguishes a published interval, partial overlap and
+unavailable scores. Partial views offer a button to focus an overlapping scored
+example. Gene searches can extend beyond the demonstration; they do not imply
+that scores for the entire gene are published. Exact and summary CSV downloads
+are disabled outside published score windows. The mitochondrial sequence is a
+reference-search example and has no demonstration score window.
 
 Navigate and inspect
 --------------------

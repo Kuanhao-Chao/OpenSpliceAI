@@ -1,6 +1,7 @@
 import './style.css';
 import { checksum } from './resources';
 import { GenomeEngine, type Config } from './igv';
+import { publishedCoverage } from './coverage';
 import { DataSource, summaryTotals } from './data';
 import { CHANNEL_COLORS, draw, layout, margin, type Palette } from './paint';
 import { comparisonStatistics, csvCell, exactCsv, predictionStatus, visibleVariants } from './science';
@@ -89,7 +90,24 @@ async function render() {
   for (const id of ['alt', 'gene-filter', 'threshold']) (document.getElementById(id) as HTMLInputElement).disabled = !data.exact;
   $('gene-details').innerHTML = (data.genes || genes).filter(g => g.chrom === state.chrom && g.start < state.end && g.end > state.start).slice(0, 30).map(g => `<div class="prediction"><h3>${esc(g.name)} · ${g.strand} strand</h3><p class="caption">${esc(formatView(g))} · ${g.exons.length} exons</p>${g.exons.map(([a, b], i) => `<button data-exon-start="${a}" data-exon-end="${b}" aria-label="Navigate to ${esc(g.name)} exon ${g.strand === '+' ? i + 1 : g.exons.length - i}">Exon ${g.strand === '+' ? i + 1 : g.exons.length - i}: ${(a + 1).toLocaleString()}–${b.toLocaleString()}</button>`).join('')}</div>`).join('') || '<p class="caption">No scoring annotation gene overlaps this view.</p>';
   const r = source.resources; $('resource-status').textContent = `${(r.transferred / 1048576).toFixed(2)} MiB received after HTTP decoding · ${(r.cache.bytes / 1048576).toFixed(1)} MiB cache · ${r.requests} requests`;
-  $<HTMLButtonElement>('csv').disabled = !data.exact; $<HTMLButtonElement>('summary-csv').disabled = false;
+  const outside = source.manifest.scope === 'demonstration' && publishedCoverage(state, source.manifest.publishedIntervals || []).kind === 'outside';
+  $<HTMLButtonElement>('csv').disabled = !data.exact || outside; $<HTMLButtonElement>('summary-csv').disabled = outside;
+}
+function showPublishedCoverage(view: View) {
+  const node = $('demo-coverage');
+  node.hidden = source.manifest.scope !== 'demonstration';
+  if (node.hidden) return null;
+  const coverage = publishedCoverage(view, source.manifest.publishedIntervals || []);
+  node.dataset.coverage = coverage.kind;
+  const count = `${coverage.coveredBp.toLocaleString()} / ${coverage.totalBp.toLocaleString()} bp within published intervals`;
+  node.textContent = coverage.kind === 'outside' ? 'Scores are unavailable here. Choose a scored example above.'
+    : `${coverage.kind === 'partial' ? 'Partially covered demonstration' : 'Published demonstration interval'} · ${count}. Input SNVs are shown where represented.`;
+  if (coverage.kind === 'partial') for (const [i, bookmark] of (source.manifest.bookmarks || []).entries()) {
+    if (bookmark.chrom !== view.chrom || bookmark.start >= view.end || bookmark.end <= view.start) continue;
+    const button = document.createElement('button'); button.dataset.bookmark = String(i); button.textContent = `Focus ${bookmark.label}`;
+    node.append(' ', button);
+  }
+  return coverage;
 }
 async function navigate(view: View, changes: Partial<BrowserState> = {}, push = true, native = true) {
   const request = ++navigationId; wholeGenome = false;
@@ -100,9 +118,15 @@ async function navigate(view: View, changes: Partial<BrowserState> = {}, push = 
   syncControls(); updateHash(push);
   if (native) await engine?.search(state);
   if (request !== navigationId) return;
+  if (native && engine?.views.length) {
+    activePane = Math.max(0, Math.min(activePane, engine.views.length - 1));
+    select('locus-pane').innerHTML = engine.views.map((v, i) => `<option value="${i}">${esc(formatView(v))}</option>`).join('');
+    select('locus-pane').value = String(activePane);
+  }
   updateHash(false); await refresh();
 }
 function clearLoadedView() {
+  $('demo-coverage').hidden = true;
   loaded = null; successfulEpoch = -1;
   ctx.clearRect(0, 0, canvas.width, canvas.height); renderInspector();
   select('variant-select').innerHTML = '<option>Loading exact alleles…</option>';
@@ -121,8 +145,8 @@ function refresh(): Promise<void> {
     if (local !== epoch || signal.aborted) return;
     loaded = result; successfulEpoch = local;
     const totals = summaryTotals(result.summaries);
-    const outside = source.manifest.scope === 'demonstration' && !source.manifest.publishedIntervals?.some(r => r.chrom === state.chrom && r.start < state.end && r.end > state.start);
-    $('load-status').textContent = outside ? 'Outside published demonstration intervals · scores unavailable' : `${result.exact ? 'Exact' : 'Binned maxima · zoom in for exact alleles'} · ${totals.rows.toLocaleString()} source occurrences in overlapping bins`;
+    const coverage = showPublishedCoverage(state);
+    $('load-status').textContent = coverage?.kind === 'outside' ? 'Outside published demonstration intervals · scores unavailable' : `${result.exact ? 'Exact' : 'Binned maxima · zoom in for exact alleles'} · ${totals.rows.toLocaleString()} source occurrences in overlapping bins${coverage?.kind === 'partial' ? ' · partially covered demonstration' : ''}`;
     return paint();
   }).catch(error => { if (local === epoch && !signal.aborted) { clearLoadedView(); report(error); } }).finally(() => { if (local === epoch) $('browser').classList.remove('loading'); });
   return loading;
@@ -240,9 +264,9 @@ async function loadDataset(url: string, restore = true) {
   if (state.snapshot !== manifest.id) throw new Error('The shared link identifies a different immutable snapshot. Choose that dataset before restoring the link.');
   const global = manifest.coverage?.global;
   const prediction = global?.models.r13.uniqueCanonicalPredicted || 0;
-  $('dataset-note').innerHTML = `<strong>${esc(manifest.label)}</strong> · ${manifest.scope === 'demonstration' ? 'Small published demonstration · six scored regions. Full-data browser packaging is a separate preparation step.' : 'Complete original SpliceAI source collection'}<br>r10 and r13 processing complete · ${prediction.toLocaleString()} / ${global?.uniqueCanonicalInput.toLocaleString()} canonical input SNVs have predictions per model (${global ? (100 * prediction / global.uniqueCanonicalInput).toFixed(2) : '—'}%). Missing predictions remain explicit.<br><span class="caption">Snapshot ${esc(manifest.id)} · ${esc(manifest.created.split('T')[0])}. ${esc(manifest.r13Evidence)}</span>`;
+  $('dataset-note').innerHTML = `<strong>${esc(manifest.label)}</strong> · ${manifest.scope === 'demonstration' ? `Small published demonstration · ${manifest.publishedIntervals?.length || 0} scored regions. Full-data browser packaging is a separate preparation step.` : 'Complete original SpliceAI source collection'}<br>r10 and r13 processing complete · ${prediction.toLocaleString()} / ${global?.uniqueCanonicalInput.toLocaleString()} canonical input SNVs have predictions per model (${global ? (100 * prediction / global.uniqueCanonicalInput).toFixed(2) : '—'}%). Missing predictions remain explicit.<br><span class="caption">Snapshot ${esc(manifest.id)} · ${esc(manifest.created.split('T')[0])}. ${esc(manifest.r13Evidence)}</span>`;
   select('model').querySelector<HTMLOptionElement>('[value="r13"]')!.textContent = 'OpenSpliceAI r13';
-  $('example-loci').innerHTML = (manifest.bookmarks || []).map((b, i) => `<button data-bookmark="${i}">${esc(b.label)}</button>`).join('');
+  $('example-loci').innerHTML = (manifest.bookmarks || []).map((b, i) => `<button data-bookmark="${i}" title="${esc(formatView(b))}">${esc(b.label)}</button>`).join('');
   select('chromosome').innerHTML = orderedContigs(manifest.contigs).map(c => `<option value="${esc(c.name)}">${esc(c.name)} · ${(c.length / 1e6).toFixed(2)} Mb</option>`).join('');
   $('gene-list').innerHTML = genes.map(g => `<option value="${esc(g.name)}"></option>`).join('');
   $('provenance').innerHTML = `<p>Snapshot <code>${esc(manifest.id)}</code> · ${esc(manifest.sourceOccurrences.toLocaleString())} prepared source occurrences, ${esc(manifest.acceptedR13Occurrences.toLocaleString())} with accepted r13 evidence.</p><p>Reference SHA-256 <code>${esc(manifest.referenceSha256)}</code><br>Annotation SHA-256 <code>${esc(manifest.annotationSha256)}</code></p>` + Object.entries(manifest.models).map(([id, m]) => `<p>${esc(id)}: ${esc(m.label)}; ${m.precision}-decimal source precision${m.seed !== undefined ? `; random seed ${m.seed}` : ''}${m.sha256 ? `<br><code>${esc(m.sha256)}</code>` : ''}</p>`).join('');
@@ -344,7 +368,9 @@ on('cancel-search', () => { searchRequest?.abort(); $('sequence-status').textCon
 async function showHit(index: number) { if (!searchHits.length) return; hitCursor = (index + searchHits.length) % searchHits.length; const hit = searchHits[hitCursor]; $('hit-position').textContent = `${hitCursor + 1} / ${searchHits.length}`; await navigate({ chrom: hit.chrom, start: hit.start - 70, end: hit.end + 70 }, { roi: hit, selected: '' }); }
 on('prev-hit', () => showHit(hitCursor - 1)); on('next-hit', () => showHit(hitCursor + 1));
 $('sequence-results').addEventListener('click', e => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-hit]'); if (b) showHit(Number(b.dataset.hit)).catch(report); });
-$('example-loci').addEventListener('click', e => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-bookmark]'); const view = source.manifest.bookmarks?.[Number(b?.dataset.bookmark)]; if (view) navigate(view, { selected: '' }).catch(report); });
+function openBookmark(e: Event) { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-bookmark]'); if (!b) return; const view = source.manifest.bookmarks?.[Number(b.dataset.bookmark)]; if (view) navigate(view, { selected: '', gene: '' }).catch(report); }
+$('example-loci').addEventListener('click', openBookmark);
+$('demo-coverage').addEventListener('click', openBookmark);
 on('allele-prev', () => { allelePage = Math.max(0, allelePage - 1); paint(); });
 on('allele-next', () => { allelePage++; paint(); });
 $('allele-rows').addEventListener('click', e => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-allele]'); if (b) { state.selected = b.dataset.allele!; updateHash(); paint(); $('variant-details').scrollIntoView({ block: 'nearest' }); } });

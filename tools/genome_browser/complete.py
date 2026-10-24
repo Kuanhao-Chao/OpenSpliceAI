@@ -11,6 +11,7 @@ import shutil
 import sqlite3
 import subprocess
 import time
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from .build import ManifestLookup, accepted, atomic, file_sha, finalize, init_db, prepare_parallel, vcf_rows
@@ -22,6 +23,7 @@ from .provenance import build_provenance
 from .reference import Reference
 from .review import make_config, review_reference
 from .search_index import attach_reference
+from .demo_recipe import recipe_settings
 
 
 def builder_identity(directory=None):
@@ -223,14 +225,14 @@ def run(directory,workers=2):
     atomic(root/'status.json',canonical_json({'state':'complete','dataset':config['id'],'verification':str(root/'all-data-verified.json')}))
 
 
-def demo(config_path, output):
+def demo(config_path, output, recipe_path=None):
     parent=json.loads(Path(config_path).read_text()); config=dict(parent); original=make_config(parent['repository'])
     config.update({k:original[k] for k in ('chunks','regions','reference_review_regions','default_view')})
     config.update({'id':parent['id']+'-demo-v3','label':'GRCh38 r10 / r13 · demonstration subset','scope':'demonstration','shard_size':2})
     # Derive two additional windows from audited records outside the four
     # existing examples. Both choices are deterministic and REF-matching.
     strong=None; different=None
-    for r in expected_rows(parent,config['chunks']):
+    for r in (() if recipe_path else expected_rows(parent,config['chunks'])):
         if r['flags']&1 or r['ref'] not in 'ACGT' or r['alt'] not in 'ACGT': continue
         if any(a['chrom']==r['chrom'] and a['start']<=r['pos']<a['end'] for a in config['regions']): continue
         bymodel={m:{e['gene']:e for e in r['models'][m] if sum(e['gene']==x['gene'] for x in r['models'][m])==1} for m in ('r10','r13')}
@@ -249,12 +251,30 @@ def demo(config_path, output):
         if not any(x['chrom']==r['chrom'] and x['start']<=a and x['end']>=b for x in config['reference_review_regions']): config['reference_review_regions'].append({'chrom':r['chrom'],'start':a,'end':b})
     config['reference_review_regions'].append({'chrom':'chrM','start':0,'end':16569})
     config['bookmarks']=[{**r,'label':f'Example {i+1} · {r["chrom"]}:{r["start"]+1:,}–{r["end"]:,}'} for i,r in enumerate(config['regions'])]
+    if recipe_path:
+        if not parent.get('r13_final'):
+            raise ValueError('expanded demonstration requires final audited source models')
+        recipe=json.loads(Path(recipe_path).read_text())
+        with closing(Reference(parent['reference'])) as ref:
+            config.update(recipe_settings(recipe,{name:entry[0] for name,entry in ref.contigs.items()}))
+        config.update({'id':parent['id']+'-demo-'+recipe['name'],
+                       'demo_recipe_sha256':file_sha(recipe_path),'builder_sha256':builder_identity()})
+        for model in ('r10','r13'):
+            lookup=ManifestLookup(config[model+'_manifest'])
+            try:
+                if not all(accepted(lookup.get(i)) for i in config['chunks']):
+                    raise ValueError(f'demo selection lacks accepted {model} audit evidence')
+            finally: lookup.close()
     config['snapshot_directory']=str(Path(output).resolve()); target=Path(config_path).parent/'demo-config.json'; atomic(target,canonical_json(config))
     prepare_parallel(target,output,workers=1); finalize(target,output); review_reference(config,Path(output)); build_tracks(target,output)
     from .search_index import build_reference
     build_reference(target,output,with_search=True,contig_names=['chrM']); attach_reference(output)
     build_native_reference(target,output,excerpts=True)
     build_provenance(target,output)
+    manifest=json.loads((Path(output)/'manifest.json').read_text())
+    expected=config.get('expected_source_occurrences')
+    if expected is not None and manifest['sourceOccurrences']!=expected:
+        raise ValueError('demo source census differs from its frozen recipe')
     proof=verify(output)
     if proof['bytes']>20*1048576: raise ValueError('demo exceeds 20 MiB data budget')
     atomic(Path(output)/'verification.json',canonical_json(proof)); return proof
@@ -264,10 +284,10 @@ def main():
     p=argparse.ArgumentParser(); s=p.add_subparsers(dest='action',required=True)
     a=s.add_parser('freeze'); a.add_argument('repository'); a.add_argument('destination')
     a=s.add_parser('run'); a.add_argument('directory'); a.add_argument('--workers',type=int,default=2)
-    a=s.add_parser('demo'); a.add_argument('config'); a.add_argument('output')
+    a=s.add_parser('demo'); a.add_argument('config'); a.add_argument('output'); a.add_argument('--recipe',help='JSON selection of audited chunks and labelled 0-based intervals')
     args=p.parse_args()
     if args.action=='freeze': print(json.dumps({'id':freeze(args.repository,args.destination)['id']}))
     elif args.action=='run': run(args.directory,args.workers)
-    else: print(json.dumps(demo(args.config,args.output)))
+    else: print(json.dumps(demo(args.config,args.output,args.recipe)))
 
 if __name__=='__main__': main()
